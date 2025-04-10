@@ -3,85 +3,70 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
+use App\Models\Service;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\Appointment; // Assuming Appointment model exists
 
 class AppointmentSchedulesController extends Controller
 {
-    /**
-     * Display a list of all appointment schedules.
-     */
     public function index()
     {
-        // Fetch all appointments from the database
-        $appointments = Appointment::all();
-
-        // Pass data to the admin view
+        $appointments = Appointment::with(['user', 'service'])->get();
         return view('admin.appointmentSchedules', compact('appointments'));
     }
 
-    /**
-     * Show the form for creating a new appointment.
-     */
     public function create()
     {
-        return view('admin.create_appointment');
+        $services = Service::where('active', true)->get();
+        $users = User::where('role', 'customer')->get();
+        return view('admin.appointments.create', compact('services', 'users'));
     }
 
-    /**
-     * Store a newly created appointment in the database.
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'customer_name' => 'required|string|max:255',
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'service_id' => 'required|exists:services,service_id',
             'appointment_date' => 'required|date',
-            'status' => 'required|string|in:Pending,Confirmed,Completed,Canceled',
+            'end_time' => 'required|date',
+            'status' => 'required|in:scheduled,completed,cancelled',
+            'notes' => 'nullable|string'
         ]);
 
-        Appointment::create($request->all());
-
-        return redirect()->route('admin.appointment_schedules')
-                         ->with('success', 'Appointment created successfully.');
+        Appointment::create($validated);
+        return redirect()->route('admin.appointmentSchedules')->with('success', 'Appointment created successfully');
     }
 
-    /**
-     * Show the form for editing an existing appointment.
-     */
     public function edit($id)
     {
         $appointment = Appointment::findOrFail($id);
-
-        return view('admin.edit_appointment', compact('appointment'));
+        $services = Service::where('active', true)->get();
+        $users = User::where('role', 'customer')->get();
+        return view('admin.appointments.edit', compact('appointment', 'services', 'users'));
     }
 
-    /**
-     * Update the specified appointment in the database.
-     */
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'customer_name' => 'required|string|max:255',
+        $appointment = Appointment::findOrFail($id);
+        
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'service_id' => 'required|exists:services,service_id',
             'appointment_date' => 'required|date',
-            'status' => 'required|string|in:Pending,Confirmed,Completed,Canceled',
+            'end_time' => 'required|date',
+            'status' => 'required|in:scheduled,completed,cancelled',
+            'notes' => 'nullable|string'
         ]);
 
-        $appointment = Appointment::findOrFail($id);
-        $appointment->update($request->all());
-
-        return redirect()->route('admin.appointment_schedules')
-                         ->with('success', 'Appointment updated successfully.');
+        $appointment->update($validated);
+        return redirect()->route('admin.appointmentSchedules')->with('success', 'Appointment updated successfully');
     }
 
-    /**
-     * Remove the specified appointment from the database.
-     */
     public function destroy($id)
     {
         $appointment = Appointment::findOrFail($id);
         $appointment->delete();
-
-        return redirect()->route('admin.appointment_schedules')
-                         ->with('success', 'Appointment deleted successfully.');
+        return redirect()->route('admin.appointmentSchedules')->with('success', 'Appointment deleted successfully');
     }
 }

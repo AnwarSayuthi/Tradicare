@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class AdminMiddleware
+class RoleRedirect
 {
     /**
      * Handle an incoming request.
@@ -17,10 +17,14 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role == 'admin') {
-            return $next($request);
+        if (Auth::check()) {
+            if (Auth::user()->role == 'admin') {
+                return redirect()->route('admin.dashboard');
+            } elseif (Auth::user()->role == 'customer') {
+                return redirect()->route('customer.homepage');
+            }
         }
         
-        return redirect('login')->with('error', 'You do not have admin access');
+        return $next($request);
     }
 }

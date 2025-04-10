@@ -3,53 +3,48 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\Request;
 
 class UserDetailsController extends Controller
 {
-    /**
-     * Display the list of user details.
-     *
-     * @return \Illuminate\View\View
-     */
     public function index()
     {
-        // Example data for users (Replace with actual database query later)
-        $users = [
-            [
-                'id' => 1,
-                'name' => 'Customer 1',
-                'email' => 'customer1@example.com',
-                'contact' => '+60123456789',
-                'status' => 'active',
-                'created_at' => '2025-01-01',
-            ],
-            [
-                'id' => 2,
-                'name' => 'Customer 2',
-                'email' => 'customer2@example.com',
-                'contact' => '+60123456789',
-                'status' => 'inactive',
-                'created_at' => '2025-01-02',
-            ],
-            [
-                'id' => 3,
-                'name' => 'Customer 3',
-                'email' => 'customer3@example.com',
-                'contact' => '+60123456789',
-                'status' => 'active',
-                'created_at' => '2025-01-03',
-            ],
-            [
-                'id' => 4,
-                'name' => 'Customer 4',
-                'email' => 'customer4@example.com',
-                'contact' => '+60123456789',
-                'status' => 'inactive',
-                'created_at' => '2025-01-04',
-            ],
-        ];
-
-        // Pass data to the view
+        $users = User::where('role', 'customer')->get();
         return view('admin.userDetails', compact('users'));
+    }
+
+    public function show($id)
+    {
+        $user = User::with(['orders', 'appointments', 'payments'])->findOrFail($id);
+        return view('admin.users.show', compact('user'));
+    }
+
+    public function edit($id)
+    {
+        $user = User::findOrFail($id);
+        return view('admin.users.edit', compact('user'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,'.$id,
+            'role' => 'required|in:admin,customer',
+            'tel_number' => 'nullable|string'
+        ]);
+
+        $user->update($validated);
+        return redirect()->route('admin.userDetails')->with('success', 'User updated successfully');
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+        return redirect()->route('admin.userDetails')->with('success', 'User deleted successfully');
     }
 }

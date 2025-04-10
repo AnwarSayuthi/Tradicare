@@ -2,29 +2,66 @@
 
 namespace App\Http\Controllers\Customer;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-
+use App\Models\Appointment;
+use App\Models\Service;
+use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
 {
     public function create()
     {
-        return view('customer.appointments');
+        $services = Service::where('active', true)->get();
+        return view('customer.appointments', compact('services'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'guests' => 'required|integer|min:1',
-            'treatment_type' => 'required|string|max:255',
-            'date' => 'required|date|after_or_equal:today',
-            'time' => 'required|date_format:H:i',
+            'service_id' => 'required|exists:services,service_id',
+            'appointment_date' => 'required|date|after:now',
+            'notes' => 'nullable|string'
         ]);
 
-        // Store or process the booking data here.
-        // For simplicity, just returning a success message.
-        return back()->with('success', 'Appointment booked successfully!');
+        // Calculate end time based on service duration
+        $service = Service::findOrFail($request->service_id);
+        $appointmentDate = new \DateTime($request->appointment_date);
+        $endTime = clone $appointmentDate;
+        $endTime->modify('+' . $service->duration_minutes . ' minutes');
+
+        Appointment::create([
+            'user_id' => auth()->id(),
+            'service_id' => $request->service_id,
+            'appointment_date' => $appointmentDate,
+            'end_time' => $endTime,
+            'status' => 'scheduled',
+            'notes' => $request->notes
+        ]);
+
+        return redirect()->route('customer.appointments')->with('success', 'Appointment booked successfully!');
+    }
+
+    public function index()
+    {
+        $appointments = Appointment::where('user_id', auth()->id())
+                                  ->with('service')
+                                  ->orderBy('appointment_date', 'desc')
+                                  ->get();
+        return view('customer.appointments.index', compact('appointments'));
+    }
+
+    public function show($id)
+    {
+        $appointment = Appointment::where('user_id', auth()->id())
+                                 ->with(['service', 'payment'])
+                                 ->findOrFail($id);
+        return view('customer.appointments.show', compact('appointment'));
+    }
+
+    public function cancel($id)
+    {
+        $appointment = Appointment::where('user_id', auth()->id())->findOrFail($id);
+        $appointment->update(['status' => 'cancelled']);
+        return redirect()->route('customer.appointments.index')->with('success', 'Appointment cancelled successfully');
     }
 }

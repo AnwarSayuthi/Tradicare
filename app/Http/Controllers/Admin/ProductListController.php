@@ -3,20 +3,62 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use Illuminate\Http\Request;
 
 class ProductListController extends Controller
 {
     public function index()
     {
-        // Example data to simulate a product list (replace this with actual database query in production)
-        $products = [
-            ['id' => 1, 'name' => 'Product 1', 'category' => 'Category A', 'price' => 'RM100', 'description' => 'Description 1', 'inventory' => '15 in stock for 2 variants'],
-            ['id' => 2, 'name' => 'Product 2', 'category' => 'Category B', 'price' => 'RM200', 'description' => 'Description 2', 'inventory' => '8 in stock for 2 variants'],
-            ['id' => 3, 'name' => 'Product 3', 'category' => 'Category A', 'price' => 'RM150', 'description' => 'Description 3', 'inventory' => '25 in stock for 2 variants'],
-            ['id' => 4, 'name' => 'Product 4', 'category' => 'Category C', 'price' => 'RM300', 'description' => 'Description 4', 'inventory' => 'Out of stock'],
-        ];
-
+        $products = Product::all();
         return view('admin.productList', compact('products'));
+    }
+
+    public function create()
+    {
+        return view('admin.products.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'product_name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'description' => 'required|string',
+            'stock_quantity' => 'required|integer|min:0',
+            'category' => 'required|string'
+        ]);
+
+        Product::create($validated);
+        return redirect()->route('admin.productList')->with('success', 'Product created successfully');
+    }
+
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        return view('admin.products.edit', compact('product'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+        
+        $validated = $request->validate([
+            'product_name' => 'required|string|max:255',
+            'price' => 'required|numeric|min:0',
+            'description' => 'required|string',
+            'stock_quantity' => 'required|integer|min:0',
+            'category' => 'required|string'
+        ]);
+
+        $product->update($validated);
+        return redirect()->route('admin.productList')->with('success', 'Product updated successfully');
+    }
+
+    public function destroy($id)
+    {
+        $product = Product::findOrFail($id);
+        $product->delete();
+        return redirect()->route('admin.productList')->with('success', 'Product deleted successfully');
     }
 }

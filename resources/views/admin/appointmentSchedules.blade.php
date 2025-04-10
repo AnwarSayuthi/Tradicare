@@ -4,24 +4,30 @@
 
 @section('content')
 <div class="container mt-4">
-    <h2>Appointment Schedule</h2>
-    <div class="mb-3">
-        <button class="btn btn-primary">This Month</button>
-        <button class="btn btn-secondary">Week</button>
-    </div>
-    <div class="row">
-        @foreach ($appointments as $appointment)
-            <div class="col-md-4 mb-3">
-                <div class="card shadow-sm">
-                    <div class="card-body">
+    <x-card>
+        <x-slot name="header">
+            <h2 class="mb-0">Appointment Schedule</h2>
+        </x-slot>
+
+        <div class="mb-3">
+            <x-buttons.primary>This Month</x-buttons.primary>
+            <x-buttons.secondary>Week</x-buttons.secondary>
+        </div>
+
+        <div class="row">
+            @foreach ($appointments as $appointment)
+                <div class="col-md-4 mb-3">
+                    <x-card>
                         <h5>{{ $appointment['title'] }}</h5>
                         <p>Time: {{ $appointment['time'] }}</p>
                         <p>Date: {{ $appointment['date'] }}</p>
-                        <a href="{{ $appointment['link'] }}" target="_blank" class="btn btn-link">Details</a>
-                    </div>
+                        <x-buttons.primary href="{{ $appointment['link'] }}" target="_blank">
+                            Details
+                        </x-buttons.primary>
+                    </x-card>
                 </div>
-            </div>
-        @endforeach
-    </div>
+            @endforeach
+        </div>
+    </x-card>
 </div>
 @endsection
