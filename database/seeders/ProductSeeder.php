@@ -7,11 +7,6 @@ use App\Models\Product;
 
 class ProductSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     *
-     * @return void
-     */
     public function run()
     {
         $products = [
@@ -20,14 +15,17 @@ class ProductSeeder extends Seeder
                 'price' => 12.99,
                 'description' => 'Hydrating shampoo for dry hair with argan oil and keratin.',
                 'stock_quantity' => 50,
-                'category' => 'Hair Care'
+                'category' => 'Hair Care',
+                'product_image' => 'products/shampoo-moisturizing.jpg',
+                'active' => true
             ],
             [
                 'product_name' => 'Conditioner - Repair',
                 'price' => 14.99,
                 'description' => 'Deep conditioning treatment for damaged hair.',
                 'stock_quantity' => 45,
-                'category' => 'Hair Care'
+                'category' => 'Hair Care',
+                'product_image' => 'products/conditioner-repair.jpg'
             ],
             [
                 'product_name' => 'Hair Mask - Protein',
@@ -48,14 +46,16 @@ class ProductSeeder extends Seeder
                 'price' => 18.99,
                 'description' => 'Gentle cleanser for sensitive skin.',
                 'stock_quantity' => 35,
-                'category' => 'Skin Care'
+                'category' => 'Skin Care',
+                'product_image' => 'products/facial-cleanser.jpg'
             ],
             [
                 'product_name' => 'Facial Toner - Balancing',
                 'price' => 16.99,
                 'description' => 'Balances skin pH and tightens pores.',
                 'stock_quantity' => 40,
-                'category' => 'Skin Care'
+                'category' => 'Skin Care',
+                'product_image' => 'products/facial-toner.jpg'
             ],
             [
                 'product_name' => 'Moisturizer - Hydrating',

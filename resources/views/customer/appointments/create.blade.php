@@ -4,50 +4,76 @@
 
 @section('content')
 <div class="container mt-5">
-    <div class="text-center">
-        <h1 class="fw-bold">Book Appointment</h1>
-        <p>Choose from our selection of services and book your appointment today.</p>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4 text-primary-custom">Book Your Appointment</h2>
+                    
+                    <form action="{{ route('customer.appointment.store') }}" method="POST">
+                        @csrf
+                        
+                        <div class="mb-4">
+                            <label for="service_id" class="form-label">Select Service</label>
+                            <select class="form-control" id="service_id" name="service_id" required>
+                                <option value="">Choose a service...</option>
+                                @foreach($services as $service)
+                                    <option value="{{ $service->service_id }}" 
+                                            data-duration="{{ $service->duration_minutes }}"
+                                            data-price="{{ $service->price }}">
+                                        {{ $service->service_name }} - {{ $service->duration_minutes }} mins (RM{{ number_format($service->price, 2) }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="appointment_date" class="form-label">Preferred Date</label>
+                            <input type="date" class="form-control" id="appointment_date" name="appointment_date" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="appointment_time" class="form-label">Preferred Time</label>
+                            <input type="time" class="form-control" id="appointment_time" name="appointment_time" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="notes" class="form-label">Special Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                    placeholder="Any special requests or concerns?"></textarea>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary-custom btn-lg">
+                                Book Appointment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <form action="{{ route('customer.appointment.store') }}" method="POST" class="mt-4">
-        @csrf
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <label for="service_id" class="form-label">Service</label>
-                <select class="form-control" id="service_id" name="service_id" required>
-                    <option value="" disabled selected>Select a service</option>
-                    @foreach($services as $service)
-                        <option value="{{ $service->service_id }}" data-duration="{{ $service->duration_minutes }}" data-price="{{ $service->price }}">
-                            {{ $service->service_name }} - ${{ number_format($service->price, 2) }} ({{ $service->duration_minutes }} mins)
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="col-md-6 mb-3">
-                <label for="appointment_date" class="form-label">Date & Time</label>
-                <input type="datetime-local" class="form-control" id="appointment_date" name="appointment_date" required>
-            </div>
-        </div>
-
-        <div class="mb-3">
-            <label for="notes" class="form-label">Special Notes (Optional)</label>
-            <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any special requests or notes?"></textarea>
-        </div>
-
-        <div class="text-center">
-            <button type="submit" class="btn btn-primary w-50">Book Appointment</button>
-        </div>
-    </form>
 </div>
+@endsection
 
-@push('scripts')
-<script>
-    // Disable past dates and times
-    const appointmentDateInput = document.getElementById('appointment_date');
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-    appointmentDateInput.min = now.toISOString().slice(0, 16);
-</script>
-@endpush
+@section('css')
+<style>
+    .btn-primary-custom {
+        background-color: #493628;
+        border-color: #493628;
+        color: white;
+    }
+    .btn-primary-custom:hover {
+        background-color: #5a442f;
+        border-color: #5a442f;
+        color: white;
+    }
+    .text-primary-custom {
+        color: #493628;
+    }
+    .form-control:focus {
+        border-color: #D6C0B3;
+        box-shadow: 0 0 0 0.25rem rgba(214, 192, 179, 0.25);
+    }
+</style>
 @endsection

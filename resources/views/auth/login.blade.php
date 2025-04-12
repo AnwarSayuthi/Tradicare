@@ -1,142 +1,124 @@
 @extends('layout')
 
-@section('title')
-    Login - Tradicare Spa
-@endsection
-
 @section('css')
-<style type="text/css">
-  body {
-    background-color: #D6C0B3;
-    background-image: linear-gradient(135deg, #D6C0B3 0%, #493628 100%);
-    min-height: 100vh;
-  }
-  .card {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border: none;
-    box-shadow: 0 15px 35px rgba(73, 54, 40, 0.2);
-  }
-  .btn-primary {
-    background-color: #493628;
-    border-color: #493628;
-    padding: 12px 30px;
-    transition: all 0.3s ease;
-  }
-  .btn-primary:hover {
-    background-color: #5a442f;
-    border-color: #5a442f;
-    transform: translateY(-2px);
-  }
-  .form-control:focus {
-    border-color: #D6C0B3;
-    box-shadow: 0 0 0 0.25rem rgba(73, 54, 40, 0.25);
-  }
-  .link-primary {
-    color: #493628;
-  }
-  .link-primary:hover {
-    color: #5a442f;
-  }
-  .form-check-input:checked {
-    background-color: #493628;
-    border-color: #493628;
-  }
-  .invalid-feedback {
-    color: #dc3545;
-  }
-  .card-body {
-    padding: 3rem;
-  }
-  .login-title {
-    color: #493628;
-    font-size: 1.75rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-  }
-  .form-floating label {
-    color: #666;
-  }
+<style>
+    .auth-container {
+        min-height: 100vh;
+        background: var(--gradient-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .auth-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 24px;
+        padding: 3rem;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+        max-width: 450px;
+        width: 100%;
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .auth-title {
+        font-size: 2.5rem;
+        font-weight: 600;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+    }
+
+    .auth-subtitle {
+        color: var(--secondary);
+        margin-bottom: 2.5rem;
+        font-size: 1.1rem;
+    }
+
+    .social-login {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+
+    .social-btn {
+        width: 45px;
+        height: 45px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: white;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease;
+        color: var(--primary);
+    }
+
+    .social-btn:hover {
+        transform: translateY(-3px);
+    }
+
+    .form-check-input:checked {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
 </style>
 @endsection
 
 @section('content')
-<div class="container">
-    <div class="row justify-content-center align-items-center min-vh-100">
-        <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
-            <div class="card rounded-4">
-                <div class="card-body">
-                    <div class="text-center mb-4">
-                        <img src="{{asset('image/logo.png')}}" width="200" alt="Logo Tradicare" class="mb-4">
-                        <h1 class="login-title">Welcome Back</h1>
-                    </div>
-
-                    <form method="POST" action="{{ route('login.post') }}">
-                        @csrf
-
-                        @session('error')
-                            <div class="alert alert-danger" role="alert"> 
-                                {{ $value }}
-                            </div>
-                        @endsession
-
-                        <div class="mb-4">
-                            <div class="form-floating">
-                                <input type="email" class="form-control @error('email') is-invalid @enderror" 
-                                    name="email" id="email" placeholder="name@example.com" required>
-                                <label for="email">{{ __('Email Address') }}</label>
-                            </div>
-                            @error('email')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
-                            <div class="form-floating">
-                                <input type="password" class="form-control @error('password') is-invalid @enderror" 
-                                    name="password" id="password" placeholder="Password" required>
-                                <label for="password">{{ __('Password') }}</label>
-                            </div>
-                            @error('password')
-                                <span class="invalid-feedback" role="alert">
-                                    <strong>{{ $message }}</strong>
-                                </span>
-                            @enderror
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="rememberMe" id="rememberMe">
-                                <label class="form-check-label" for="rememberMe">
-                                    Remember me
-                                </label>
-                            </div>
-                            <a href="{{route('password.request')}}" class="link-primary text-decoration-none">
-                                {{ __('Forgot password?') }}
-                            </a>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary btn-lg" type="submit">
-                                {{ __('Sign In') }}
-                            </button>
-                        </div>
-
-                        <p class="text-center mt-4 mb-0">
-                            Don't have an account? 
-                            <a href="{{ route('register') }}" class="link-primary text-decoration-none">
-                                Sign up
-                            </a>
-                        </p>
-                    </form>
-                </div>
+<div class="auth-container d-flex align-items-center justify-content-center">
+    <div class="auth-card">
+        <h1 class="auth-title text-center">Welcome back</h1>
+        <p class="auth-subtitle text-center">Please enter your account details</p>
+        
+        <form method="POST" action="{{ route('login') }}">
+            @csrf
+            
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control @error('email') is-invalid @enderror" 
+                    name="email" value="{{ old('email') }}" required>
+                @error('email')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
             </div>
+
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control @error('password') is-invalid @enderror" 
+                    name="password" required>
+                @error('password')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                    <label class="form-check-label" for="remember">Keep me logged in</label>
+                </div>
+                <a href="#" class="text-decoration-none" style="color: var(--primary);">Forgot Password?</a>
+            </div>
+
+            <button type="submit" class="btn btn-primary-custom w-100">Sign in</button>
+        </form>
+
+        <div class="social-login">
+            <a href="#" class="social-btn">
+                <i class="bi bi-google" style="color: var(--primary); font-size: 1.2rem;"></i>
+            </a>
+            <a href="#" class="social-btn">
+                <i class="bi bi-facebook" style="color: var(--primary); font-size: 1.2rem;"></i>
+            </a>
+            <a href="#" class="social-btn">
+                <i class="bi bi-github" style="color: var(--primary); font-size: 1.2rem;"></i>
+            </a>
+        </div>
+
+        <div class="text-center mt-4">
+            <p class="mb-0">Don't have an account? <a href="{{ route('register') }}" class="text-decoration-none" style="color: var(--primary);">Register</a></p>
         </div>
     </div>
 </div>
-@endsection
-@section('js')
-    
 @endsection

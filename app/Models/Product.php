@@ -5,7 +5,15 @@ use Illuminate\Database\Eloquent\Model;
 class Product extends Model
 {
     protected $primaryKey = 'product_id';
-    protected $fillable = ['product_name', 'price', 'description', 'stock_quantity', 'category'];
+    protected $fillable = [
+        'product_name',
+        'price',
+        'description',
+        'stock_quantity',
+        'category',
+        'product_image',
+        'active'
+    ];
 
     public function cartItems()
     {
