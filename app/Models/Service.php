@@ -5,7 +5,7 @@ use Illuminate\Database\Eloquent\Model;
 class Service extends Model
 {
     protected $primaryKey = 'service_id';
-    protected $fillable = ['service_name', 'description', 'duration_minutes', 'price', 'active'];
+    protected $fillable = ['service_name', 'description', 'duration_minutes', 'price', 'active', 'icon', 'category'];
     public $timestamps = false;
 
     public function appointments()

@@ -6,10 +6,11 @@ use App\Http\Controllers\AdminViewController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
-
+use App\Http\Controllers\Process\ReportController;
 
 // Public routes
-Route::get('/', [CustomerViewController::class, 'landing']);
+// Route::get('/', [CustomerViewController::class, 'landing']);
+Route::get('/', [CustomerViewController::class, 'landing'])->name('landing');
 
 // Auth routes
 Route::get('/login', [AuthController::class, 'loginForm'])->name('login');
@@ -20,16 +21,73 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 
 // Admin routes
+// Inside your admin middleware group
 Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
     // Admin view routes will go here
+    Route::get('/dashboard', [AdminViewController::class, 'dashboard'])->name('dashboard');
+    
+    // Admin Orders
+    Route::get('/orders', [AdminViewController::class, 'orders'])->name('orders.index');
+    Route::get('/orders/{order}', [AdminViewController::class, 'showOrder'])->name('orders.show');
+
+    // Product routes
+    Route::get('/products', [App\Http\Controllers\Process\ProductController::class, 'index'])->name('products.index');
+    Route::get('/products/create', [App\Http\Controllers\Process\ProductController::class, 'create'])->name('products.create');
+    Route::post('/products', [App\Http\Controllers\Process\ProductController::class, 'store'])->name('products.store');
+    Route::get('/products/{product}', [App\Http\Controllers\Process\ProductController::class, 'show'])->name('products.show');
+    Route::get('/products/{product}/edit', [App\Http\Controllers\Process\ProductController::class, 'edit'])->name('products.edit');
+    Route::put('/products/{product}', [App\Http\Controllers\Process\ProductController::class, 'update'])->name('products.update');
+    Route::put('/products/{product}/status', [App\Http\Controllers\Process\ProductController::class, 'updateStatus'])->name('products.update-status');
+    Route::delete('/products/{product}', [App\Http\Controllers\Process\ProductController::class, 'destroy'])->name('products.destroy');
+    
+    // Appointment routes
+    Route::get('/appointments', [App\Http\Controllers\Process\AppointmentController::class, 'index'])->name('appointments.index');
+    Route::get('/appointments/create', [App\Http\Controllers\Process\AppointmentController::class, 'create'])->name('appointments.create');
+    Route::post('/appointments', [App\Http\Controllers\Process\AppointmentController::class, 'store'])->name('appointments.store');
+    Route::get('/appointments/{id}', [App\Http\Controllers\Process\AppointmentController::class, 'show'])->name('appointments.show');
+    Route::get('/appointments/{id}/edit', [App\Http\Controllers\Process\AppointmentController::class, 'edit'])->name('appointments.edit');
+    Route::put('/appointments/{id}', [App\Http\Controllers\Process\AppointmentController::class, 'update'])->name('appointments.update');
+    Route::put('/appointments/{id}/status', [App\Http\Controllers\Process\AppointmentController::class, 'updateStatus'])->name('appointments.update-status');
+    Route::delete('/appointments/{id}', [App\Http\Controllers\Process\AppointmentController::class, 'destroy'])->name('appointments.destroy');
+    
+    // Add these customer routes
+    Route::get('/customerDetails', [AdminViewController::class, 'customerDetails'])->name('customers.index');
+    Route::get('/customers/{user}', [AdminViewController::class, 'showCustomer'])->name('customers.show');
+    Route::post('/customers', [AdminViewController::class, 'storeCustomer'])->name('customers.store');
+    Route::put('/customers/{user}/update-status', [AdminViewController::class, 'updateCustomerStatus'])->name('customers.update-status');
+    
+    // Admin Order Process routes
+    Route::put('/orders/{order}/status', [App\Http\Controllers\Process\DashboardController::class, 'updateOrderStatus'])->name('orders.update-status');
+    
+    // Report generation route
+    Route::get('/reports/generate/{type}', [ReportController::class, 'generateAdminReport'])->name('reports.generate');
+    
+    // Services management views
+    Route::get('/services', [AdminViewController::class, 'services'])->name('services.index');
+    Route::get('/services/create', [AdminViewController::class, 'createService'])->name('services.create');
+    Route::get('/services/{id}', [AdminViewController::class, 'showService'])->name('services.show');
+    Route::get('/services/{id}/edit', [AdminViewController::class, 'editService'])->name('services.edit');
+    
+    // Services management process
+    Route::post('/services', [App\Http\Controllers\Process\ServiceController::class, 'store'])->name('services.store');
+    Route::put('/services/{id}', [App\Http\Controllers\Process\ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/services/{id}', [App\Http\Controllers\Process\ServiceController::class, 'destroy'])->name('services.destroy');
+    Route::patch('/services/{id}/toggle-status', [App\Http\Controllers\Process\ServiceController::class, 'toggleStatus'])->name('services.toggle-status');
 });
 
 // Customer routes
-Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('customer.')->group(function () {
+// Inside your customer middleware group
+Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('customer.')->group(function() 
+{
+    Route::get('/profile/location/{id}/get', [App\Http\Controllers\Process\ProfileController::class, 'getLocation'])->name('location.get');
     // Appointments
-    Route::get('/appointments', [CustomerViewController::class, 'appointments'])->name('appointments.index');
-    Route::post('/appointments', [CustomerViewController::class, 'appointmentStore'])->name('appointment.store');
-    Route::get('/appointment/create', [CustomerViewController::class, 'appointmentCreate'])->name('appointment.create');
+    Route::get('/appointments', [CustomerViewController::class, 'appointments'])->name('appointments');
+    Route::get('/appointments/create', [CustomerViewController::class, 'createAppointment'])->name('appointments.create');
+    Route::post('/appointments', [CustomerViewController::class, 'storeAppointment'])->name('appointments.store');
+    Route::get('/appointment/create', [CustomerViewController::class, 'createAppointment'])->name('appointment.create');
+    Route::get('/appointments/available-slots', [CustomerViewController::class, 'getAvailableTimeSlots'])->name('appointments.available-slots');
+    Route::get('/appointment/payment/{id}', [CustomerViewController::class, 'appointmentPayment'])->name('appointment.payment');
+    Route::post('/appointment/payment/{id}/process', [CustomerViewController::class, 'processPayment'])->name('appointment.process-payment');
 
     // Products
     Route::get('/products', [CustomerViewController::class, 'products'])->name('products.index');
@@ -55,8 +113,12 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::post('/profile/location/add', [App\Http\Controllers\Process\ProfileController::class, 'addLocation'])->name('location.add');
     Route::put('/profile/location/{id}/update', [App\Http\Controllers\Process\ProfileController::class, 'updateLocation'])->name('location.update');
     Route::delete('/profile/location/{id}', [App\Http\Controllers\Process\ProfileController::class, 'deleteLocation'])->name('location.delete');
-    Route::post('/profile/change-password', [App\Http\Controllers\Process\ProfileController::class, 'changePassword'])->name('password.change');
+    Route::get('/profile/location/{id}/get', [App\Http\Controllers\Process\ProfileController::class, 'getLocation'])->name('location.get');
     
+    // Password change route
+    Route::post('/profile/change-password', [App\Http\Controllers\Process\ProfileController::class, 'changePassword'])->name('password.change');
+    // Remove this line as we're using the original password.change route instead
+    // Route::put('/profile/update-password', [App\Http\Controllers\Process\ProfileController::class, 'updatePassword'])->name('profile.update-password');
     // Cart routes
     Route::get('/cart', [App\Http\Controllers\CustomerViewController::class, 'cart'])->name('cart');
     Route::post('/cart/add/{productId}', [App\Http\Controllers\Process\CartController::class, 'addToCart'])->name('cart.add');
@@ -65,4 +127,21 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::post('/cart/clear', [App\Http\Controllers\Process\CartController::class, 'clearCart'])->name('cart.clear');
     Route::post('/cart/increment/{cartItemId}', [App\Http\Controllers\Process\CartController::class, 'incrementCartItem'])->name('cart.increment');
     Route::post('/cart/decrement/{cartItemId}', [App\Http\Controllers\Process\CartController::class, 'decrementCartItem'])->name('cart.decrement');
+    
+    
+    // Add this route inside the customer middleware group
+    // Services and Appointments
+    Route::get('/services', [CustomerViewController::class, 'services'])->name('services');
+    Route::get('/services/{service}', [CustomerViewController::class, 'showService'])->name('services.show');
+    Route::get('/appointment/create', [CustomerViewController::class, 'createAppointment'])->name('appointment.create');
+    Route::post('/appointment/store', [CustomerViewController::class, 'storeAppointment'])->name('appointment.store');
+    
+    // Add this to your customer routes section
+    Route::get('/about', [CustomerViewController::class, 'about'])->name('about');
+    
+    // Move orders under profile section
+    Route::get('/profile/orders', [CustomerViewController::class, 'orders'])->name('profile.orders');
+    Route::get('/profile/orders/{order}', [CustomerViewController::class, 'orderDetails'])->name('profile.orders.show');
+    // Add this route definition if it doesn't exist
+    Route::put('/profile/update-password', [App\Http\Controllers\Process\ProfileController::class, 'updatePassword'])->name('profile.update-password');
 });

@@ -162,4 +162,42 @@ class ProfileController extends Controller
         
         return redirect()->route('customer.profile')->with('success', 'Password changed successfully!');
     }
+    
+    /**
+     * Get location details for AJAX request
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function getLocation($id)
+    {
+        $location = Location::where('location_id', $id)
+            ->where('user_id', auth()->id())
+            ->first();
+        
+        if (!$location) {
+            return response()->json(['success' => false, 'message' => 'Location not found'], 404);
+        }
+        
+        return response()->json(['success' => true, 'location' => $location]);
+    }
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'current_password' => 'required',
+            'password' => 'required|min:8|confirmed',
+        ]);
+
+        // Check if current password matches
+        if (!Hash::check($request->current_password, auth()->user()->password)) {
+            return back()->with('error', 'Current password is incorrect');
+        }
+
+        // Update password
+        auth()->user()->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        return back()->with('success', 'Password updated successfully');
+    }
 }

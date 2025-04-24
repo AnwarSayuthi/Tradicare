@@ -22,12 +22,21 @@ class User extends Authenticatable
         'remember_token',
     ];
 
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isCustomer()
+    {
+        return $this->role === 'customer';
+    }
+
     public function cart()
     {
         return $this->hasMany(Cart::class, 'user_id');
     }
 
-    // Add this method to the User model class
     public function locations()
     {
         return $this->hasMany(Location::class, 'user_id');

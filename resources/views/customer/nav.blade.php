@@ -1,6 +1,6 @@
 <li class="nav-item">
-    <a class="nav-link px-3" href="{{ route('customer.appointments.index') }}">
-        <i class="bi bi-calendar-check me-2"></i> My Appointments
+    <a class="nav-link px-3" href="{{ route('customer.services') }}">
+        <i class="bi bi-calendar-plus me-2"></i> Make Appointment
     </a>
 </li>
 <li class="nav-item">
@@ -19,7 +19,7 @@
     </a>
 </li>
 <li class="nav-item">
-    <a class="nav-link px-3" href="{{ route('customer.orders') }}">
-        <i class="bi bi-bag me-2"></i> My Orders
+    <a class="nav-link px-3" href="{{ route('customer.about') }}">
+        <i class="bi bi-info-circle me-2"></i> About Us
     </a>
 </li>

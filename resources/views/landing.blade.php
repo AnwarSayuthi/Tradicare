@@ -271,3 +271,50 @@
     </div>
 </section>
 @endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Address form handling for checkout modal if it exists
+        const saveAddressBtn = document.getElementById('save-address-btn');
+        
+        if (saveAddressBtn) {
+            saveAddressBtn.addEventListener('click', function() {
+                // Get form data
+                const formData = new FormData();
+                formData.append('location_name', document.getElementById('location_name').value);
+                formData.append('address_line1', document.getElementById('address_line1').value);
+                formData.append('address_line2', document.getElementById('address_line2').value || '');
+                formData.append('city', document.getElementById('city').value);
+                formData.append('state', document.getElementById('state').value);
+                formData.append('postal_code', document.getElementById('postal_code').value);
+                formData.append('phone_number', document.getElementById('phone_number').value || '');
+                formData.append('is_default', document.getElementById('is_default').checked ? 1 : 0);
+                formData.append('_token', '{{ csrf_token() }}');
+                
+                // Send AJAX request to save address - using the correct route name
+                fetch('{{ route("customer.location.add") }}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Reload the page to show the new address
+                        window.location.reload();
+                    } else {
+                        alert('There was an error saving your address. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('There was an error saving your address. Please try again.');
+                });
+            });
+        }
+    });
+</script>
+@endsection

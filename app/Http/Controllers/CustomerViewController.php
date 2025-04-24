@@ -114,11 +114,11 @@ class CustomerViewController extends Controller
         return view('customer.appointments.index', compact('appointments'));
     }
 
-    public function appointmentCreate()
-    {
-        $services = Service::where('active', 1)->get();
-        return view('customer.appointments.create', compact('services'));
-    }
+    /**
+     * Display the appointment creation form
+     *
+     * @return \Illuminate\View\View
+     */
 
     // Update the cart method to use the new cart system
     public function cart()
@@ -154,6 +154,8 @@ class CustomerViewController extends Controller
     // Remove the removeFromCart method as it's now handled by the Process\CartController
     // public function removeFromCart($itemId) { ... }
 
+    // Add this to the checkout method in CustomerViewController.php
+    // Update the checkout method to include address selection
     public function checkout()
     {
         // Get the active cart for the current user
@@ -176,14 +178,24 @@ class CustomerViewController extends Controller
             $totalPrice += $item->unit_price * $item->quantity;
         }
         
-        return view('customer.cart.checkout', compact('cart', 'cartItems', 'totalPrice'));
+        // Get the user's default address or first address
+        $user = auth()->user();
+        $selectedAddress = $user->locations()->where('is_default', true)->first();
+        
+        // If no default address, get the first address
+        if (!$selectedAddress && $user->locations()->count() > 0) {
+            $selectedAddress = $user->locations()->first();
+        }
+        
+        return view('customer.cart.checkout', compact('cart', 'cartItems', 'totalPrice', 'selectedAddress'));
     }
 
+    // Update the placeOrder method to handle the location_id
     public function placeOrder(Request $request)
     {
         // Validate the request
         $request->validate([
-            'shipping_address' => 'required|string|max:255',
+            'shipping_address' => 'required',
             'payment_method' => 'required|in:credit_card,paypal,cash_on_delivery',
         ]);
         
@@ -196,11 +208,28 @@ class CustomerViewController extends Controller
             return redirect()->route('customer.cart')->with('error', 'Your cart is empty.');
         }
         
+        // Get the selected location
+        $location = auth()->user()->locations()->where('location_id', $request->shipping_address)->first();
+        
+        if (!$location) {
+            return redirect()->route('customer.checkout')->with('error', 'Please select a valid shipping address.');
+        }
+        
+        // Format the shipping address
+        $shippingAddress = $location->address_line1;
+        if ($location->address_line2) {
+            $shippingAddress .= ', ' . $location->address_line2;
+        }
+        $shippingAddress .= ', ' . $location->city . ', ' . $location->state . ' ' . $location->postal_code;
+        
         // Calculate total amount
         $totalAmount = 0;
         foreach ($cart->cartItems as $item) {
             $totalAmount += $item->unit_price * $item->quantity;
         }
+        
+        // Add shipping cost
+        $totalAmount += 5; // $5 shipping
         
         // Create order
         $order = Order::create([
@@ -209,7 +238,7 @@ class CustomerViewController extends Controller
             'order_date' => now(),
             'total_amount' => $totalAmount,
             'payment_status' => 'pending',
-            'shipping_address' => $request->shipping_address,
+            'shipping_address' => $shippingAddress,
             'status' => 'processing'
         ]);
         
@@ -267,13 +296,28 @@ class CustomerViewController extends Controller
         return view('customer.orders.show', compact('order'));
     }
 
+    // Add these methods to the CustomerViewController class
+    
     // Add this method to your CustomerViewController class
+    public function about()
+    {
+        return view('customer.about');
+    }
+
+    // Update the profile method to include orders
     public function profile()
     {
         $user = auth()->user();
         $locations = $user->locations()->get();
         
-        return view('customer.profile.index', compact('user', 'locations'));
+        // Get recent orders for profile page
+        $recentOrders = Order::with(['orderItems.product', 'payment'])
+                              ->where('user_id', auth()->id())
+                              ->orderBy('order_date', 'desc')
+                              ->limit(3)
+                              ->get();
+        
+        return view('customer.profile.index', compact('user', 'locations', 'recentOrders'));
     }
 
     // Add this method to handle adding new addresses
@@ -363,5 +407,344 @@ class CustomerViewController extends Controller
         }
         
         return redirect()->route('customer.profile')->with('success', 'Address deleted successfully!');
+    }
+    
+    /**
+     * Display the services page.
+     */
+    // Add this method to CustomerViewController
+    public function services()
+    {
+        $services = Service::where('active', true)
+                    ->orderBy('service_name')
+                    ->get();
+        
+        // Get available slots for each service
+        $availableSlots = [];
+        $startDate = now()->addDay(); // Start from tomorrow
+        $endDate = now()->addDays(14); // Show availability for next 14 days
+        
+        foreach ($services as $service) {
+            // Get all booked appointments for this service in the date range
+            $bookedAppointments = Appointment::where('service_id', $service->service_id)
+                ->where('status', 'scheduled')
+                ->whereBetween('appointment_date', [$startDate, $endDate])
+                ->get();
+            
+            // Calculate available slots
+            $currentDate = clone $startDate;
+            while ($currentDate <= $endDate) {
+                // Skip if current day is Sunday (assuming clinic closed on Sundays)
+                if ($currentDate->dayOfWeek === 0) {
+                    $currentDate->addDay();
+                    continue;
+                }
+                
+                $dateStr = $currentDate->format('M d, Y');
+                
+                // Business hours: 9 AM to 8 PM, 1-hour slots
+                $startHour = 9; // 9 AM
+                $endHour = 20; // 8 PM
+                
+                for ($hour = $startHour; $hour < $endHour; $hour++) {
+                    $slotStart = clone $currentDate;
+                    $slotStart->hour($hour)->minute(0)->second(0);
+                    
+                    // Skip if this time slot has already passed
+                    if ($slotStart < now()) {
+                        continue;
+                    }
+                    
+                    // Calculate slot end time based on service duration
+                    $slotEnd = (clone $slotStart)->addMinutes($service->duration_minutes);
+                    
+                    // Check if this slot overlaps with any booked appointment
+                    $isAvailable = true;
+                    foreach ($bookedAppointments as $appointment) {
+                        $appointmentStart = $appointment->appointment_date;
+                        $appointmentEnd = $appointment->end_time;
+                        
+                        // Check for overlap
+                        if (
+                            ($slotStart >= $appointmentStart && $slotStart < $appointmentEnd) ||
+                            ($slotEnd > $appointmentStart && $slotEnd <= $appointmentEnd) ||
+                            ($slotStart <= $appointmentStart && $slotEnd >= $appointmentEnd)
+                        ) {
+                            $isAvailable = false;
+                            break;
+                        }
+                    }
+                    
+                    if ($isAvailable) {
+                        $availableSlots[$service->service_id][$dateStr][] = $slotStart->format('g:i A');
+                    }
+                }
+                
+                $currentDate->addDay();
+            }
+        }
+        
+        return view('customer.services.index', compact('services', 'availableSlots'));
+    }
+
+    // Update the createAppointment method to handle service_id parameter
+    public function createAppointment(Request $request)
+    {
+        $selectedService = null;
+        
+        if ($request->has('service_id')) {
+            $selectedService = Service::findOrFail($request->service_id);
+        }
+        
+        $services = Service::where('active', true)->get();
+        
+        // Get available time slots for the selected date (or default to tomorrow)
+        $selectedDate = $request->date ?? now()->addDay()->format('Y-m-d');
+        $availableTimeSlots = $this->getAvailableTimeSlots($selectedDate, $request->service_id);
+        
+        return view('customer.appointments.create', compact('services', 'selectedService', 'selectedDate', 'availableTimeSlots'));
+    }
+
+    // Helper method to get available time slots
+    private function getAvailableTimeSlots($date, $serviceId = null)
+    {
+        $date = Carbon::parse($date);
+        $timeSlots = [];
+        
+        // If Sunday, return empty (assuming clinic closed on Sundays)
+        if ($date->dayOfWeek === 0) {
+            return $timeSlots;
+        }
+        
+        // Get service duration if service_id is provided
+        $serviceDuration = 60; // Default 1 hour
+        if ($serviceId) {
+            $service = Service::find($serviceId);
+            if ($service) {
+                $serviceDuration = $service->duration_minutes;
+            }
+        }
+        
+        // Business hours: 9 AM to 8 PM
+        $startHour = 9; // 9 AM
+        $endHour = 20; // 8 PM
+        
+        // Get all appointments for this date
+        $appointments = Appointment::where('status', 'scheduled')
+            ->whereDate('appointment_date', $date)
+            ->get();
+        
+        // Generate time slots
+        for ($hour = $startHour; $hour < $endHour; $hour++) {
+            // Generate slots at 30-minute intervals
+            for ($minute = 0; $minute < 60; $minute += 30) {
+                $slotStart = Carbon::parse($date)->hour($hour)->minute($minute)->second(0);
+                
+                // Skip if this time slot has already passed
+                if ($slotStart < now()) {
+                    continue;
+                }
+                
+                // Calculate slot end time based on service duration
+                $slotEnd = (clone $slotStart)->addMinutes($serviceDuration);
+                
+                // Skip if slot end time is after business hours
+                if ($slotEnd->hour >= $endHour) {
+                    continue;
+                }
+                
+                // Check if this slot overlaps with any booked appointment
+                $isAvailable = true;
+                foreach ($appointments as $appointment) {
+                    $appointmentStart = $appointment->appointment_date;
+                    $appointmentEnd = $appointment->end_time;
+                    
+                    // Check for overlap
+                    if (
+                        ($slotStart >= $appointmentStart && $slotStart < $appointmentEnd) ||
+                        ($slotEnd > $appointmentStart && $slotEnd <= $appointmentEnd) ||
+                        ($slotStart <= $appointmentStart && $slotEnd >= $appointmentEnd)
+                    ) {
+                        $isAvailable = false;
+                        break;
+                    }
+                }
+                
+                if ($isAvailable) {
+                    $timeSlots[] = [
+                        'time' => $slotStart->format('g:i A'),
+                        'value' => $slotStart->format('H:i'),
+                        'available' => true
+                    ];
+                }
+            }
+        }
+        
+        return $timeSlots;
+    }
+
+    // Update the storeAppointment method to handle payment redirection
+    public function storeAppointment(Request $request)
+    {
+        $validated = $request->validate([
+            'service_id' => 'required|exists:services,service_id',
+            'appointment_date' => 'required|date|after:today',
+            'appointment_time' => 'required',
+            'notes' => 'nullable|string',
+            'terms_agreed' => 'required|accepted',
+        ]);
+        
+        // Combine date and time
+        $appointmentDateTime = Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
+        
+        // Get service to calculate end time
+        $service = Service::findOrFail($validated['service_id']);
+        
+        // Calculate end time based on service duration
+        $endTime = (clone $appointmentDateTime)->addMinutes($service->duration_minutes);
+        
+        // Create appointment
+        $appointment = Appointment::create([
+            'user_id' => auth()->id(),
+            'service_id' => $validated['service_id'],
+            'appointment_date' => $appointmentDateTime,
+            'end_time' => $endTime,
+            'status' => 'scheduled',
+            'notes' => $validated['notes'] ?? null,
+        ]);
+        
+        // Redirect to payment page
+        return redirect()->route('customer.appointment.payment', $appointment->appointment_id)
+            ->with('success', 'Appointment scheduled successfully. Please complete your payment.');
+    }
+
+    // Add a new method for appointment payment
+    public function appointmentPayment($appointmentId)
+    {
+        $appointment = Appointment::with('service')->findOrFail($appointmentId);
+        
+        // Check if this appointment belongs to the logged-in user
+        if ($appointment->user_id !== auth()->id()) {
+            return redirect()->route('customer.appointments')
+                ->with('error', 'Unauthorized access to appointment.');
+        }
+        
+        return view('customer.appointments.payment', compact('appointment'));
+    }
+
+    // Add a method to process appointment payment
+    public function processPayment(Request $request, $appointmentId)
+    {
+        $appointment = Appointment::with('service')->findOrFail($appointmentId);
+        
+        // Check if this appointment belongs to the logged-in user
+        if ($appointment->user_id !== auth()->id()) {
+            return redirect()->route('customer.appointments')
+                ->with('error', 'Unauthorized access to appointment.');
+        }
+        
+        $validated = $request->validate([
+            'payment_method' => 'required|in:credit_card,paypal,cash',
+        ]);
+        
+        // Create a payment record
+        $payment = Payment::create([
+            'user_id' => auth()->id(),
+            'appointment_id' => $appointmentId,
+            'amount' => $appointment->service->price,
+            'payment_date' => now(),
+            'payment_method' => $validated['payment_method'],
+            'status' => 'completed',
+            'transaction_id' => 'TRX-' . time() . '-' . auth()->id(),
+        ]);
+        
+        return redirect()->route('customer.appointments')
+            ->with('success', 'Payment completed successfully. Your appointment is confirmed.');
+    }
+
+    /**
+     * Display the specified service details
+     *
+     * @param int $id
+     * @return \Illuminate\View\View
+     */
+    public function showService($id)
+    {
+        $service = Service::findOrFail($id);
+        
+        // Get available slots for this service
+        $availableSlots = [];
+        $startDate = now()->addDay(); // Start from tomorrow
+        $endDate = now()->addDays(14); // Show availability for next 14 days
+        
+        // Get all booked appointments for this service in the date range
+        $bookedAppointments = Appointment::where('service_id', $service->service_id)
+            ->where('status', 'scheduled')
+            ->whereBetween('appointment_date', [$startDate, $endDate])
+            ->get();
+        
+        // Calculate available slots
+        $currentDate = clone $startDate;
+        while ($currentDate <= $endDate) {
+            // Skip if current day is Sunday (assuming clinic closed on Sundays)
+            if ($currentDate->dayOfWeek === 0) {
+                $currentDate->addDay();
+                continue;
+            }
+            
+            $dateStr = $currentDate->format('M d, Y');
+            
+            // Business hours: 9 AM to 8 PM, 1-hour slots
+            $startHour = 9; // 9 AM
+            $endHour = 20; // 8 PM
+            
+            for ($hour = $startHour; $hour < $endHour; $hour++) {
+                $slotStart = clone $currentDate;
+                $slotStart->hour($hour)->minute(0)->second(0);
+                
+                // Skip if this time slot has already passed
+                if ($slotStart < now()) {
+                    continue;
+                }
+                
+                // Calculate slot end time based on service duration
+                $slotEnd = (clone $slotStart)->addMinutes($service->duration_minutes);
+                
+                // Check if this slot overlaps with any booked appointment
+                $isAvailable = true;
+                foreach ($bookedAppointments as $appointment) {
+                    $appointmentStart = $appointment->appointment_date;
+                    $appointmentEnd = $appointment->end_time;
+                    
+                    // Check for overlap
+                    if (
+                        ($slotStart >= $appointmentStart && $slotStart < $appointmentEnd) ||
+                        ($slotEnd > $appointmentStart && $slotEnd <= $appointmentEnd) ||
+                        ($slotStart <= $appointmentStart && $slotEnd >= $appointmentEnd)
+                    ) {
+                        $isAvailable = false;
+                        break;
+                    }
+                }
+                
+                if ($isAvailable) {
+                    $availableSlots[$dateStr][] = [
+                        'time' => $slotStart->format('g:i A'),
+                        'datetime' => $slotStart->format('Y-m-d H:i:s')
+                    ];
+                }
+            }
+            
+            $currentDate->addDay();
+        }
+        
+        // Get related services in the same category
+        $relatedServices = Service::where('category', $service->category)
+            ->where('service_id', '!=', $service->service_id)
+            ->where('active', true)
+            ->take(3)
+            ->get();
+        
+        return view('customer.services.show', compact('service', 'availableSlots', 'relatedServices'));
     }
 }
