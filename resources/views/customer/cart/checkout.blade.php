@@ -22,7 +22,7 @@
                                 <h6 class="mb-0">{{ $item->product->product_name }}</h6>
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">Qty: {{ $item->quantity }}</small>
-                                    <span class="fw-medium">${{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                    <span class="fw-medium">RM{{ number_format($item->unit_price * $item->quantity, 2) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -34,20 +34,20 @@
                     <div class="order-summary">
                         <div class="d-flex justify-content-between mb-2">
                             <span>Subtotal</span>
-                            <span>${{ number_format($totalPrice, 2) }}</span>
+                            <span class="text-end">RM{{ number_format($subtotal, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Shipping</span>
-                            <span>$5.00</span>
+                            <span class="text-end">RM{{ number_format($shippingCost, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
                             <span>Tax</span>
-                            <span>$0.00</span>
+                            <span>RM0.00</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between fw-bold">
                             <span>Total</span>
-                            <span>${{ number_format($totalPrice + 5, 2) }}</span>
+                            <span class="text-end fw-bold">RM{{ number_format($total, 2) }}</span>
                         </div>
                     </div>
                     

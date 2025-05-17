@@ -21,6 +21,7 @@ class ProductController extends Controller
             'totalProducts' => Product::count(),
             'activeProducts' => Product::where('active', true)->count(),
             'inactiveProducts' => Product::where('active', false)->count(),
+            'categoryCounts' => Product::getAllCategories(),
         ];
     }
 
@@ -34,8 +35,9 @@ class ProductController extends Controller
         $query = Product::query();
         
         // Apply filters
-        if ($request->has('active') && $request->active != '') {
-            $query->where('active', $request->active == 'true' ? true : false);
+        if ($request->has('status') && $request->status != '') {
+            $status = $request->status === 'active';
+            $query->where('active', $status);
         }
         
         if ($request->has('search') && $request->search != '') {
@@ -50,17 +52,22 @@ class ProductController extends Controller
             $query->where('category', $request->category);
         }
         
+        // Apply sorting
+        $sortField = $request->get('sort_by', 'created_at');
+        $sortDirection = $request->get('sort_dir', 'desc');
+        $query->orderBy($sortField, $sortDirection);
+        
         // Get products with pagination
-        $products = $query->orderBy('created_at', 'desc')->paginate(10);
+        $products = $query->paginate(10);
         
         // Get product statistics
         $stats = $this->getProductStats();
         
-        // Get unique categories for filter dropdown
-        $categories = Product::distinct()->pluck('category')->filter()->toArray();
+        // Get unique categories for filter dropdown with counts
+        $categories = Product::getAllCategories();
         
         return view('admin.products.index', array_merge(
-            compact('products', 'categories'),
+            compact('products', 'categories', 'sortField', 'sortDirection'),
             $stats
         ));
     }
@@ -114,63 +121,92 @@ class ProductController extends Controller
      * Store a newly created product in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\Response
      */
     public function store(Request $request)
     {
+        // Validate the request
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'category' => 'required|string|max:100',
-            'stock_quantity' => 'required|integer|min:0',
             'description' => 'required|string',
-            'active' => 'boolean',
-            'image' => 'nullable|image|max:2048',
+            'stock_quantity' => 'required|integer|min:0',
+            'category' => 'required|string',
+            'product_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'active' => 'sometimes|boolean',
         ]);
         
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            $validated['product_image'] = $request->file('image')->store('products', 'public');
+        // Handle the image upload
+        if ($request->hasFile('product_image')) {
+            $image = $request->file('product_image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->storeAs('public/products', $imageName);
+            $validated['product_image'] = 'products/' . $imageName;
+        } else {
+            // Ensure product_image is null if no image is uploaded
+            $validated['product_image'] = null;
         }
         
-        Product::create($validated);
+        // Create the product
+        $product = Product::create($validated);
         
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product created successfully');
+        return redirect()->route('admin.products.show', $product->product_id)
+            ->with('success', 'Product created successfully.');
     }
 
     /**
      * Update the specified product in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Product  $product
-     * @return \Illuminate\Http\RedirectResponse
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
+        $product = Product::findOrFail($id);
+        
+        // Validate the request
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'category' => 'required|string|max:100',
-            'stock_quantity' => 'required|integer|min:0',
             'description' => 'required|string',
-            'active' => 'boolean',
-            'image' => 'nullable|image|max:2048',
+            'stock_quantity' => 'required|integer|min:0',
+            'category' => 'required|string',
+            'product_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'active' => 'sometimes|boolean',
         ]);
         
-        // Handle image upload
-        if ($request->hasFile('image')) {
-            // Delete old image if exists
+        // Handle the image upload
+        if ($request->hasFile('product_image')) {
+            // Delete the old image if it exists
             if ($product->product_image) {
-                Storage::disk('public')->delete($product->product_image);
+                Storage::delete('public/' . $product->product_image);
             }
-            $validated['product_image'] = $request->file('image')->store('products', 'public');
+            
+            $image = $request->file('product_image');
+            $imageName = time() . '_' . $image->getClientOriginalName();
+            $image->storeAs('public/products', $imageName);
+            $validated['product_image'] = 'products/' . $imageName;
+        } else if ($request->has('remove_image')) {
+            // If user wants to remove the image
+            if ($product->product_image) {
+                Storage::delete('public/' . $product->product_image);
+            }
+            $validated['product_image'] = null;
+        } else {
+            // Keep the existing image
+            unset($validated['product_image']);
         }
+
+        if ($request->hasFile('item_image')) {
+                $imagePath = $request->file('item_image')->store('item_images', 'public');
+                $item->item_image = $imagePath;
         
+        // Update the product
         $product->update($validated);
         
-        return redirect()->route('admin.products.index')
-            ->with('success', 'Product updated successfully');
+        return redirect()->route('admin.products.show', $product->product_id)
+            ->with('success', 'Product updated successfully.');
     }
 
     /**

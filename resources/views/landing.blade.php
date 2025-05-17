@@ -2,8 +2,9 @@
 
 @section('css')
 <style>
+    /* Hero Section Styles */
     .hero-section {
-        background: linear-gradient(rgba(73, 54, 40, 0.8), rgba(73, 54, 40, 0.7)), url('/images/spa-bg.jpg');
+        background: linear-gradient(rgba(73, 54, 40, 0.8), rgba(73, 54, 40, 0.7)), url('/image/background.png');
         background-size: cover;
         background-position: center;
         min-height: 90vh;
@@ -27,40 +28,117 @@
         height: 150px;
         background: linear-gradient(to top, #FAFAFA, transparent);
     }
-
-    .service-card {
-        background: #fff;
-        border: none;
-        border-radius: 15px;
-        transition: all 0.4s ease;
-        box-shadow: 0 5px 15px rgba(73, 54, 40, 0.1);
-        height: 100%;
+    
+    /* Section Title Styles */
+    .section-title {
+        color: #493628;
         position: relative;
-        overflow: hidden;
+        padding-bottom: 15px;
+        margin-bottom: 30px;
+        text-align: center;
     }
 
-    .service-card::before {
+    .section-title::after {
         content: '';
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 5px;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 3px;
+        background: #D6C0B3;
+    }
+    
+    /* Feature Icon Styles */
+    .feature-icon {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
         background: var(--gradient-primary);
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.4s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        color: white;
+        font-size: 1.8rem;
+        box-shadow: 0 10px 20px rgba(73, 54, 40, 0.2);
     }
 
-    .service-card:hover::before {
-        transform: scaleX(1);
+    /* Service Card Styles */
+    .service-card {
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        padding-top: 40px;
+        height: 100%;
     }
 
     .service-card:hover {
         transform: translateY(-10px);
-        box-shadow: 0 15px 30px rgba(73, 54, 40, 0.15);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.1);
     }
 
+    .service-icon {
+        width: 80px;
+        height: 80px;
+        background: var(--primary-light);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: -40px auto 20px;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    .service-icon i {
+        font-size: 2rem;
+        color: var(--primary);
+    }
+
+    .service-content {
+        padding: 0 25px 25px;
+        text-align: center;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .service-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        color: var(--primary);
+    }
+
+    .service-meta {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+        color: var(--secondary);
+    }
+
+    .service-meta span {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .service-description {
+        color: #666;
+        margin-bottom: 20px;
+        flex-grow: 1;
+    }
+
+    /* Product Card Styles */
     .product-card {
         background: #fff;
         border: none;
@@ -86,39 +164,7 @@
         transform: scale(1.05);
     }
 
-    .section-title {
-        color: #493628;
-        position: relative;
-        padding-bottom: 15px;
-        margin-bottom: 30px;
-        text-align: center;
-    }
-
-    .section-title::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80px;
-        height: 3px;
-        background: #D6C0B3;
-    }
-
-    .feature-icon {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        background: var(--gradient-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1.5rem;
-        color: white;
-        font-size: 1.8rem;
-        box-shadow: 0 10px 20px rgba(73, 54, 40, 0.2);
-    }
-
+    /* Responsive Styles */
     @media (max-width: 767.98px) {
         .hero-section {
             min-height: 70vh;
@@ -136,8 +182,8 @@
 <!-- Hero Section -->
 <section class="hero-section">
     <div class="container text-center hero-content">
-        <h1 class="display-4 fw-bold mb-4 animate__animated animate__fadeInDown">Experience Luxury Spa Treatment</h1>
-        <p class="lead mb-5 animate__animated animate__fadeInUp">Indulge in our premium spa services and products for ultimate relaxation and rejuvenation</p>
+        <h1 class="display-4 fw-bold mb-4 animate__animated animate__fadeInDown">Experience Luxury Massage Treatment</h1>
+        <p class="lead mb-5 animate__animated animate__fadeInUp">Indulge in our premium massage services and products for ultimate relaxation and rejuvenation</p>
         
         <div class="animate__animated animate__fadeInUp animate__delay-1s">
             <x-ui.button href="{{ route('customer.appointment.create') }}" class="btn-lg">
@@ -191,16 +237,19 @@
         </div>
         <div class="row g-4">
             @foreach($services as $service)
-            <div class="col-lg-4 col-md-6">
-                <div class="service-card p-4 text-center h-100">
-                    <div class="p-3">
-                        <img src="{{ $service->icon ?? asset('images/service-icon.png') }}" alt="{{ $service->service_name }}" class="mb-4" width="64">
-                        <h3 class="h5 mb-3" style="color: var(--primary);">{{ $service->service_name }}</h3>
-                        <p class="text-muted mb-3">{{ $service->description }}</p>
-                        <p class="fw-bold mb-4">${{ $service->price }}</p>
-                        <a href="{{ route('customer.appointment.create') }}" class="btn btn-sm btn-primary-custom">
-                            Book Now
-                        </a>
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="service-card h-100">
+                    <div class="service-icon">
+                        <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
+                    </div>
+                    <div class="service-content">
+                        <h3 class="service-title">{{ $service->service_name }}</h3>
+                        <div class="service-meta">
+                            <span><i class="bi bi-clock"></i> {{ $service->duration_minutes }} mins</span>
+                            <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
+                        </div>
+                        <p class="service-description">{{ $service->description }}</p>
+                        <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
                     </div>
                 </div>
             </div>
@@ -318,3 +367,4 @@
     });
 </script>
 @endsection
+

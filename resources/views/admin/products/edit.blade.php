@@ -77,12 +77,9 @@
                                         <div class="row mb-4">
                                             <div class="col-md-6 mb-3 mb-md-0">
                                                 <label for="price" class="form-label fw-medium">Regular Price (RM) <span class="text-danger">*</span></label>
-                                                <div class="input-group input-group-lg">
-                                                    <span class="input-group-text bg-light">RM</span>
-                                                    <input type="number" step="0.01" min="0" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price', $product->price) }}" required>
-                                                    @error('price')
-                                                        <div class="invalid-feedback">{{ $message }}</div>
-                                                    @enderror
+                                                <div class="input-group">
+                                                    <span class="input-group-text">RM</span>
+                                                    <input type="number" step="0.01" class="form-control" id="price" name="price" value="{{ old('price', $product->price) }}" required>
                                                 </div>
                                             </div>
                                             

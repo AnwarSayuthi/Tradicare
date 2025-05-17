@@ -113,10 +113,10 @@ function getStatusBadgeClass($status) {
     </div>
     
     <!-- Orders Table -->
-    <div class="card shadow-sm border-0">
-        <div class="card-body">
+    <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Order ID</th>
@@ -270,111 +270,80 @@ function getStatusBadgeClass($status) {
                     </tbody>
                 </table>
             </div>
-            
-            <div class="d-flex justify-content-center mt-4">
+
+            <!-- Replace the existing pagination with this new one -->
+            {{-- <div class="d-flex justify-content-center mt-4">
                 {{ $orders->links() }}
-            </div>
+            </div> --}}
+            @if($orders->hasPages())
+                <div class="card-footer bg-white border-0 py-3">
+                    {{ $orders->withQueryString()->links('pagination::bootstrap-5') }}
+                </div>
+            @endif
         </div>
     </div>
 </div>
+
 @endsection
 
-@section('css')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
-<style>
-    /* Badge Styling */
-    .badge {
-        padding: 0.5rem 0.75rem;
-        font-weight: 500;
-        font-size: 0.75rem;
-    }
-    
-    .badge-processing {
-        background-color: #3498db;
-        color: white;
-    }
-    
-    .badge-shipped {
-        background-color: #f39c12;
-        color: white;
-    }
-    
-    .badge-delivered {
-        background-color: #2ecc71;
-        color: white;
-    }
-    
-    .badge-cancelled {
-        background-color: #e74c3c;
-        color: white;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 767.98px) {
-        .table th, .table td {
-            padding: 0.75rem 0.5rem;
-        }
-        
-        .badge {
-            padding: 0.4rem 0.6rem;
-            font-size: 0.7rem;
-        }
-        
-        .btn-sm {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-        }
-        
-        .dropdown-menu {
-            min-width: 10rem;
-        }
-    }
-    
-    @media (max-width: 575.98px) {
-        .card-body {
-            padding: 1rem;
-        }
-        
-        h3 {
-            font-size: 1.5rem;
-        }
-        
-        .table th, .table td {
-            padding: 0.5rem 0.25rem;
-            font-size: 0.875rem;
-        }
-    }
-</style>
-@endsection
-
-@section('scripts')
-<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize date range picker
-        $('#date_range').daterangepicker({
-            autoUpdateInput: false,
-            locale: {
-                cancelLabel: 'Clear'
-            },
-            ranges: {
-               'Today': [moment(), moment()],
-               'Yesterday': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-               'Last 7 Days': [moment().subtract(6, 'days'), moment()],
-               'Last 30 Days': [moment().subtract(29, 'days'), moment()],
-               'This Month': [moment().startOf('month'), moment().endOf('month')],
-               'Last Month': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+    flatpickr("#date_range", {
+        mode: "range",
+        dateFormat: "Y-m-d",
+        altInput: true,
+        altFormat: "M d, Y",
+    });
+
+    // Handle Cancel Order Reason Submission
+    document.querySelectorAll('[id^="cancelOrderModal"]').forEach(modal => {
+        const form = modal.querySelector('form[action*="update-status"]');
+        const reasonTextarea = modal.querySelector('textarea[name="cancel_reason"]');
+        const reasonInput = form.querySelector('input[name="notes"]');
+        const submitButton = form.querySelector('button[type="submit"]');
+
+        submitButton.addEventListener('click', function(event) {
+            // Check if the textarea is empty
+            if (reasonTextarea.value.trim() === '') {
+                event.preventDefault(); // Stop form submission
+                reasonTextarea.classList.add('is-invalid'); // Add validation error class
+                // Optionally, add an error message display
+                let errorDiv = reasonTextarea.parentNode.querySelector('.invalid-feedback');
+                if (!errorDiv) {
+                    errorDiv = document.createElement('div');
+                    errorDiv.classList.add('invalid-feedback');
+                    reasonTextarea.parentNode.appendChild(errorDiv);
+                }
+                errorDiv.textContent = 'Please provide a reason for cancellation.';
+            } else {
+                reasonTextarea.classList.remove('is-invalid'); // Remove error class if valid
+                reasonInput.value = reasonTextarea.value; // Copy reason to hidden input
             }
         });
-        
-        $('#date_range').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-        });
-        
-        $('#date_range').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
+
+        // Remove error state when user starts typing
+        reasonTextarea.addEventListener('input', function() {
+            if (reasonTextarea.value.trim() !== '') {
+                reasonTextarea.classList.remove('is-invalid');
+                let errorDiv = reasonTextarea.parentNode.querySelector('.invalid-feedback');
+                if (errorDiv) {
+                    errorDiv.textContent = ''; // Clear error message
+                }
+            }
         });
     });
 </script>
-@endsection
+@endpush
+
+@push('styles')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .badge-processing { background-color: #0dcaf0; color: #000; }
+    .badge-shipped { background-color: #0d6efd; color: #fff; }
+    .badge-delivered { background-color: #198754; color: #fff; }
+    .badge-cancelled { background-color: #dc3545; color: #fff; }
+    .table th, .table td { vertical-align: middle; }
+    .dropdown-toggle::after { display: none; } /* Hide default dropdown arrow */
+</style>
+@endpush

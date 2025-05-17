@@ -4,6 +4,16 @@
 
 @section('content')
 <div class="container-lg container-fluid py-5">
+    @php
+        // Calculate total if it's not already defined
+        if (!isset($total) && isset($cart) && $cart->cartItems->count() > 0) {
+            $total = 0;
+            foreach($cart->cartItems as $item) {
+                $total += $item->unit_price * $item->quantity;
+            }
+        }
+    @endphp
+    
     <h1 class="mb-4 cart-title">Your Shopping Cart</h1>
     
     @if(session('success'))
@@ -49,7 +59,7 @@
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="text-center">${{ number_format($item->unit_price, 2) }}</td>
+                                        <td class="text-end">RM{{ number_format($item->unit_price, 2) }}</td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center align-items-center">
                                                 <div class="quantity-selector cart-quantity">
@@ -76,15 +86,14 @@
                                         </td>
                                         <td class="text-center pe-4">
                                             <div class="d-flex justify-content-center align-items-center">
-                                                <span class="me-3">${{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                                <span class="me-3">RM{{ number_format($item->unit_price * $item->quantity, 2) }}</span>
                                                 <form action="{{ route('customer.cart.remove', $item->cart_item_id) }}" method="POST">
                                                     @csrf
                                                     <button type="submit" class="btn btn-sm text-danger border-0 bg-transparent">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
-                                            </div>
-                                        </td>
+                                            </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -111,7 +120,7 @@
                                         </div>
                                         <small class="text-muted d-block mb-2">{{ ucfirst($item->product->category) }}</small>
                                         <div class="d-flex justify-content-between align-items-center">
-                                            <span class="fw-medium">${{ number_format($item->unit_price, 2) }}</span>
+                                            <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
                                             <div class="quantity-selector cart-quantity-sm">
                                                 <form action="{{ route('customer.cart.decrement', $item->cart_item_id) }}" method="POST" class="d-inline">
                                                     @csrf
@@ -134,7 +143,7 @@
                                             </div>
                                         </div>
                                         <div class="text-end mt-2">
-                                            <span class="fw-medium">Subtotal: ${{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                            <span class="fw-medium">Subtotal: RM{{ number_format($item->unit_price * $item->quantity, 2) }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -149,7 +158,7 @@
                             <div class="col-md-4 mb-3 mb-md-0">
                                 <div class="cart-total">
                                     <span class="text-muted me-2">Total:</span>
-                                    <span class="fw-bold fs-4">${{ number_format($totalPrice, 2) }}</span>
+                                    <span class="fw-bold fs-5">RM{{ number_format($total, 2) }}</span>
                                 </div>
                             </div>
                             <div class="col-md-8">
@@ -214,7 +223,7 @@
                                     <div class="order-item-details flex-grow-1">
                                         <div class="d-flex justify-content-between">
                                             <p class="mb-0 small fw-medium">{{ $item->product->product_name }}</p>
-                                            <p class="mb-0 small">${{ number_format($item->unit_price * $item->quantity, 2) }}</p>
+                                            <p class="mb-0 small">RM{{ number_format($item->unit_price * $item->quantity, 2) }}</span></p>
                                         </div>
                                         <small class="text-muted">Qty: {{ $item->quantity }}</small>
                                     </div>
@@ -224,7 +233,7 @@
                             
                             <div class="d-flex justify-content-between fw-bold mt-3 pt-2 border-top">
                                 <span>Total</span>
-                                <span>${{ number_format($totalPrice, 2) }}</span>
+                                <span>RM{{ number_format($totalPrice, 2) }}</span>
                             </div>
                         </div>
                     </div>

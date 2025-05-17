@@ -6,19 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Carbon\Carbon;
 
 class ServicesController extends Controller
 {
-    /**
-     * Display a listing of the services.
-     */
-    // Remove this line
-    private $categories = ['traditional', 'massage', 'wellness'];
-    
     public function index()
     {
-        $services = Service::all();
-        return view('admin.services.index', compact('services'));
+        // Get service statistics
+        $totalServices = Service::count();
+        $activeServices = Service::where('active', 1)->count();
+        $inactiveServices = Service::where('active', 0)->count();
+        
+        // Change from all() to paginate()
+        $services = Service::paginate(10); // You can adjust the number 10 to how many items per page you want
+        return view('admin.services.index', compact('services', 'totalServices', 'activeServices', 'inactiveServices'));
     }
 
     /**
@@ -26,7 +27,12 @@ class ServicesController extends Controller
      */
     public function create()
     {
-        return view('admin.services.create');
+        // Get service statistics
+        $totalServices = Service::count();
+        $activeServices = Service::where('active', 1)->count();
+        $inactiveServices = Service::where('active', 0)->count();
+        
+        return view('admin.services.create', compact('totalServices', 'activeServices', 'inactiveServices'));
     }
 
     /**
@@ -39,8 +45,6 @@ class ServicesController extends Controller
             'description' => 'required|string',
             'duration_minutes' => 'required|integer|min:15',
             'price' => 'required|numeric|min:0',
-            'category' => 'required|string|max:100',
-            'icon' => 'nullable|string|max:50',
             'active' => 'boolean'
         ]);
 
@@ -55,12 +59,10 @@ class ServicesController extends Controller
         $service->description = $request->description;
         $service->duration_minutes = $request->duration_minutes;
         $service->price = $request->price;
-        $service->category = $request->category;
-        $service->icon = $request->icon;
         $service->active = $request->has('active') ? 1 : 0;
         $service->save();
 
-        return redirect()->route('admin.services.index')
+        return redirect()->route('admin.services.show', $service->service_id)
             ->with('success', 'Service created successfully');
     }
 
@@ -69,8 +71,13 @@ class ServicesController extends Controller
      */
     public function show($id)
     {
+        // Get service statistics
+        $totalServices = Service::count();
+        $activeServices = Service::where('active', 1)->count();
+        $inactiveServices = Service::where('active', 0)->count();
+        
         $service = Service::findOrFail($id);
-        return view('admin.services.show', compact('service'));
+        return view('admin.services.show', compact('service', 'totalServices', 'activeServices', 'inactiveServices'));
     }
 
     /**
@@ -78,8 +85,13 @@ class ServicesController extends Controller
      */
     public function edit($id)
     {
+        // Get service statistics
+        $totalServices = Service::count();
+        $activeServices = Service::where('active', 1)->count();
+        $inactiveServices = Service::where('active', 0)->count();
+        
         $service = Service::findOrFail($id);
-        return view('admin.services.edit', compact('service'));
+        return view('admin.services.edit', compact('service', 'totalServices', 'activeServices', 'inactiveServices'));
     }
 
     /**
@@ -87,34 +99,40 @@ class ServicesController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'service_name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'duration_minutes' => 'required|integer|min:15',
-            'price' => 'required|numeric|min:0',
-            'category' => 'required|string|max:100',
-            'icon' => 'nullable|string|max:50',
-            'active' => 'boolean'
-        ]);
+        try {
+            $validator = Validator::make($request->all(), [
+                'service_name' => 'required|string|max:255',
+                'description' => 'required|string',
+                'duration_minutes' => 'required|integer|min:15',
+                'price' => 'required|numeric|min:0',
+                'active' => 'boolean'
+            ]);
 
-        if ($validator->fails()) {
+            if ($validator->fails()) {
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+
+            $service = Service::findOrFail($id);
+            $service->service_name = $request->service_name;
+            $service->description = $request->description;
+            $service->duration_minutes = $request->duration_minutes;
+            $service->price = $request->price;
+            $service->active = $request->has('active') ? 1 : 0;
+            
+            if (!$service->save()) {
+                throw new \Exception('Failed to update service');
+            }
+
+            return redirect()->route('admin.services.show', $id)
+                ->with('success', 'Service updated successfully');
+                
+        } catch (\Exception $e) {
             return redirect()->back()
-                ->withErrors($validator)
+                ->with('error', 'Failed to update service: ' . $e->getMessage())
                 ->withInput();
         }
-
-        $service = Service::findOrFail($id);
-        $service->service_name = $request->service_name;
-        $service->description = $request->description;
-        $service->duration_minutes = $request->duration_minutes;
-        $service->price = $request->price;
-        $service->category = $request->category;
-        $service->icon = $request->icon;
-        $service->active = $request->has('active') ? 1 : 0;
-        $service->save();
-
-        return redirect()->route('admin.services.index')
-            ->with('success', 'Service updated successfully');
     }
 
     /**
@@ -124,15 +142,15 @@ class ServicesController extends Controller
     {
         $service = Service::findOrFail($id);
         
-        // Check if service has appointments before deleting
-        if ($service->appointments()->count() > 0) {
-            return redirect()->route('admin.services.index')
-                ->with('error', 'Cannot delete service because it has associated appointments');
-        }
+        // Delete the service and all associated appointments
+        // First delete associated appointments
+        $service->appointments()->delete();
         
+        // Then delete the service
         $service->delete();
+        
         return redirect()->route('admin.services.index')
-            ->with('success', 'Service deleted successfully');
+            ->with('success', 'Service and its associated appointments deleted successfully');
     }
 
     /**
@@ -144,7 +162,7 @@ class ServicesController extends Controller
         $service->active = !$service->active;
         $service->save();
 
-        return redirect()->route('admin.services.index')
+        return redirect()->route('admin.services.show', $service->service_id)
             ->with('success', 'Service status updated successfully');
     }
 }

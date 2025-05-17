@@ -47,8 +47,8 @@
         
         <div class="col-lg-9">
             <div class="tab-content" id="profileTabContent">
-                <!-- Personal Info Tab -->
-                <div class="tab-pane fade show active" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                <!-- Fix the tab ID mismatch -->
+                <div class="tab-pane fade show active" id="personal" role="tabpanel" aria-labelledby="personal-tab">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white">
                             <h5 class="mb-0">Personal Information</h5>

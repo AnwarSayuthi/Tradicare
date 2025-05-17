@@ -78,9 +78,9 @@
                     <label for="category" class="form-label fw-medium">Category</label>
                     <select name="category" id="category" class="form-select form-select-lg">
                         <option value="">All Categories</option>
-                        @foreach($categories as $category)
+                        @foreach($categories as $category => $count)
                             <option value="{{ $category }}" {{ request('category') == $category ? 'selected' : '' }}>
-                                {{ ucfirst($category) }}
+                                {{ ucfirst($category) }} ({{ $count }})
                             </option>
                         @endforeach
                     </select>
@@ -104,207 +104,93 @@
     <!-- Products Table -->
     <div class="card shadow-sm border-0 rounded-3">
         <div class="card-body p-0">
-            <ul class="nav nav-tabs nav-fill px-3 pt-3 border-0">
-                <li class="nav-item">
-                    <a class="nav-link rounded-3 {{ request('status') == '' ? 'active bg-light' : '' }}" href="{{ route('admin.products.index') }}">
-                        All Products <span class="badge bg-secondary ms-1 rounded-pill">{{ $totalProducts }}</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link rounded-3 {{ request('status') == 'active' ? 'active bg-light' : '' }}" href="{{ route('admin.products.index', ['status' => 'active']) }}">
-                        Active <span class="badge bg-success ms-1 rounded-pill">{{ $activeProducts }}</span>
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link rounded-3 {{ request('status') == 'inactive' ? 'active bg-light' : '' }}" href="{{ route('admin.products.index', ['status' => 'inactive']) }}">
-                        Inactive <span class="badge bg-danger ms-1 rounded-pill">{{ $inactiveProducts }}</span>
-                    </a>
-                </li>
-            </ul>
-            
-            <div class="table-responsive p-3">
-                <table class="table table-hover align-middle border-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light">
                         <tr>
-                            <th width="40" class="rounded-start">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="selectAll">
-                                </div>
-                            </th>
+                            <th width="60">#</th>
                             <th width="80">IMAGE</th>
                             <th>PRODUCT</th>
                             <th>CATEGORY</th>
                             <th>PRICE</th>
                             <th>INVENTORY</th>
                             <th>STATUS</th>
-                            <th width="100" class="rounded-end">ACTIONS</th>
+                            <th width="100">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if($products->isEmpty())
-                            <tr>
-                                <td colspan="8" class="text-center py-5">
-                                    <div class="d-flex flex-column align-items-center">
-                                        <i class="bi bi-search fs-1 text-muted mb-3"></i>
-                                        <h5 class="fw-medium">No products found</h5>
-                                        <p class="text-muted">Try adjusting your search or filter to find what you're looking for.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @else
-                            @foreach($products as $product)
-                                <tr>
-                                    <td>
-                                        <div class="form-check">
-                                            <input class="form-check-input product-checkbox" type="checkbox" value="{{ $product->product_id }}">
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="product-image">
-                                            @if($product->image)
-                                                <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->product_name }}" class="img-thumbnail rounded-3" width="60" height="60" style="object-fit: cover;">
-                                            @else
-                                                <div class="bg-light rounded-3 d-flex align-items-center justify-content-center" style="width: 60
-                                                    <i class="bi bi-box text-secondary"></i>
-                                                </div>
-                                            @endif
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('admin.products.show', $product->product_id) }}" class="text-decoration-none text-dark fw-medium">
-                                            {{ $product->product_name }}
-                                        </a>
-                                        <div class="text-muted small">SKU: {{ $product->sku ?? 'N/A' }}</div>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark">{{ ucfirst($product->category) }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="fw-medium">RM{{ number_format($product->price, 2) }}</div>
-                                        @if($product->sale_price)
-                                            <div class="text-success small">Sale: RM{{ number_format($product->sale_price, 2) }}</div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($product->stock_quantity > 10)
-                                            <span class="text-success">{{ $product->stock_quantity }} in stock</span>
-                                        @elseif($product->stock_quantity > 0)
-                                            <span class="text-warning">{{ $product->stock_quantity }} in stock</span>
-                                        @else
-                                            <span class="text-danger">Out of stock</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge rounded-pill {{ 
-                                            $product->status === 'active' ? 'bg-success-subtle text-success' : 
-                                            ($product->status === 'inactive' ? 'bg-danger-subtle text-danger' : 'bg-secondary-subtle text-secondary') 
-                                        }} px-3 py-2">
-                                            {{ ucfirst($product->status) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                                <i class="bi bi-three-dots-vertical"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end">
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('admin.products.show', $product->product_id) }}">
-                                                        <i class="bi bi-eye me-2"></i> View Details
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item" href="{{ route('admin.products.edit', $product->product_id) }}">
-                                                        <i class="bi bi-pencil me-2"></i> Edit
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <button class="dropdown-item" data-bs-toggle="modal" data-bs-target="#updateStatusModal{{ $product->product_id }}">
-                                                        <i class="bi bi-toggle-on me-2"></i> Change Status
-                                                    </button>
-                                                </li>
-                                                <li><hr class="dropdown-divider"></li>
-                                                <li>
-                                                    <button class="dropdown-item text-danger" data-bs-toggle="modal" data-bs-target="#deleteProductModal{{ $product->product_id }}">
-                                                        <i class="bi bi-trash me-2"></i> Delete
-                                                    </button>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        
-                                        <!-- Update Status Modal -->
-                                        <div class="modal fade" id="updateStatusModal{{ $product->product_id }}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Update Product Status</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <form action="{{ route('admin.products.update-status', $product->product_id) }}" method="POST">
-                                                        @csrf
-                                                        @method('PUT')
-                                                        <div class="modal-body">
-                                                            <p>Change status for: <strong>{{ $product->product_name }}</strong></p>
-                                                            <div class="mb-3">
-                                                                <label for="status{{ $product->product_id }}" class="form-label">Status</label>
-                                                                <select class="form-select" id="status{{ $product->product_id }}" name="status">
-                                                                    <option value="active" {{ $product->status === 'active' ? 'selected' : '' }}>Active</option>
-                                                                    <option value="inactive" {{ $product->status === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                                                    <!-- Removed draft option -->
-                                                                </select>
-                                                            </div>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                            <button type="submit" class="btn btn-primary">Update Status</button>
-                                                        </div>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Delete Product Modal -->
-                                        <div class="modal fade" id="deleteProductModal{{ $product->product_id }}" tabindex="-1" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title">Delete Product</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <p>Are you sure you want to delete this product? This action cannot be undone.</p>
-                                                        <p><strong>Product:</strong> {{ $product->product_name }}</p>
-                                                        <p><strong>SKU:</strong> {{ $product->sku ?? 'N/A' }}</p>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                        <form action="{{ route('admin.products.destroy', $product->product_id) }}" method="POST">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-danger">Delete Product</button>
-                                                        </form>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        @endif
+                        @forelse($products as $index => $product)
+                        <tr>
+                            <td>{{ ($products->currentPage() - 1) * $products->perPage() + $index + 1 }}</td>
+                            <td>
+                                @if($product->product_image)
+                                <img src="{{ asset('storage/' . $product->product_image) }}" alt="{{ $product->product_name }}" class="img-thumbnail" width="50">
+                                @else
+                                <div class="no-image-placeholder">
+                                    <i class="bi bi-image text-muted"></i>
+                                </div>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <h6 class="mb-1">{{ $product->product_name }}</h6>
+                                </div>
+                            </td>
+                            <td>{{ ucfirst($product->category) }}</td>
+                            <td>RM{{ number_format($product->price, 2) }}</td>
+                            <td>{{ $product->stock_quantity ?? '0' }} in stock</td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <span class="badge rounded-pill px-3 py-2 {{ $product->active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                                        <i class="bi {{ $product->active ? 'bi-check-circle' : 'bi-x-circle' }} me-1"></i>
+                                        {{ $product->active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-icon" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><a class="dropdown-item" href="{{ route('admin.products.show', $product->product_id) }}"><i class="bi bi-eye me-2"></i>View</a></li>
+                                        <li><a class="dropdown-item" href="{{ route('admin.products.edit', $product->product_id) }}"><i class="bi bi-pencil me-2"></i>Edit</a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <form action="{{ route('admin.products.destroy', $product->product_id) }}" method="POST" class="d-inline delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Delete</button>
+                                            </form>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="bi bi-box fs-1 text-secondary mb-3"></i>
+                                    <h5>No products found</h5>
+                                    <p class="text-muted">Try adjusting your search or filter to find what you're looking for.</p>
+                                    <a href="{{ route('admin.products.create') }}" class="btn btn-primary mt-2">
+                                        <i class="bi bi-plus-circle me-1"></i> Add New Product
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
-            
-            <div class="d-flex justify-content-between align-items-center mt-4">
-                <div>
-                    <p class="text-muted mb-0">Showing {{ $products->firstItem() ?? 0 }} to {{ $products->lastItem() ?? 0 }} of {{ $products->total() }} products</p>
-                </div>
-                <div>
-                    {{ $products->links() }}
-                </div>
-            </div>
+        </div>
+        <div class="card-footer bg-white border-0 py-3">
+            {{ $products->withQueryString()->links('pagination::bootstrap-5') }}
         </div>
     </div>
+    
+    <!-- Remove the old pagination div -->
 </div>
 @endsection
 
@@ -330,6 +216,7 @@
     
     /* Table styling */
     .table th {
+        text-align: center;
         font-weight: 600;
         font-size: 0.8rem;
         text-transform: uppercase;

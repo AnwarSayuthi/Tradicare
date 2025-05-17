@@ -6,6 +6,62 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <h1 class="h3 mb-0 fw-bold text-primary">Services</h1>
+        
+        <div class="d-flex flex-column flex-sm-row gap-2">
+            <a href="{{ route('admin.reports.generate', 'services') }}" class="btn btn-outline-primary">
+                <i class="bi bi-file-earmark-pdf me-1"></i> Export
+            </a>
+            <a href="{{ route('admin.services.create') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i> Add Service
+            </a>
+        </div>
+    </div>
+    
+    <!-- Service Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="icon-container me-3">
+                        <i class="bi bi-gem fs-1 text-dark"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">All Services</h6>
+                        <h2 class="mb-0 fw-bold">{{ $totalServices }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="icon-container me-3">
+                        <i class="bi bi-check-circle fs-1 text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Active Services</h6>
+                        <h2 class="mb-0 fw-bold">{{ $activeServices }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body d-flex align-items-center p-4">
+                    <div class="icon-container me-3">
+                        <i class="bi bi-x-circle fs-1 text-danger"></i>
+                    </div>
+                    <div>
+                        <h6 class="text-muted mb-1">Inactive Services</h6>
+                        <h2 class="mb-0 fw-bold">{{ $inactiveServices }}</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm border-0 rounded-3">
@@ -49,7 +105,6 @@
                                 <tr>
                                     <th scope="col" class="ps-4">#</th>
                                     <th scope="col">Service</th>
-                                    <th scope="col">Category</th>
                                     <th scope="col">Duration</th>
                                     <th scope="col">Price</th>
                                     <th scope="col">Status</th>
@@ -57,13 +112,13 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($services as $service)
+                                @forelse($services as $service)
                                 <tr>
                                     <td class="ps-4">{{ $service->service_id }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <div class="service-icon-sm me-3">
-                                                <i class="bi {{ $service->icon ?? 'bi-diamond-fill' }}"></i>
+                                                <i class="bi bi-gem text-dark"></i>
                                             </div>
                                             <div>
                                                 <h6 class="mb-0">{{ $service->service_name }}</h6>
@@ -71,7 +126,6 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td><span class="badge bg-light text-dark">{{ ucfirst($service->category) }}</span></td>
                                     <td>{{ $service->duration_minutes }} mins</td>
                                     <td>RM {{ number_format($service->price, 2) }}</td>
                                     <td>
@@ -100,14 +154,28 @@
                                                     title="Delete Service">
                                                 <i class="bi bi-trash"></i>
                                             </button>
+                                            {{-- Include Delete Modal Here --}}
+                                            @include('admin.services.delete', ['service' => $service])
                                         </div>
                                     </td>
                                 </tr>
-                                @endforeach
+                                @empty
+                                <tr>
+                                    <td colspan="6" class="text-center py-4">No services found.</td>
+                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
                 </div>
+                
+                {{-- Add Pagination Links --}}
+                @if($services->hasPages())
+                    <div class="card-footer bg-white border-0 py-3">
+                        {{-- This line correctly renders Bootstrap 5 pagination links --}}
+                        {{ $services->withQueryString()->links('pagination::bootstrap-5') }}
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -118,26 +186,20 @@
 <script>
     // Search functionality
     document.getElementById('serviceSearch').addEventListener('input', filterServices);
-    document.getElementById('categoryFilter').addEventListener('change', filterServices);
-    document.getElementById('statusFilter').addEventListener('change', filterServices);
     
     function filterServices() {
         const searchTerm = document.getElementById('serviceSearch').value.toLowerCase();
-        const categoryFilter = document.getElementById('categoryFilter').value.toLowerCase();
-        const statusFilter = document.getElementById('statusFilter').value;
         
-        const rows = document.querySelectorAll('.service-row');
+        const rows = document.querySelectorAll('tbody tr');
         
         rows.forEach(row => {
-            const name = row.getAttribute('data-name');
-            const category = row.getAttribute('data-category');
-            const status = row.getAttribute('data-status');
+            const serviceName = row.querySelector('h6').textContent.toLowerCase();
+            const description = row.querySelector('small').textContent.toLowerCase();
             
-            const nameMatch = name.includes(searchTerm);
-            const categoryMatch = categoryFilter === '' || category === categoryFilter;
-            const statusMatch = statusFilter === '' || status === statusFilter;
+            const nameMatch = serviceName.includes(searchTerm);
+            const descMatch = description.includes(searchTerm);
             
-            if (nameMatch && categoryMatch && statusMatch) {
+            if (nameMatch || descMatch) {
                 row.style.display = '';
             } else {
                 row.style.display = 'none';

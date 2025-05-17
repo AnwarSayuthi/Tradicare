@@ -213,7 +213,7 @@
                     <p class="text-muted mb-0">Showing {{ $customers->firstItem() ?? 0 }} to {{ $customers->lastItem() ?? 0 }} of {{ $customers->total() }} Customers</p>
                 </div>
                 <div>
-                    {{ $customers->links() }}
+                    {{ $customers->withQueryString()->links('pagination::bootstrap-5') }}
                 </div>
             </div>
         </div>

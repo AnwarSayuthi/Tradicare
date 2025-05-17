@@ -6,7 +6,7 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <!-- Product Statistics - Added to match the reference image style -->
+    <!-- Product Statistics -->
     <div class="row mb-4">
         <div class="col-md-4">
             <div class="card border-0 shadow-sm rounded-3">
@@ -95,7 +95,7 @@
                                     <div class="col-md-6 mb-3 mb-md-0">
                                         <div class="info-card p-3 rounded-3 h-100">
                                             <h6 class="text-muted mb-1">Regular Price</h6>
-                                            <h5 class="fw-bold">RM{{ number_format($product->price, 2) }}</h5>
+                                            <h5 class="mb-0">RM{{ number_format($product->price, 2) }}</h5>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
@@ -307,6 +307,36 @@
     
     .modal-header {
         background-color: #f8f9fa;
+    }
+    
+    .no-image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 2rem;
+    height: 100%;
+    min-height: 300px;
+    }
+
+    .no-image-placeholder i {
+        font-size: 3rem;
+        color: #adb5bd;
+        margin-bottom: 1rem;
+    }
+
+    .no-image-placeholder p {
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+
+    .product-main-image {
+        width: 100%;
+        height: auto;
+        object-fit: contain;
+        border-radius: 8px;
     }
     
     /* Responsive adjustments */

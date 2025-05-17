@@ -17,6 +17,20 @@
                     </a>
                 </div>
                 
+                @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show mx-4 mt-3" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
+                
+                @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show mx-4 mt-3" role="alert">
+                    {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                @endif
+                
                 <div class="card-body p-4">
                     <form action="{{ route('admin.services.store') }}" method="POST">
                         @csrf
@@ -31,14 +45,6 @@
                             </div>
                             
                             <div class="col-md-6 mb-3">
-                                <label for="category" class="form-label">Category <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('category') is-invalid @enderror" id="category" name="category" value="{{ old('category') }}" required>
-                                @error('category')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
                                 <label for="duration_minutes" class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control @error('duration_minutes') is-invalid @enderror" id="duration_minutes" name="duration_minutes" value="{{ old('duration_minutes', 60) }}" min="15" step="15" required>
                                 @error('duration_minutes')
@@ -46,7 +52,7 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="price" class="form-label">Price (RM) <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" min="0" step="0.01" required>
                                 @error('price')
@@ -54,16 +60,24 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-4 mb-3">
-                                <label for="icon" class="form-label">Icon (Bootstrap Icons)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">bi-</span>
-                                    <input type="text" class="form-control @error('icon') is-invalid @enderror" id="icon" name="icon" value="{{ old('icon', 'gem') }}" placeholder="e.g. gem, heart, star">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label d-block">Service Status <span class="text-danger">*</span></label>
+                                <div class="status-toggle-container p-3 border rounded-3 bg-light">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="badge {{ old('active', true) ? 'bg-success' : 'bg-secondary' }} p-2">
+                                                <i class="bi {{ old('active', true) ? 'bi-check-circle' : 'bi-x-circle' }} me-1"></i>
+                                                {{ old('active', true) ? 'Active (available for booking)' : 'Inactive (not available)' }}
+                                            </span>
+                                        </div>
+                                        <div class="form-check form-switch form-switch-lg">
+                                            <input class="form-check-input" type="checkbox" id="active" name="active" {{ old('active', true) ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="active">
+                                                <span class="visually-hidden">Toggle status</span>
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
-                                <small class="text-muted">Visit <a href="https://icons.getbootstrap.com/" target="_blank">Bootstrap Icons</a> for icon names</small>
-                                @error('icon')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
                             </div>
                             
                             <div class="col-md-12 mb-3">
@@ -72,13 +86,6 @@
                                 @error('description')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                            </div>
-                            
-                            <div class="col-md-12 mb-3">
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" id="active" name="active" checked>
-                                    <label class="form-check-label" for="active">Active (immediately available for booking)</label>
-                                </div>
                             </div>
                         </div>
                         
@@ -96,25 +103,19 @@
 
 @section('scripts')
 <script>
-    // Preview icon as user types
-    document.getElementById('icon').addEventListener('input', function() {
-        const iconName = this.value.trim();
-        const previewIcon = document.querySelector('.input-group-text');
+    // Toggle status badge appearance when checkbox changes
+    document.getElementById('active').addEventListener('change', function() {
+        const statusContainer = this.closest('.status-toggle-container');
+        const badge = statusContainer.querySelector('.badge');
         
-        if (iconName) {
-            previewIcon.innerHTML = `<i class="bi bi-${iconName}"></i>`;
+        if (this.checked) {
+            badge.classList.remove('bg-secondary');
+            badge.classList.add('bg-success');
+            badge.innerHTML = '<i class="bi bi-check-circle me-1"></i> Active (available for booking)';
         } else {
-            previewIcon.innerHTML = 'bi-';
-        }
-    });
-    
-    // Initialize icon preview
-    window.addEventListener('DOMContentLoaded', function() {
-        const iconName = document.getElementById('icon').value.trim();
-        const previewIcon = document.querySelector('.input-group-text');
-        
-        if (iconName) {
-            previewIcon.innerHTML = `<i class="bi bi-${iconName}"></i>`;
+            badge.classList.remove('bg-success');
+            badge.classList.add('bg-secondary');
+            badge.innerHTML = '<i class="bi bi-x-circle me-1"></i> Inactive (not available)';
         }
     });
 </script>

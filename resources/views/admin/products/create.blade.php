@@ -141,7 +141,7 @@
                                         <h5 class="card-title mt-4 mb-3 fw-semibold border-top border-bottom py-3">Product Image</h5>
                                         <div class="mb-3">
                                             <label for="image" class="form-label fw-medium">Upload Image</label>
-                                            <input type="file" class="form-control form-control-lg @error('image') is-invalid @enderror" id="image" name="image" accept="image/*">
+                                            <input type="file" class="form-control form-control-lg @error('image') is-invalid @enderror" id="image" name="product_image" accept="image/*">
                                             <div class="form-text text-muted mt-2">Recommended size: 800x800 pixels. Max file size: 2MB.</div>
                                             @error('image')
                                                 <div class="invalid-feedback">{{ $message }}</div>

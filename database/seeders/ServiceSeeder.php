@@ -16,66 +16,66 @@ class ServiceSeeder extends Seeder
     {
         $services = [
             [
-                'service_name' => 'Haircut - Women',
-                'description' => 'Professional haircut for women including wash and style.',
+                'service_name' => 'Tradicare Signature Massage',
+                'description' => 'Full-body traditional Malay massage to relieve muscle stiffness and fatigue',
                 'duration_minutes' => 60,
-                'price' => 45.00,
+                'price' => 80.00,
                 'active' => true
             ],
             [
-                'service_name' => 'Haircut - Men',
-                'description' => 'Professional haircut for men including wash and style.',
-                'duration_minutes' => 45,
-                'price' => 35.00,
+                'service_name' => 'Herbal Clay Massage',
+                'description' => 'A unique mixture of hand massage and heated clay compress. Herbal plants promote deep relaxation while soothing aching muscles and easing fatigue',
+                'duration_minutes' => 60,
+                'price' => 95.00,
                 'active' => true
             ],
             [
-                'service_name' => 'Hair Coloring',
-                'description' => 'Full hair coloring service with premium products.',
-                'duration_minutes' => 120,
+                'service_name' => 'Rawatan Patah & Seliuh',
+                'description' => 'Bone setting and joint adjustment for fractures, sprains, or dislocations',
+                'duration_minutes' => 60,
+                'price' => 100.00,
+                'active' => true
+            ],
+            [
+                'service_name' => 'Rawatan Batuk & Asma Herba',
+                'description' => 'Herbal steam and chest massage to relieve cough, asthma, and sinus congestion using traditional remedies',
+                'duration_minutes' => 30,
+                'price' => 55.00,
+                'active' => true
+            ],
+            [
+                'service_name' => 'Rawatan Saraf',
+                'description' => 'Traditional nerve treatment for numbness, pinched nerves, or muscle weakness',
+                'duration_minutes' => 60,
+                'price' => 90.00,
+                'active' => true
+            ],
+            [
+                'service_name' => 'Rawatan Bekam (Lelaki)',
+                'description' => 'Cupping therapy to remove toxins and improve circulation (men only)',
+                'duration_minutes' => 30,
+                'price' => 60.00,
+                'active' => true
+            ],
+            [
+                'service_name' => 'Rawatan Bekam (Wanita)',
+                'description' => 'Female-friendly cupping therapy session with a female therapist',
+                'duration_minutes' => 30,
+                'price' => 60.00,
+                'active' => true
+            ],
+            [
+                'service_name' => 'Urutan Ibu Mengandung',
+                'description' => 'Gentle prenatal massage to reduce swelling, stress, and back pain',
+                'duration_minutes' => 60,
                 'price' => 85.00,
                 'active' => true
             ],
             [
-                'service_name' => 'Highlights',
-                'description' => 'Partial or full highlights to enhance your natural color.',
-                'duration_minutes' => 90,
-                'price' => 75.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Balayage',
-                'description' => 'Hand-painted highlights for a natural, sun-kissed look.',
-                'duration_minutes' => 150,
-                'price' => 120.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Blowout',
-                'description' => 'Professional blow dry and style.',
-                'duration_minutes' => 45,
-                'price' => 35.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Deep Conditioning Treatment',
-                'description' => 'Intensive conditioning to restore moisture and shine.',
-                'duration_minutes' => 30,
-                'price' => 25.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Basic Manicure',
-                'description' => 'Nail shaping, cuticle care, and polish application.',
-                'duration_minutes' => 30,
-                'price' => 25.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Gel Manicure',
-                'description' => 'Long-lasting gel polish that stays chip-free for weeks.',
-                'duration_minutes' => 45,
-                'price' => 35.00,
+                'service_name' => 'Urutan Selepas Bersalin',
+                'description' => 'Postnatal massage to help recovery, firm the uterus, and improve circulation',
+                'duration_minutes' => 60,
+                'price' => 90.00,
                 'active' => true
             ],
             [
@@ -90,27 +90,6 @@ class ServiceSeeder extends Seeder
                 'description' => 'Deluxe pedicure with extended massage and paraffin treatment.',
                 'duration_minutes' => 60,
                 'price' => 50.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Basic Facial',
-                'description' => 'Cleansing, exfoliation, mask, and moisturizer.',
-                'duration_minutes' => 60,
-                'price' => 60.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Anti-Aging Facial',
-                'description' => 'Specialized treatment to reduce fine lines and improve skin texture.',
-                'duration_minutes' => 75,
-                'price' => 85.00,
-                'active' => true
-            ],
-            [
-                'service_name' => 'Acne Treatment Facial',
-                'description' => 'Deep cleansing facial designed for acne-prone skin.',
-                'duration_minutes' => 60,
-                'price' => 70.00,
                 'active' => true
             ],
             [

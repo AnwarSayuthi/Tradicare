@@ -69,10 +69,10 @@ Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->gr
     Route::get('/services/{id}/edit', [AdminViewController::class, 'editService'])->name('services.edit');
     
     // Services management process
-    Route::post('/services', [App\Http\Controllers\Process\ServiceController::class, 'store'])->name('services.store');
-    Route::put('/services/{id}', [App\Http\Controllers\Process\ServiceController::class, 'update'])->name('services.update');
-    Route::delete('/services/{id}', [App\Http\Controllers\Process\ServiceController::class, 'destroy'])->name('services.destroy');
-    Route::patch('/services/{id}/toggle-status', [App\Http\Controllers\Process\ServiceController::class, 'toggleStatus'])->name('services.toggle-status');
+    Route::post('/services', [App\Http\Controllers\Process\ServicesController::class, 'store'])->name('services.store');
+    Route::put('/services/{id}', [App\Http\Controllers\Process\ServicesController::class, 'update'])->name('services.update');
+    Route::delete('/services/{id}', [App\Http\Controllers\Process\ServicesController::class, 'destroy'])->name('services.destroy');
+    Route::patch('/services/{id}/toggle-status', [App\Http\Controllers\Process\ServicesController::class, 'toggleStatus'])->name('services.toggle-status');
 });
 
 // Customer routes

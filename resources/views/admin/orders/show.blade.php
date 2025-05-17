@@ -111,7 +111,7 @@
                                                     @endif
                                                 </td>
                                                 <td class="text-center">{{ $item->quantity }}</td>
-                                                <td class="text-end">RM {{ number_format($item->price, 2) }}</td>
+                                                <td class="text-end"><span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span></td>
                                                 <td class="text-end">RM {{ number_format($item->subtotal, 2) }}</td>
                                             </tr>
                                         @endforeach

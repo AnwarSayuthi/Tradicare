@@ -73,7 +73,7 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>${{ number_format($item->unit_price, 2) }}</td>
+                                    <span class="fw-bold">RM{{ number_format($item->unit_price, 2) }}</span>
                                     <td>{{ $item->quantity }}</td>
                                     <td class="text-end">${{ number_format($item->subtotal, 2) }}</td>
                                 </tr>
@@ -90,7 +90,7 @@
                                 </tr>
                                 <tr>
                                     <td colspan="3" class="text-end fw-bold">Total:</td>
-                                    <td class="text-end fw-bold">${{ number_format($order->total_amount, 2) }}</td>
+                                    <td class="text-end fw-bold">RM{{ number_format($order->total_amount, 2) }}</span></td>
                                 </tr>
                             </tfoot>
                         </table>

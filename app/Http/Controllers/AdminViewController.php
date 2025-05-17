@@ -358,8 +358,15 @@ class AdminViewController extends Controller
      */
     public function services()
     {
-        $services = Service::orderBy('service_name')->paginate(10);
-        return view('admin.services.index', compact('services'));
+        // Get only non-deleted services
+        $services = Service::notDeleted()->paginate(10);
+        
+        // Count services
+        $totalServices = Service::notDeleted()->count();
+        $activeServices = Service::notDeleted()->where('active', 1)->count();
+        $inactiveServices = Service::notDeleted()->where('active', 0)->count();
+        
+        return view('admin.services.index', compact('services', 'totalServices', 'activeServices', 'inactiveServices'));
     }
     
     /**
@@ -386,7 +393,6 @@ class AdminViewController extends Controller
             'price' => 'required|numeric|min:0',
             'duration_minutes' => 'required|integer|min:15',
             'category' => 'required|string|in:traditional,massage,wellness',
-            'icon' => 'nullable|string|max:50',
             'active' => 'boolean',
         ]);
         
@@ -444,7 +450,6 @@ class AdminViewController extends Controller
             'price' => 'required|numeric|min:0',
             'duration_minutes' => 'required|integer|min:15',
             'category' => 'required|string|in:traditional,massage,wellness',
-            'icon' => 'nullable|string|max:50',
             'active' => 'boolean',
         ]);
         
@@ -456,7 +461,7 @@ class AdminViewController extends Controller
     }
     
     /**
-     * Remove the specified service
+     * Soft delete the specified service
      *
      * @param int $id
      * @return \Illuminate\Http\RedirectResponse
@@ -465,17 +470,11 @@ class AdminViewController extends Controller
     {
         $service = Service::findOrFail($id);
         
-        // Check if there are any appointments using this service
-        $appointmentsCount = Appointment::where('service_id', $id)->count();
-        
-        if ($appointmentsCount > 0) {
-            return redirect()->route('admin.services.index')
-                ->with('error', 'Cannot delete service. It has ' . $appointmentsCount . ' appointments associated with it.');
-        }
-        
-        $service->delete();
+        // Perform soft delete by setting the deleted flag
+        $service->deleted = 1;
+        $service->save();
         
         return redirect()->route('admin.services.index')
-            ->with('success', 'Service deleted successfully');
+            ->with('success', 'Service has been successfully deleted.');
     }
 }

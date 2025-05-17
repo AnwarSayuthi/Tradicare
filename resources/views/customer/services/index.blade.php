@@ -15,137 +15,25 @@
 </div>
 
 <div class="container py-5">
-    <!-- Service Categories -->
-    <div class="row mb-5">
-        <div class="col-12">
-            <ul class="nav nav-pills justify-content-center service-filter mb-4" id="serviceTab" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="all-tab" data-bs-toggle="pill" data-bs-target="#all" type="button" role="tab" aria-selected="true">All Treatments</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="traditional-tab" data-bs-toggle="pill" data-bs-target="#traditional" type="button" role="tab" aria-selected="false">Traditional Healing</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="massage-tab" data-bs-toggle="pill" data-bs-target="#massage" type="button" role="tab" aria-selected="false">Massage Therapy</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="wellness-tab" data-bs-toggle="pill" data-bs-target="#wellness" type="button" role="tab" aria-selected="false">Wellness Treatments</button>
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <div class="tab-content" id="serviceTabContent">
-        <!-- All Services Tab -->
-        <div class="tab-pane fade show active" id="all" role="tabpanel" aria-labelledby="all-tab">
-            <div class="row g-4">
-                @foreach($services as $service)
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="service-card h-100">
-                        <div class="service-icon">
-                            <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
-                        </div>
-                        <div class="service-content">
-                            <h3 class="service-title">{{ $service->service_name }}</h3>
-                            <div class="service-meta">
-                                <span><i class="bi bi-clock"></i> {{ $service->duration_minutes }} mins</span>
-                                <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
-                            </div>
-                            <p class="service-description">{{ $service->description }}</p>
-                            <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
-                        </div>
+    <div class="row g-4">
+        @foreach($services as $service)
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="service-card h-100">
+                <div class="service-icon">
+                    <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
+                </div>
+                <div class="service-content">
+                    <h3 class="service-title">{{ $service->service_name }}</h3>
+                    <div class="service-meta">
+                        <span><i class="bi bi-clock"></i> {{ $service->duration_minutes }} mins</span>
+                        <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
                     </div>
+                    <p class="service-description">{{ $service->description }}</p>
+                    <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
                 </div>
-                @endforeach
             </div>
         </div>
-        
-        <!-- Traditional Healing Tab -->
-        <div class="tab-pane fade" id="traditional" role="tabpanel" aria-labelledby="traditional-tab">
-            <div class="row mb-4">
-                <div class="col-lg-8 mx-auto text-center">
-                    <p class="lead-sm">Our traditional healing treatments address specific health concerns using time-tested techniques passed down through generations</p>
-                </div>
-            </div>
-            <div class="row g-4">
-                @foreach($services->where('category', 'traditional') as $service)
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="service-card h-100">
-                        <div class="service-icon">
-                            <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
-                        </div>
-                        <div class="service-content">
-                            <h3 class="service-title">{{ $service->service_name }}</h3>
-                            <div class="service-meta">
-                                <span><i class="bi bi-clock"></i> {{ $service->duration_minutes }} mins</span>
-                                <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
-                            </div>
-                            <p class="service-description">{{ $service->description }}</p>
-                            <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-        
-        <!-- Massage Therapy Tab -->
-        <div class="tab-pane fade" id="massage" role="tabpanel" aria-labelledby="massage-tab">
-            <div class="row mb-4">
-                <div class="col-lg-8 mx-auto text-center">
-                    <p class="lead-sm">Our massage therapies combine traditional techniques with therapeutic benefits to relieve tension and promote wellness</p>
-                </div>
-            </div>
-            <div class="row g-4">
-                @foreach($services->where('category', 'massage') as $service)
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="service-card h-100">
-                        <div class="service-icon">
-                            <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
-                        </div>
-                        <div class="service-content">
-                            <h3 class="service-title">{{ $service->service_name }}</h3>
-                            <div class="service-meta">
-                                <span><i class="bi bi-clock"></i> {{ $service->duration_minutes }} mins</span>
-                                <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
-                            </div>
-                            <p class="service-description">{{ $service->description }}</p>
-                            <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-        
-        <!-- Wellness Treatments Tab -->
-        <div class="tab-pane fade" id="wellness" role="tabpanel" aria-labelledby="wellness-tab">
-            <div class="row mb-4">
-                <div class="col-lg-8 mx-auto text-center">
-                    <p class="lead-sm">Our wellness treatments focus on enhancing your natural beauty and promoting overall well-being</p>
-                </div>
-            </div>
-            <div class="row g-4">
-                @foreach($services->whereIn('category', ['facial', 'body']) as $service)
-                <div class="col-lg-4 col-md-6 mb-4">
-                    <div class="service-card h-100">
-                        <div class="service-icon">
-                            <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
-                        </div>
-                        <div class="service-content">
-                            <h3 class="service-title">{{ $service->service_name }}</h3>
-                            <div class="service-meta">
-                                <span><i class="bi bi-clock"></i> {{ $service->duration_minutes }} mins</span>
-                                <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
-                            </div>
-                            <p class="service-description">{{ $service->description }}</p>
-                            <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
+        @endforeach
     </div>
     
     <!-- Benefits Section -->

@@ -11,150 +11,185 @@ class ProductSeeder extends Seeder
     {
         $products = [
             [
-                'product_name' => 'Shampoo - Moisturizing',
-                'price' => 12.99,
-                'description' => 'Hydrating shampoo for dry hair with argan oil and keratin.',
-                'stock_quantity' => 50,
-                'category' => 'Hair Care',
-                'product_image' => 'products/shampoo-moisturizing.jpg',
+                'product_name' => 'Habbatus Sauda',
+                'price' => 35.00,
+                'description' => 'Black seed capsules for immunity and general health',
+                'stock_quantity' => 30,
+                'category' => 'Supplements',
+                'product_image' => 'products/1.jpg',
                 'active' => true
             ],
             [
-                'product_name' => 'Conditioner - Repair',
-                'price' => 14.99,
-                'description' => 'Deep conditioning treatment for damaged hair.',
+                'product_name' => 'Kacip Fatimah',
+                'price' => 39.00,
+                'description' => 'Supports women’s hormonal balance and energy',
                 'stock_quantity' => 45,
-                'category' => 'Hair Care',
-                'product_image' => 'products/conditioner-repair.jpg'
+                'category' => 'Supplements',
+                'product_image' => 'products/2.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Hair Mask - Protein',
-                'price' => 19.99,
-                'description' => 'Weekly protein treatment to strengthen hair.',
-                'stock_quantity' => 30,
-                'category' => 'Hair Care'
-            ],
-            [
-                'product_name' => 'Hair Serum - Shine',
-                'price' => 24.99,
-                'description' => 'Adds shine and reduces frizz for all hair types.',
-                'stock_quantity' => 40,
-                'category' => 'Hair Care'
-            ],
-            [
-                'product_name' => 'Facial Cleanser - Gentle',
-                'price' => 18.99,
-                'description' => 'Gentle cleanser for sensitive skin.',
+                'product_name' => 'Manjakani Capsule',
+                'price' => 36.00,
+                'description' => 'Supports female reproductive health and hormonal balance',
                 'stock_quantity' => 35,
-                'category' => 'Skin Care',
-                'product_image' => 'products/facial-cleanser.jpg'
+                'category' => 'Supplements',
+                'product_image' => 'products/3.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Facial Toner - Balancing',
-                'price' => 16.99,
-                'description' => 'Balances skin pH and tightens pores.',
+                'product_name' => 'Pegaga Capsule',
+                'price' => 30.00,
+                'description' => 'Enhances cognitive function and blood circulation',
+                'stock_quantity' => 20,
+                'category' => 'Supplements',
+                'product_image' => 'products/4.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Herba Asmak Oil',
+                'price' => 29.00,
+                'description' => 'Relieves cough, asthma, and body aches',
+                'stock_quantity' => 35,
+                'category' => 'Oil & Balms',
+                'product_image' => 'products/5.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Minyak Bidara Oil',
+                'price' => 25.00,
+                'description' => 'May help relieve joint pain, muscle inflammation, and enhance relaxation',
                 'stock_quantity' => 40,
-                'category' => 'Skin Care',
-                'product_image' => 'products/facial-toner.jpg'
+                'category' => 'Oil & Balms',
+                'product_image' => 'products/6.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Moisturizer - Hydrating',
-                'price' => 22.99,
-                'description' => 'Daily moisturizer with hyaluronic acid.',
+                'product_name' => 'Gamat Balm',
+                'price' => 27.00,
+                'description' => 'Sea cucumber-based balm for reduces discomfort from arthritis, backaches, or sprains',
                 'stock_quantity' => 45,
-                'category' => 'Skin Care'
+                'category' => 'Oil & Balms',
+                'product_image' => 'products/7.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Facial Serum - Vitamin C',
-                'price' => 29.99,
-                'description' => 'Brightening serum with 15% vitamin C.',
+                'product_name' => 'Eucalyptus Oil',
+                'price' =>  22.00,
+                'description' => 'Soothing oil for congestion, massage, and warmth',
                 'stock_quantity' => 30,
-                'category' => 'Skin Care'
+                'category' => 'Oil & Balms',
+                'product_image' => 'products/8.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Facial Mask - Clay',
-                'price' => 15.99,
-                'description' => 'Detoxifying clay mask for oily skin.',
+                'product_name' => 'Misai Kucing Tea',
+                'price' => 18.00,
+                'description' => 'Helps with detox and urinary health',
                 'stock_quantity' => 35,
-                'category' => 'Skin Care'
+                'category' => 'Baverages',
+                'product_image' => 'products/9.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Nail Polish - Red',
-                'price' => 9.99,
-                'description' => 'Long-lasting, chip-resistant nail polish.',
+                'product_name' => 'Tongkat Ali Coffee',
+                'price' => 20.00,
+                'description' => 'Herbal coffee to boost energy and alertness',
+                'stock_quantity' => 20,
+                'category' => 'Baverages',
+                'product_image' => 'products/10.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Dates & Raisin Juice',
+                'price' => 20.00,
+                'description' => 'Natural tonic to increase energy and immunity',
+                'stock_quantity' => 35,
+                'category' => 'Baverages',
+                'product_image' => 'products/11.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Ginger Tea',
+                'price' => 19.00,
+                'description' => 'Traditional tea for digestion and warmth',
+                'stock_quantity' => 25,
+                'category' => 'Baverages',
+                'product_image' => 'products/12.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Ayurvedic Ubtan Scrub',
+                'price' => 12.00,
+                'description' => 'Gently removes dead skin cells, leaving the skin smooth and moisturized',
+                'stock_quantity' => 20,
+                'category' => 'Body Care',
+                'product_image' => 'products/13.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Aloe Vera Shampoo',
+                'price' => 19.00,
+                'description' => 'Herbal shampoo for scalp nourishment and hair strength',
+                'stock_quantity' => 35,
+                'category' => 'Body Care',
+                'product_image' => 'products/14.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Herbal Body Oil',
+                'price' => 21.00,
+                'description' => 'Removes dead skin and refreshes the body',
+                'stock_quantity' => 30,
+                'category' => 'Body Care',
+                'product_image' => 'products/15.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Snail White Lotion',
+                'price' => 15.00,
+                'description' => 'Contains snail mucin for hydration and brightening',
+                'stock_quantity' => 40,
+                'category' => 'Body Care',
+                'product_image' => 'products/16.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Madu Tualang Asli',
+                'price' =>  38.00,
+                'description' => 'Wild forest honey known for its antibacterial and healing power',
+                'stock_quantity' => 40,
+                'category' => 'Immune Booster',
+                'product_image' => 'products/17.jpg',
+                'active' => true
+            ],
+            [
+                'product_name' => 'Halia Bara Capsule',
+                'price' => 32.00,
+                'description' => 'Improves digestion and supports natural body warmth',
                 'stock_quantity' => 50,
-                'category' => 'Nail Care'
+                'category' => 'Immune Booster',
+                'product_image' => 'products/18.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Nail Strengthener',
-                'price' => 12.99,
-                'description' => 'Strengthens weak, brittle nails.',
-                'stock_quantity' => 40,
-                'category' => 'Nail Care'
-            ],
-            [
-                'product_name' => 'Cuticle Oil',
-                'price' => 8.99,
-                'description' => 'Nourishing oil for dry cuticles.',
+                'product_name' => 'Cuka Kurma',
+                'price' => 28.00,
+                'description' => 'Date vinegar rich in enzymes and antioxidants',
                 'stock_quantity' => 45,
-                'category' => 'Nail Care'
+                'category' => 'Immune Booster',
+                'product_image' => 'products/19.jpg',
+                'active' => true
             ],
             [
-                'product_name' => 'Body Lotion - Coconut',
-                'price' => 17.99,
-                'description' => 'Hydrating body lotion with coconut oil.',
-                'stock_quantity' => 40,
-                'category' => 'Body Care'
-            ],
-            [
-                'product_name' => 'Body Scrub - Coffee',
-                'price' => 19.99,
-                'description' => 'Exfoliating coffee scrub for smooth skin.',
+                'product_name' => 'Buah Zaitun Kering',
+                'price' => 26.00,
+                'description' => 'Dried olives packed with antioxidants to support immunity',
                 'stock_quantity' => 35,
-                'category' => 'Body Care'
-            ],
-            [
-                'product_name' => 'Body Oil - Lavender',
-                'price' => 21.99,
-                'description' => 'Relaxing body oil with lavender essential oil.',
-                'stock_quantity' => 30,
-                'category' => 'Body Care'
-            ],
-            [
-                'product_name' => 'Makeup Remover',
-                'price' => 14.99,
-                'description' => 'Gentle makeup remover for all skin types.',
-                'stock_quantity' => 45,
-                'category' => 'Makeup'
-            ],
-            [
-                'product_name' => 'Foundation - Medium',
-                'price' => 24.99,
-                'description' => 'Medium coverage foundation for all skin types.',
-                'stock_quantity' => 40,
-                'category' => 'Makeup'
-            ],
-            [
-                'product_name' => 'Mascara - Volumizing',
-                'price' => 18.99,
-                'description' => 'Adds volume and length to lashes.',
-                'stock_quantity' => 50,
-                'category' => 'Makeup'
-            ],
-            [
-                'product_name' => 'Lipstick - Nude',
-                'price' => 16.99,
-                'description' => 'Creamy nude lipstick for everyday wear.',
-                'stock_quantity' => 45,
-                'category' => 'Makeup'
-            ],
-            [
-                'product_name' => 'Eyeshadow Palette - Neutral',
-                'price' => 29.99,
-                'description' => '12 neutral eyeshadow shades for everyday looks.',
-                'stock_quantity' => 35,
-                'category' => 'Makeup'
-            ],
+                'category' => 'Immune Booster',
+                'product_image' => 'products/20.jpg',
+                'active' => true
+            ]
         ];
 
         foreach ($products as $product) {

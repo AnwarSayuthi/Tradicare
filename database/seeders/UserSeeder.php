@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
             'email' => 'tradicare@gmail.com',
             'password' => Hash::make('123456'),
             'role' => 'admin',
-            'tel_number' => '1234567890',
+            'tel_number' => '019-3325968',
         ]);
 
         // Create specified customer
@@ -30,12 +30,14 @@ class UserSeeder extends Seeder
             'email' => 'anwarsayuthi@gmail.com',
             'password' => Hash::make('101010'),
             'role' => 'customer',
-            'tel_number' => '9876543210',
+            'tel_number' => '016-2650425',
         ]);
-
-        // Create 20 random customers
-        \App\Models\User::factory()->count(20)->create([
-            'role' => 'customer'
+        User::create([
+            'name' => 'Irfan Faiz',
+            'email' => 'irfanfaiz@gmail.com',
+            'password' => Hash::make('123321'),
+            'role' => 'customer',
+            'tel_number' => '012-3456789',
         ]);
     }
 }

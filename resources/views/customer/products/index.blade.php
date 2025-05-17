@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container py-5">
+    <!-- Page Header -->
     <div class="row mb-5">
         <div class="col-lg-8 mx-auto text-center">
             <h1 class="section-title">Premium Herbal Products</h1>
@@ -11,13 +12,64 @@
         </div>
     </div>
 
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <form action="{{ route('customer.products.index') }}" method="GET" class="search-form">
+                <div class="input-group">
+                    <input type="text" class="form-control" name="search" placeholder="Search products..." value="{{ request('search') }}">
+                    <button class="btn btn-primary" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+                @if(request('category'))
+                    <input type="hidden" name="category" value="{{ request('category') }}">
+                @endif
+                @if(request('sort'))
+                    <input type="hidden" name="sort" value="{{ request('sort') }}">
+                @endif
+            </form>
+        </div>
+    </div>
+
     <!-- Category Filter -->
     <div class="category-filter mb-5">
         <div class="d-flex justify-content-center flex-wrap">
-            <button class="filter-btn active mx-2 mb-2" data-filter="all">All Products</button>
-            @foreach($categories as $category)
-                <button class="filter-btn mx-2 mb-2" data-filter="{{ $category }}">{{ ucfirst($category) }}</button>
+            <button class="filter-btn {{ !request('category') ? 'active' : '' }} mx-2 mb-2" data-filter="all">
+                All Products
+            </button>
+            @foreach($categories as $category => $count)
+                <button class="filter-btn {{ request('category') == $category ? 'active' : '' }} mx-2 mb-2" 
+                        data-filter="{{ $category }}" 
+                        data-url="{{ route('customer.products.index', ['category' => $category]) }}">
+                    {{ ucfirst($category) }}
+                </button>
             @endforeach
+        </div>
+    </div>
+
+    <!-- Sorting Options -->
+    <div class="sorting-options mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="results-count">
+                <p class="mb-0">Showing {{ $products->firstItem() ?? 0 }} - {{ $products->lastItem() ?? 0 }} of {{ $products->total() }} products</p>
+            </div>
+            <div class="sort-dropdown">
+                <form id="sortForm" action="{{ route('customer.products.index') }}" method="GET">
+                    @if(request('category'))
+                        <input type="hidden" name="category" value="{{ request('category') }}">
+                    @endif
+                    @if(request('search'))
+                        <input type="hidden" name="search" value="{{ request('search') }}">
+                    @endif
+                    <select name="sort" id="sortSelect" class="form-select" onchange="document.getElementById('sortForm').submit()">
+                        <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
+                        <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Price (Low to High)</option>
+                        <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Price (High to Low)</option>
+                        <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest First</option>
+                    </select>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -27,8 +79,11 @@
             <div class="col-xl-3 col-lg-4 col-md-6 product-item" data-category="{{ $product->category }}">
                 <div class="product-card">
                     <div class="product-image">
-                        <img src="{{ asset('storage/' . $product->product_image) }}" alt="{{ $product->product_name }}" class="img-fluid">
-                        <!-- In the product-overlay div, update the form -->
+                        @if($product->product_image)
+                            <img src="{{ asset('storage/' . $product->product_image) }}" alt="{{ $product->product_name }}" class="img-fluid">
+                        @else
+                            <img src="{{ asset('images/placeholder.jpg') }}" alt="{{ $product->product_name }}" class="img-fluid">
+                        @endif
                         <div class="product-overlay">
                             <form action="{{ route('customer.cart.add', $product->product_id) }}" method="POST">
                                 @csrf
@@ -46,7 +101,9 @@
                         <h3 class="product-title">{{ $product->product_name }}</h3>
                         <div class="d-flex justify-content-between align-items-center">
                             <span class="product-category">{{ ucfirst($product->category) }}</span>
-                            <span class="product-price">${{ number_format($product->price, 2) }}</span>
+                            <div class="product-price mb-2">
+                                <span class="fw-bold">RM{{ number_format($product->price, 2) }}</span>
+                            </div>
                         </div>
                         <p class="product-description">{{ Str::limit($product->description, 80) }}</p>
                         <div class="stock-info {{ $product->stock_quantity > 10 ? 'in-stock' : ($product->stock_quantity > 0 ? 'low-stock' : 'out-of-stock') }}">
@@ -68,9 +125,11 @@
     </div>
 
     <!-- Pagination -->
-    <div class="d-flex justify-content-center mt-5">
-        {{ $products->links() }}
-    </div>
+    @if($products->total() > 9)
+        <div class="d-flex justify-content-center mt-5 pagination-container">
+            {{ $products->withQueryString()->links('pagination::bootstrap-5') }}
+        </div>
+    @endif
 </div>
 @endsection
 
@@ -93,6 +152,7 @@
         box-shadow: 0 15px 35px rgba(73, 54, 40, 0.1);
     }
 
+    /* Product Image */
     .product-image {
         position: relative;
         overflow: hidden;
@@ -110,6 +170,7 @@
         transform: scale(1.08);
     }
 
+    /* Product Overlay */
     .product-overlay {
         position: absolute;
         top: 0;
@@ -129,6 +190,7 @@
         opacity: 1;
     }
 
+    /* Action Buttons */
     .btn-add-cart, .btn-view-details {
         width: 45px;
         height: 45px;
@@ -162,6 +224,7 @@
         transition-delay: 0.1s;
     }
 
+    /* Product Info */
     .product-info {
         padding: 1.5rem;
         flex-grow: 1;
@@ -195,6 +258,7 @@
         flex-grow: 1;
     }
 
+    /* Stock Information */
     .stock-info {
         font-size: 0.85rem;
         font-weight: 500;
@@ -305,57 +369,23 @@
 @section('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Category filtering
+        // Category filtering with page reload for proper pagination
         const filterButtons = document.querySelectorAll('.filter-btn');
-        const productItems = document.querySelectorAll('.product-item');
         
         filterButtons.forEach(button => {
             button.addEventListener('click', function() {
-                // Remove active class from all buttons
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                
-                // Add active class to clicked button
-                this.classList.add('active');
-                
                 const filterValue = this.getAttribute('data-filter');
                 
-                // Filter products
-                productItems.forEach(item => {
-                    if (filterValue === 'all' || item.getAttribute('data-category') === filterValue) {
-                        item.style.display = 'block';
-                        // Add animation
-                        item.style.animation = 'fadeIn 0.5s forwards';
-                    } else {
-                        item.style.display = 'none';
+                if (filterValue === 'all') {
+                    window.location.href = "{{ route('customer.products.index') }}";
+                } else {
+                    const url = this.getAttribute('data-url');
+                    if (url) {
+                        window.location.href = url;
                     }
-                });
+                }
             });
         });
-        
-        // Add animation on page load
-        productItems.forEach((item, index) => {
-            item.style.animation = `fadeIn 0.5s forwards ${index * 0.1}s`;
-        });
     });
-    
-    // Animation keyframes
-    document.head.insertAdjacentHTML('beforeend', `
-        <style>
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-            
-            .product-item {
-                opacity: 0;
-            }
-        </style>
-    `);
 </script>
 @endsection

@@ -200,4 +200,19 @@ class ProfileController extends Controller
 
         return back()->with('success', 'Password updated successfully');
     }
+    public function index()
+    {
+        $user = auth()->user();
+        $locations = $user->locations;
+        $orders = $user->orders()
+            ->with(['orderItems.product', 'payment'])
+            ->orderBy('order_date', 'desc')
+            ->get();
+        $appointments = $user->appointments()
+            ->with(['service', 'payment'])
+            ->orderBy('appointment_date', 'desc')
+            ->get();
+    
+        return view('customer.profile.index', compact('user', 'locations', 'orders', 'appointments'));
+    }
 }

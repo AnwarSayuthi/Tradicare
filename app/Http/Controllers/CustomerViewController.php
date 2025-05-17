@@ -11,15 +11,17 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use Carbon\Carbon;
 
 class CustomerViewController extends Controller
 {
     public function landing()
     {
-        $services = Service::where('active', 1)
+        $services = Service::notDeleted()
+            ->where('active', 1)
             ->select('service_id', 'service_name', 'description', 'price')
             ->get();
-            
+        
         $products = Product::where('active', 1)
             ->select('product_id', 'product_name', 'price', 'product_image')
             ->limit(4)
@@ -28,33 +30,67 @@ class CustomerViewController extends Controller
         return view('landing', compact('services', 'products'));
     }
 
-    public function products()
+    public function products(Request $request)
     {
-        $products = Product::where('active', true)
-                      ->orderBy('product_name')
-                      ->paginate(12);
-                      
-        // Get unique categories for filter
-        $categories = Product::where('active', true)
-                        ->distinct()
-                        ->pluck('category')
-                        ->toArray();
-                        
-        return view('customer.products.index', compact('products', 'categories'));
+        $query = Product::where('active', true);
+        
+        // Apply search if provided
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('product_name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+        
+        // Apply category filter if provided
+        if ($request->has('category') && $request->category != '') {
+            $query->where('category', $request->category);
+        }
+        
+        // Apply sorting
+        $sortBy = $request->get('sort', 'name_asc');
+        switch ($sortBy) {
+            case 'price_asc':
+                $query->orderBy('price', 'asc');
+                break;
+            case 'price_desc':
+                $query->orderBy('price', 'desc');
+                break;
+            case 'newest':
+                $query->orderBy('created_at', 'desc');
+                break;
+            case 'name_asc':
+            default:
+                $query->orderBy('product_name', 'asc');
+                break;
+        }
+        
+        $products = $query->paginate(12);
+        
+        // Get categories with product counts
+        $categories = Product::getActiveCategories();
+        
+        return view('customer.products.index', compact('products', 'categories', 'sortBy'));
     }
-    
+
     public function showProduct($id)
     {
         $product = Product::findOrFail($id);
         
-        // Get related products in the same category
-        $relatedProducts = Product::where('category', $product->category)
-            ->where('product_id', '!=', $product->product_id)
-            ->where('active', true)
-            ->limit(4)
-            ->get();
-            
-        return view('customer.products.show', compact('product', 'relatedProducts'));
+        // Check if product is active, if not redirect to products page
+        if (!$product->active) {
+            return redirect()->route('customer.products.index')
+                ->with('error', 'This product is currently unavailable.');
+        }
+        
+        // Get related products using the model method
+        $relatedProducts = $product->getRelatedProducts(4);
+        
+        // Get categories for sidebar
+        $categories = Product::getActiveCategories();
+        
+        return view('customer.products.show', compact('product', 'relatedProducts', 'categories'));
     }
     
     // The error is in the addToCart method. Here's the fix:
@@ -415,94 +451,21 @@ class CustomerViewController extends Controller
     // Add this method to CustomerViewController
     public function services()
     {
-        $services = Service::where('active', true)
-                    ->orderBy('service_name')
-                    ->get();
-        
-        // Get available slots for each service
-        $availableSlots = [];
-        $startDate = now()->addDay(); // Start from tomorrow
-        $endDate = now()->addDays(14); // Show availability for next 14 days
-        
-        foreach ($services as $service) {
-            // Get all booked appointments for this service in the date range
-            $bookedAppointments = Appointment::where('service_id', $service->service_id)
-                ->where('status', 'scheduled')
-                ->whereBetween('appointment_date', [$startDate, $endDate])
-                ->get();
+        $services = Service::where('active', 1)
+            ->where('deleted', 0)  // Add this line to filter out deleted services
+            ->get();
             
-            // Calculate available slots
-            $currentDate = clone $startDate;
-            while ($currentDate <= $endDate) {
-                // Skip if current day is Sunday (assuming clinic closed on Sundays)
-                if ($currentDate->dayOfWeek === 0) {
-                    $currentDate->addDay();
-                    continue;
-                }
-                
-                $dateStr = $currentDate->format('M d, Y');
-                
-                // Business hours: 9 AM to 8 PM, 1-hour slots
-                $startHour = 9; // 9 AM
-                $endHour = 20; // 8 PM
-                
-                for ($hour = $startHour; $hour < $endHour; $hour++) {
-                    $slotStart = clone $currentDate;
-                    $slotStart->hour($hour)->minute(0)->second(0);
-                    
-                    // Skip if this time slot has already passed
-                    if ($slotStart < now()) {
-                        continue;
-                    }
-                    
-                    // Calculate slot end time based on service duration
-                    $slotEnd = (clone $slotStart)->addMinutes($service->duration_minutes);
-                    
-                    // Check if this slot overlaps with any booked appointment
-                    $isAvailable = true;
-                    foreach ($bookedAppointments as $appointment) {
-                        $appointmentStart = $appointment->appointment_date;
-                        $appointmentEnd = $appointment->end_time;
-                        
-                        // Check for overlap
-                        if (
-                            ($slotStart >= $appointmentStart && $slotStart < $appointmentEnd) ||
-                            ($slotEnd > $appointmentStart && $slotEnd <= $appointmentEnd) ||
-                            ($slotStart <= $appointmentStart && $slotEnd >= $appointmentEnd)
-                        ) {
-                            $isAvailable = false;
-                            break;
-                        }
-                    }
-                    
-                    if ($isAvailable) {
-                        $availableSlots[$service->service_id][$dateStr][] = $slotStart->format('g:i A');
-                    }
-                }
-                
-                $currentDate->addDay();
-            }
-        }
-        
-        return view('customer.services.index', compact('services', 'availableSlots'));
+        return view('customer.services.index', compact('services'));
     }
 
     // Update the createAppointment method to handle service_id parameter
-    public function createAppointment(Request $request)
+    public function createAppointment()
     {
-        $selectedService = null;
-        
-        if ($request->has('service_id')) {
-            $selectedService = Service::findOrFail($request->service_id);
-        }
-        
-        $services = Service::where('active', true)->get();
-        
-        // Get available time slots for the selected date (or default to tomorrow)
-        $selectedDate = $request->date ?? now()->addDay()->format('Y-m-d');
-        $availableTimeSlots = $this->getAvailableTimeSlots($selectedDate, $request->service_id);
-        
-        return view('customer.appointments.create', compact('services', 'selectedService', 'selectedDate', 'availableTimeSlots'));
+        $services = Service::where('active', 1)
+            ->where('deleted', 0)  // Add this line to filter out deleted services
+            ->get();
+            
+        return view('customer.appointments.create', compact('services'));
     }
 
     // Helper method to get available time slots
@@ -553,6 +516,7 @@ class CustomerViewController extends Controller
                     continue;
                 }
                 
+                // Change any instances of '$' to 'RM' in currency formatting
                 // Check if this slot overlaps with any booked appointment
                 $isAvailable = true;
                 foreach ($appointments as $appointment) {
