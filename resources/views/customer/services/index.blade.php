@@ -18,9 +18,9 @@
     <div class="row g-4">
         @foreach($services as $service)
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="service-card h-100">
+            <div class="service-card h-100 fade-in-up" style="animation-delay: {{ $loop->index * 0.1 }}s">
                 <div class="service-icon">
-                    <i class="bi {{ $service->icon ?? 'bi-gem' }}"></i>
+                    <i class="bi bi-gem"></i>
                 </div>
                 <div class="service-content">
                     <h3 class="service-title">{{ $service->service_name }}</h3>
@@ -29,7 +29,9 @@
                         <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
                     </div>
                     <p class="service-description">{{ $service->description }}</p>
-                    <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
+                    <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">
+                        <i class="bi bi-gem me-2"></i>Book Now
+                    </a>
                 </div>
             </div>
         </div>
@@ -46,7 +48,7 @@
         <div class="col-lg-3 col-md-6 mb-4">
             <div class="benefit-card text-center">
                 <div class="benefit-icon">
-                    <i class="bi bi-heart-pulse"></i>
+                    <i class="bi bi-heart"></i>
                 </div>
                 <h4>Natural Healing</h4>
                 <p>Harness the body's natural ability to heal itself through traditional techniques</p>
@@ -214,6 +216,24 @@
     
     .btn-primary-custom {
         margin-top: auto;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.5rem 1.5rem;
+        border-radius: 50px;
+        background: var(--primary);
+        color: white;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        border: none;
+        text-decoration: none;
+    }
+    
+    .btn-primary-custom:hover {
+        background: var(--primary-dark);
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(73, 54, 40, 0.2);
+        color: #674c39;
     }
     
     /* Benefits Section */
@@ -232,9 +252,9 @@
     }
     
     .benefit-icon {
-        width: 70px;
-        height: 70px;
-        background: var(--primary-light);
+        width: 80px;
+        height: 80px;
+        background: #ddb99c; /* Updated to beige color as shown in the image */
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -244,7 +264,7 @@
     
     .benefit-icon i {
         font-size: 1.75rem;
-        color: var(--primary);
+        color: #674c39; /* Updated to dark brown color for better visibility */
     }
     
     .benefit-card h4 {
@@ -257,6 +277,23 @@
     .benefit-card p {
         color: #666;
         font-size: 0.95rem;
+    }
+    
+    /* Animation */
+    .fade-in-up {
+        animation: fadeInUp 0.6s ease forwards;
+        opacity: 0;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     /* Responsive Adjustments */

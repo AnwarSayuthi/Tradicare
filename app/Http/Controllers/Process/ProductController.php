@@ -197,10 +197,6 @@ class ProductController extends Controller
             // Keep the existing image
             unset($validated['product_image']);
         }
-
-        if ($request->hasFile('item_image')) {
-                $imagePath = $request->file('item_image')->store('item_images', 'public');
-                $item->item_image = $imagePath;
         
         // Update the product
         $product->update($validated);

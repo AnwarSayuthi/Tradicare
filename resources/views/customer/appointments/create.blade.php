@@ -3,497 +3,638 @@
 @section('title', 'Book Appointment - Tradicare')
 
 @section('content')
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-lg">
-                <div class="card-body p-4 p-md-5">
-                    <div class="text-center mb-4">
-                        <h2 class="h3 fw-bold text-primary-custom">Book Your Appointment</h2>
-                        <p class="text-muted">Complete the form below to schedule your wellness session</p>
+<div class="container py-4">
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-0">
+                    <div class="row g-0">
+                        <!-- Left Side - Appointment Selection -->
+                        <div class="col-lg-7 p-4 p-md-5 border-end">
+                            <div class="d-flex align-items-center mb-4">
+                                <a href="{{ route('customer.services') }}" class="text-decoration-none text-dark me-3">
+                                    <i class="bi bi-arrow-left"></i>
+                                </a>
+                                <h5 class="mb-0 fw-bold">Select a Slot</h5>
+                            </div>
+                            
+                            <form action="{{ route('customer.appointments.store') }}" method="POST" id="appointment-form">
+                                @csrf
+                                
+                                <!-- Service Selection -->
+                                <div class="mb-4">
+                                    <label for="service_id" class="form-label">Select Service</label>
+                                    <select class="form-select @error('service_id') is-invalid @enderror" id="service_id" name="service_id" required>
+                                        <option value="">Choose a service...</option>
+                                        @foreach($services as $service)
+                                            <option value="{{ $service->service_id }}" 
+                                                    data-duration="{{ $service->duration_minutes }}"
+                                                    data-price="{{ $service->price }}"
+                                                    {{ isset($selectedService) && $selectedService->service_id == $service->service_id ? 'selected' : '' }}>
+                                                {{ $service->service_name }} - {{ $service->duration_minutes }} mins (RM{{ number_format($service->price, 2) }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('service_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                
+                                <!-- Date Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label">Select Date</label>
+                                    <input type="hidden" id="selected_date" name="appointment_date" value="{{ $selectedDate ?? '' }}">
+                                    
+                                    <div class="date-selector">
+                                        <div class="month-selector d-flex justify-content-between align-items-center mb-3">
+                                            <button type="button" id="prev-month" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </button>
+                                            <span id="current-month" class="fw-medium">{{ date('F Y') }}</span>
+                                            <button type="button" id="next-month" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="weekdays-header d-flex mb-2">
+                                            <div class="weekday-cell">SUN</div>
+                                            <div class="weekday-cell">MON</div>
+                                            <div class="weekday-cell">TUE</div>
+                                            <div class="weekday-cell">WED</div>
+                                            <div class="weekday-cell">THU</div>
+                                            <div class="weekday-cell">FRI</div>
+                                            <div class="weekday-cell">SAT</div>
+                                        </div>
+                                        
+                                        <div class="week-navigation d-flex justify-content-between align-items-center mb-2">
+                                            <button type="button" id="prev-week" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </button>
+                                            <button type="button" id="next-week" class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="date-grid" id="date-grid">
+                                            <!-- Dates will be populated by JavaScript -->
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Time Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label">Select Time</label>
+                                    <input type="hidden" id="selected_time" name="appointment_time" value="{{ $selectedTime ?? '' }}">
+                                    
+                                    <div class="time-slots-container">
+                                        <div class="morning-slots mb-3">
+                                            <div class="time-slots-grid">
+                                                <div class="time-slot-cell" data-time="08:00">
+                                                    <div class="time-slot">8.00 - 9.00 AM</div>
+                                                </div>
+                                                <div class="time-slot-cell" data-time="09:00">
+                                                    <div class="time-slot">9.00 - 10.00 AM</div>
+                                                </div>
+                                                <div class="time-slot-cell" data-time="10:00">
+                                                    <div class="time-slot">10.00 - 11.00 AM</div>
+                                                </div>
+                                                <div class="time-slot-cell" data-time="11:00">
+                                                    <div class="time-slot">11.00 - 12.00 PM</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="afternoon-slots">
+                                            <div class="time-slots-grid">
+                                                <div class="time-slot-cell" data-time="14:00">
+                                                    <div class="time-slot">2.00 - 3.00 PM</div>
+                                                </div>
+                                                <div class="time-slot-cell" data-time="15:00">
+                                                    <div class="time-slot">3.00 - 4.00 PM</div>
+                                                </div>
+                                                <div class="time-slot-cell" data-time="16:00">
+                                                    <div class="time-slot">4.00 - 5.00 PM</div>
+                                                </div>
+                                                <div class="time-slot-cell" data-time="17:00">
+                                                    <div class="time-slot">5.00 - 6.00 PM</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Mobile Number -->
+                                <div class="mb-4">
+                                    <label for="mobile_number" class="form-label">Mobile Number</label>
+                                    <input type="tel" class="form-control @error('mobile_number') is-invalid @enderror" 
+                                           id="mobile_number" name="mobile_number" 
+                                           placeholder="Enter your mobile number" 
+                                           value="{{ auth()->user()->tel_number ?? old('mobile_number') }}" required>
+                                    @error('mobile_number')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Right Side - Booking Details -->
+                        <div class="col-lg-5 p-4 p-md-5 bg-gradient-dark booking-details-panel">
+                            <h5 class="mb-4 fw-bold text-dark">Booking Details</h5>
+                            
+                            <!-- Service Details -->
+                            <div class="mb-4 detail-card animate-fade-in">
+                                <h6 class="text-muted mb-3 detail-header"><i class="bi bi-gem me-2"></i>Service Details</h6>
+                                <div id="service-details" class="p-3 rounded-3 bg-white shadow-sm">
+                                    <p class="text-muted">No service selected yet</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Date & Time -->
+                            <div class="mb-4 detail-card animate-fade-in" style="animation-delay: 0.1s;">
+                                <h6 class="text-muted mb-3 detail-header"><i class="bi bi-calendar-check me-2"></i>Date & Time</h6>
+                                <div id="datetime-details" class="p-3 rounded-3 bg-white shadow-sm">
+                                    <p class="text-muted">No date and time selected yet</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Booked For -->
+                            <div class="mb-4 detail-card animate-fade-in" style="animation-delay: 0.2s;">
+                                <h6 class="text-muted mb-3 detail-header"><i class="bi bi-person me-2"></i>Booked for</h6>
+                                <div class="booked-for-details p-3 rounded-3 bg-white shadow-sm">
+                                    <span class="badge px-3 py-2" style="background-color: #3a3a3a;">{{ auth()->user()->name }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Total Amount -->
+                            <div class="mb-4 detail-card animate-fade-in" style="animation-delay: 0.3s;">
+                                <h6 class="text-muted mb-3 detail-header"><i class="bi bi-cash-coin me-2"></i>Total Amount</h6>
+                                <div class="total-amount p-3 rounded-3 bg-white shadow-sm">
+                                    <h4 class="fw-bold text-dark mb-3" id="total-price">RM0.00</h4>
+                                    <!-- Proceed Button -->
+                                    <button type="button" id="proceed-button" class="btn w-100 btn-lg pulse-animation" style="background-color: #3a3a3a; color: white;" onclick="document.getElementById('appointment-form').submit();">
+                                        <i class="bi bi-credit-card me-2"></i>Proceed to Pay
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Help Section -->
+                            <div class="help-section mb-4 p-4 rounded-4 bg-white shadow-sm animate-fade-in" style="animation-delay: 0.4s;">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3 support-icon-container">
+                                        <i class="bi bi-headset support-icon"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1 fw-bold">We can help you</h6>
+                                        <p class="mb-0 small">Call +60 123 456 789 for chat with our customer support team</p>
+                                    </div>
+                                </div>
+                                <a href="#" class="btn btn-outline-dark btn-sm mt-3 w-100 hover-scale">
+                                    <i class="bi bi-chat-dots me-2"></i>Chat with us
+                                </a>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <form action="{{ route('customer.appointments.store') }}" method="POST" id="appointment-form">
-                        @csrf
-                        
-                        @if(isset($selectedService))
-                            <input type="hidden" name="service_id" value="{{ $selectedService->service_id }}">
-                            <div class="selected-service mb-4">
-                                <div class="d-flex align-items-center p-3 bg-light rounded-3">
-                                    <div class="flex-shrink-0">
-                                        <div class="service-icon-sm">
-                                            <i class="bi {{ $selectedService->icon ?? 'bi-gem' }}"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h5 class="mb-1">{{ $selectedService->service_name }}</h5>
-                                        <div class="d-flex text-muted small">
-                                            <span class="me-3"><i class="bi bi-clock me-1"></i> {{ $selectedService->duration_minutes }} mins</span>
-                                            <span><i class="bi bi-tag me-1"></i> RM{{ number_format($selectedService->price, 2) }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @else
-                            <div class="mb-4">
-                                <label for="service_id" class="form-label">Select Service</label>
-                                <select class="form-select @error('service_id') is-invalid @enderror" id="service_id" name="service_id" required>
-                                    <option value="">Choose a service...</option>
-                                    @foreach($services as $service)
-                                        <option value="{{ $service->service_id }}" 
-                                                data-duration="{{ $service->duration_minutes }}"
-                                                data-price="{{ $service->price }}">
-                                            {{ $service->service_name }} - {{ $service->duration_minutes }} mins (RM{{ number_format($service->price, 2) }})
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('service_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        @endif
-
-                        <div class="mb-4">
-                            <label for="appointment_date" class="form-label">Preferred Date</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
-                                <input type="text" class="form-control" id="appointment_date" name="appointment_date" 
-                                       value="{{ $selectedDate ?? date('m/d/Y', strtotime('+1 day')) }}"
-                                       required readonly>
-                                <button class="btn btn-outline-secondary" type="button" id="calendar-btn">
-                                    <i class="bi bi-calendar-date"></i>
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <!-- Available Time Slots -->
-                        <div class="mb-4">
-                            <label class="form-label">Available Time Slots</label>
-                            <div class="time-slots-container" id="time-slots-container">
-                                <div class="alert alert-info">
-                                    <i class="bi bi-info-circle me-2"></i> Please select a date to view available time slots.
-                                </div>
-                            </div>
-                            @error('appointment_time')
-                                <div class="text-danger mt-2">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="notes" class="form-label">Special Notes (Optional)</label>
-                            <textarea class="form-control" id="notes" name="notes" rows="3" 
-                                    placeholder="Any special requests or health concerns we should know about?"></textarea>
-                        </div>
-
-                        <div class="mb-4">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="terms_agreed" name="terms_agreed" required>
-                                <label class="form-check-label" for="terms_agreed">
-                                    I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">terms and conditions</a>
-                                </label>
-                                @error('terms_agreed')
-                                    <div class="text-danger mt-1">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary-custom btn-lg">
-                                <i class="bi bi-calendar-check me-2"></i> Confirm Booking
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Terms Modal -->
-<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <h6>Appointment Policy</h6>
-                <p>Please arrive 15 minutes before your scheduled appointment time to complete any necessary paperwork and prepare for your treatment.</p>
-                
-                <h6>Cancellation Policy</h6>
-                <p>We understand that schedules change. We ask that you notify us at least 24 hours in advance if you need to cancel or reschedule your appointment to avoid a cancellation fee.</p>
-                
-                <h6>Late Arrival Policy</h6>
-                <p>If you arrive late for your scheduled appointment, your treatment time may be reduced to accommodate other scheduled appointments. Full treatment prices will apply.</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-primary-custom" data-bs-dismiss="modal">I Understand</button>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@section('css')
-<style>
-    .service-icon-sm {
-        width: 50px;
-        height: 50px;
-        background: var(--primary-light);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    
-    .service-icon-sm i {
-        font-size: 1.5rem;
-        color: var(--primary);
-    }
-    
-    .time-slots-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-        gap: 10px;
-    }
-    
-    .time-slot-item {
-        margin-bottom: 10px;
-    }
-    
-    .calendar-grid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 5px;
-    }
-    
-    .calendar-day {
-        aspect-ratio: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        cursor: pointer;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .calendar-day:hover:not(.disabled) {
-        background-color: #f0f0f0;
-    }
-    
-    .calendar-day.today {
-        border: 2px solid var(--primary);
-    }
-    
-    .calendar-day.selected {
-        background-color: var(--primary);
-        color: white;
-    }
-    
-    .calendar-day.disabled {
-        color: #ccc;
-        cursor: not-allowed;
-    }
-    
-    .calendar-day.other-month {
-        color: #aaa;
-    }
-    
-    .modal-time-slot {
-        padding: 10px;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .modal-time-slot:hover {
-        background-color: #f8f9fa;
-    }
-    
-    .modal-time-slot.selected {
-        background-color: var(--primary);
-        color: white;
-        border-color: var(--primary);
-    }
-</style>
 @endsection
 
 @section('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // DOM elements
-        const appointmentDateInput = document.getElementById('appointment_date');
-        const calendarBtn = document.getElementById('calendar-btn');
-        const calendarModal = new bootstrap.Modal(document.getElementById('calendarModal'));
-        const prevMonthBtn = document.getElementById('prev-month');
-        const nextMonthBtn = document.getElementById('next-month');
-        const currentMonthEl = document.getElementById('current-month');
-        const calendarGrid = document.getElementById('calendar-grid');
-        const timeSlotsSection = document.getElementById('time-slots-section');
-        const modalTimeSlots = document.getElementById('modal-time-slots');
-        const noSlotsMessage = document.getElementById('no-slots-message');
-        const selectedDateDisplay = document.getElementById('selected-date-display');
-        const continueBtn = document.getElementById('continue-btn');
-        const timeSlotsContainer = document.getElementById('time-slots-container');
-        
-        // Current date and selected date
-        const today = new Date();
-        let currentMonth = today.getMonth();
-        let currentYear = today.getFullYear();
-        let selectedDate = null;
-        let selectedTimeSlot = null;
-        
-        // Sample time slots (in a real app, these would come from the server)
-        const sampleTimeSlots = {
-            '2025-05-11': ['11:40 AM', '1:00 PM', '2:00 PM', '2:30 PM', '3:30 PM'],
-            '2025-05-12': ['10:00 AM', '11:30 AM', '1:30 PM', '3:00 PM'],
-            '2025-05-13': ['9:30 AM', '12:00 PM', '2:30 PM', '4:00 PM'],
-            '2025-05-14': ['10:30 AM', '1:00 PM', '3:30 PM'],
-            '2025-05-15': ['9:00 AM', '11:00 AM', '2:00 PM', '4:30 PM'],
-            '2025-05-16': ['10:00 AM', '12:30 PM', '3:00 PM'],
-            '2025-05-17': ['11:00 AM', '1:30 PM', '3:30 PM']
-        };
-        
-        // Open calendar modal when button is clicked
-        calendarBtn.addEventListener('click', function() {
-            renderCalendar();
-            calendarModal.show();
-        });
-        
-        // Navigate to previous month
-        prevMonthBtn.addEventListener('click', function() {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            renderCalendar();
-        });
-        
-        // Navigate to next month
-        nextMonthBtn.addEventListener('click', function() {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            renderCalendar();
-        });
-        
-        // Continue button click handler
-        continueBtn.addEventListener('click', function() {
-            if (selectedDate && selectedTimeSlot) {
-                const formattedDate = formatDate(selectedDate);
-                appointmentDateInput.value = formattedDate;
-                
-                // Update the time slots in the main form
-                renderMainFormTimeSlots(selectedDate);
-                
-                calendarModal.hide();
-            }
-        });
-        
-        // Render the calendar for the current month
-        function renderCalendar() {
-            // Update the month/year display
-            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-            currentMonthEl.textContent = `${monthNames[currentMonth]} ${currentYear}`;
-            
-            // Clear the grid
-            calendarGrid.innerHTML = '';
-            
-            // Get the first day of the month
-            const firstDay = new Date(currentYear, currentMonth, 1);
-            const startingDay = firstDay.getDay(); // 0 = Sunday, 1 = Monday, etc.
-            
-            // Get the number of days in the month
-            const lastDay = new Date(currentYear, currentMonth + 1, 0);
-            const totalDays = lastDay.getDate();
-            
-            // Get the number of days from the previous month to display
-            const prevMonthDays = startingDay;
-            
-            // Get the last day of the previous month
-            const prevMonthLastDay = new Date(currentYear, currentMonth, 0).getDate();
-            
-            // Add days from the previous month
-            for (let i = prevMonthDays - 1; i >= 0; i--) {
-                const day = prevMonthLastDay - i;
-                const dayEl = createDayElement(day, true, false);
-                calendarGrid.appendChild(dayEl);
-            }
-            
-            // Add days for the current month
-            for (let i = 1; i <= totalDays; i++) {
-                const date = new Date(currentYear, currentMonth, i);
-                const isToday = date.toDateString() === today.toDateString();
-                const isSelected = selectedDate && date.toDateString() === selectedDate.toDateString();
-                const isPast = date < new Date(today.setHours(0, 0, 0, 0));
-                
-                const dayEl = createDayElement(i, false, isPast, isToday, isSelected);
-                
-                // Add click event for valid days
-                if (!isPast) {
-                    dayEl.addEventListener('click', function() {
-                        // Deselect previously selected day
-                        const prevSelected = document.querySelector('.calendar-day.selected');
-                        if (prevSelected) {
-                            prevSelected.classList.remove('selected');
-                        }
-                        
-                        // Select this day
-                        dayEl.classList.add('selected');
-                        selectedDate = new Date(currentYear, currentMonth, i);
-                        
-                        // Reset selected time slot
-                        selectedTimeSlot = null;
-                        continueBtn.disabled = true;
-                        
-                        // Format date for display
-                        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                        selectedDateDisplay.textContent = selectedDate.toLocaleDateString('en-US', options);
-                        
-                        // Show time slots for this date
-                        showTimeSlotsForDate(selectedDate);
-                    });
-                }
-                
-                calendarGrid.appendChild(dayEl);
-            }
-            
-            // Add days from the next month if needed to fill the grid
-            const totalCells = 42; // 6 rows of 7 days
-            const nextMonthDays = totalCells - (prevMonthDays + totalDays);
-            
-            for (let i = 1; i <= nextMonthDays; i++) {
-                const dayEl = createDayElement(i, true, false);
-                calendarGrid.appendChild(dayEl);
-            }
-            
-            // Hide time slots section initially
-            timeSlotsSection.classList.add('d-none');
-            noSlotsMessage.classList.add('d-none');
-        }
-        
-        // Create a day element for the calendar
-        function createDayElement(day, isOtherMonth, isDisabled, isToday = false, isSelected = false) {
-            const dayEl = document.createElement('div');
-            dayEl.classList.add('calendar-day');
-            dayEl.textContent = day;
-            
-            if (isOtherMonth) {
-                dayEl.classList.add('other-month');
-            }
-            
-            if (isDisabled) {
-                dayEl.classList.add('disabled');
-            }
-            
-            if (isToday) {
-                dayEl.classList.add('today');
-            }
-            
-            if (isSelected) {
-                dayEl.classList.add('selected');
-            }
-            
-            return dayEl;
-        }
-        
-        // Show time slots for the selected date
-        function showTimeSlotsForDate(date) {
-            const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const availableSlots = sampleTimeSlots[dateString] || [];
-            
-            if (availableSlots.length > 0) {
-                // Show time slots section
-                timeSlotsSection.classList.remove('d-none');
-                noSlotsMessage.classList.add('d-none');
-                
-                // Clear previous time slots
-                modalTimeSlots.innerHTML = '';
-                
-                // Add time slots
-                availableSlots.forEach(slot => {
-                    const slotEl = document.createElement('div');
-                    slotEl.classList.add('modal-time-slot');
-                    slotEl.textContent = slot;
-                    
-                    slotEl.addEventListener('click', function() {
-                        // Deselect previously selected slot
-                        const prevSelected = document.querySelector('.modal-time-slot.selected');
-                        if (prevSelected) {
-                            prevSelected.classList.remove('selected');
-                        }
-                        
-                        // Select this slot
-                        slotEl.classList.add('selected');
-                        selectedTimeSlot = slot;
-                        
-                        // Enable continue button
-                        continueBtn.disabled = false;
-                    });
-                    
-                    modalTimeSlots.appendChild(slotEl);
-                });
-            } else {
-                // Show no slots message
-                timeSlotsSection.classList.add('d-none');
-                noSlotsMessage.classList.remove('d-none');
-            }
-        }
-        
-        // Render time slots in the main form
-        function renderMainFormTimeSlots(date) {
-            const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            const availableSlots = sampleTimeSlots[dateString] || [];
-            
-            // Clear previous time slots
-            timeSlotsContainer.innerHTML = '';
-            
-            if (availableSlots.length > 0) {
-                const timeSlotsGrid = document.createElement('div');
-                timeSlotsGrid.classList.add('time-slots-grid');
-                
-                availableSlots.forEach((slot, index) => {
-                    const timeSlotItem = document.createElement('div');
-                    timeSlotItem.classList.add('time-slot-item');
-                    
-                    const isSelected = slot === selectedTimeSlot;
-                    
-                    timeSlotItem.innerHTML = `
-                        <input type="radio" class="btn-check" name="appointment_time" 
-                               id="time-${index}" value="${slot}" 
-                               autocomplete="off" required ${isSelected ? 'checked' : ''}>
-                        <label class="btn btn-outline-secondary w-100" for="time-${index}">
-                            ${slot}
-                        </label>
-                    `;
-                    
-                    timeSlotsGrid.appendChild(timeSlotItem);
-                });
-                
-                timeSlotsContainer.appendChild(timeSlotsGrid);
-            } else {
-                timeSlotsContainer.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i> No available slots for the selected date. Please try another date.
-                    </div>
-                `;
-            }
-        }
-        
-        // Format date as MM/DD/YYYY
-        function formatDate(date) {
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const year = date.getFullYear();
-            return `${month}/${day}/${year}`;
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables
+    const dateGrid = document.getElementById('date-grid');
+    const currentMonthEl = document.getElementById('current-month');
+    const prevMonthBtn = document.getElementById('prev-month');
+    const nextMonthBtn = document.getElementById('next-month');
+    const prevWeekBtn = document.getElementById('prev-week');
+    const nextWeekBtn = document.getElementById('next-week');
+    const selectedDateInput = document.getElementById('selected_date');
+    const selectedTimeInput = document.getElementById('selected_time');
+    const serviceSelect = document.getElementById('service_id');
+    const totalPriceEl = document.getElementById('total-price');
+    const serviceDetailsEl = document.getElementById('service-details');
+    const datetimeDetailsEl = document.getElementById('datetime-details');
+    
+    let currentDate = new Date();
+    let currentWeekStart = getWeekStart(currentDate);
+    let selectedDate = null;
+    let selectedTime = null;
+    
+    // Initialize
+    updateMonthDisplay();
+    renderWeek(currentWeekStart);
+    updateServiceDetails();
+    
+    // Event Listeners
+    prevMonthBtn.addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        currentWeekStart = getWeekStart(currentDate);
+        updateMonthDisplay();
+        renderWeek(currentWeekStart);
     });
+    
+    nextMonthBtn.addEventListener('click', function() {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        currentWeekStart = getWeekStart(currentDate);
+        updateMonthDisplay();
+        renderWeek(currentWeekStart);
+    });
+    
+    prevWeekBtn.addEventListener('click', function() {
+        currentWeekStart.setDate(currentWeekStart.getDate() - 7);
+        renderWeek(currentWeekStart);
+    });
+    
+    nextWeekBtn.addEventListener('click', function() {
+        currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+        renderWeek(currentWeekStart);
+    });
+    
+    serviceSelect.addEventListener('change', updateServiceDetails);
+    
+    // Functions
+    function getWeekStart(date) {
+        const d = new Date(date);
+        const day = d.getDay(); // 0 for Sunday, 1 for Monday, etc.
+        d.setDate(d.getDate() - day); // Go to the start of the week (Sunday)
+        return d;
+    }
+    
+    function updateMonthDisplay() {
+        currentMonthEl.textContent = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+    }
+    
+    function renderWeek(startDate) {
+        dateGrid.innerHTML = '';
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            
+            const dateCell = document.createElement('div');
+            dateCell.className = 'date-cell';
+            
+            const dateNumber = document.createElement('div');
+            dateNumber.className = 'date-number';
+            if (date.toDateString() === new Date().toDateString()) {
+                dateNumber.classList.add('today');
+            }
+            dateNumber.textContent = date.getDate();
+            
+            // Make dates in the past disabled
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (date < today) {
+                dateCell.classList.add('disabled');
+            } else {
+                dateCell.addEventListener('click', function() {
+                    // Remove active class from all date cells
+                    document.querySelectorAll('.date-cell .date-number').forEach(el => {
+                        el.classList.remove('active');
+                    });
+                    
+                    // Add active class to selected date
+                    dateNumber.classList.add('active');
+                    
+                    // Update selected date
+                    selectedDate = date;
+                    selectedDateInput.value = date.toISOString().split('T')[0];
+                    
+                    // Update booking details
+                    updateDateTimeDetails();
+                });
+            }
+            
+            dateCell.appendChild(dateNumber);
+            dateGrid.appendChild(dateCell);
+        }
+    }
+    
+    function updateServiceDetails() {
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+        
+        if (selectedOption && selectedOption.value) {
+            const serviceName = selectedOption.text.split(' - ')[0];
+            const duration = selectedOption.getAttribute('data-duration');
+            const price = selectedOption.getAttribute('data-price');
+            
+            serviceDetailsEl.innerHTML = `
+                <div class="selected-service">
+                    <h6 class="mb-1">${serviceName}</h6>
+                    <p class="mb-0 small text-muted">${duration} minutes</p>
+                </div>
+            `;
+            
+            totalPriceEl.textContent = `RM${parseFloat(price).toFixed(2)}`;
+        } else {
+            serviceDetailsEl.innerHTML = `<p class="text-muted">No service selected yet</p>`;
+            totalPriceEl.textContent = 'RM0.00';
+        }
+    }
+    
+    function updateDateTimeDetails() {
+        if (selectedDate && selectedTime) {
+            const formattedDate = selectedDate.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            
+            datetimeDetailsEl.innerHTML = `
+                <div class="selected-datetime">
+                    <p class="mb-1"><i class="bi bi-calendar-date me-2"></i>${formattedDate}</p>
+                    <p class="mb-0"><i class="bi bi-clock me-2"></i>${selectedTime}</p>
+                </div>
+            `;
+        } else if (selectedDate) {
+            const formattedDate = selectedDate.toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+            });
+            
+            datetimeDetailsEl.innerHTML = `
+                <div class="selected-datetime">
+                    <p class="mb-1"><i class="bi bi-calendar-date me-2"></i>${formattedDate}</p>
+                    <p class="mb-0 text-muted">No time selected yet</p>
+                </div>
+            `;
+        } else {
+            datetimeDetailsEl.innerHTML = `<p class="text-muted">No date and time selected yet</p>`;
+        }
+    }
+    
+    // Time slot selection
+    document.querySelectorAll('.time-slot-cell').forEach(slot => {
+        slot.addEventListener('click', function() {
+            // Remove active class from all time slots
+            document.querySelectorAll('.time-slot-cell').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to selected time slot
+            this.classList.add('active');
+            
+            // Update selected time
+            selectedTime = this.querySelector('.time-slot').textContent;
+            selectedTimeInput.value = this.getAttribute('data-time');
+            
+            // Update booking details
+            updateDateTimeDetails();
+        });
+    });
+});
 </script>
+
+<style>
+/* Date Selector Styles */
+.date-selector {
+    margin-bottom: 1.5rem;
+}
+
+.weekdays-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.weekday-cell {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+}
+
+.date-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: space-between;
+}
+
+.date-cell {
+    width: calc(100% / 7 - 0.5rem);
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+}
+
+.date-cell.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.date-number {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    font-weight: 500;
+}
+
+.date-number.today {
+    border: 2px solid #a8a079;
+    color: 	#a8a079;
+}
+
+.date-number.active {
+    background-color: #a8a079;
+    color: white;
+}
+
+/* Time Slots Styles */
+.time-slots-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.time-slot-cell {
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.time-slot-cell:hover {
+    border-color: #bcb8ad;
+}
+
+.time-slot-cell.active {
+    background-color: #bcb8ad;
+    border-color: #bcb8ad;
+    color: white;
+}
+
+.time-slot {
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Booking Details Panel Styles */
+.booking-details-panel {
+    background: linear-gradient(145deg,#e9ecef, #a8a079);
+    border-radius: 0 1rem 1rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.booking-details-panel::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.1);
+    z-index: 0;
+}
+
+.booking-details-panel::after {
+    content: '';
+    position: absolute;
+    bottom: -30px;
+    left: -30px;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.05);
+    z-index: 0;
+}
+
+.detail-card {
+    position: relative;
+    z-index: 1;
+    transition: all 0.3s ease;
+}
+
+.detail-card:hover {
+    transform: translateY(-3px);
+}
+
+.detail-header {
+    font-weight: 600;
+    color: #495057;
+    display: flex;
+    align-items: center;
+}
+
+/* Animation Styles */
+.animate-fade-in {
+    opacity: 0;
+    animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pulse-animation {
+    animation: pulse 2s infinite;
+    box-shadow: rgba(58, 58, 58, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.pulse-animation::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #3a3a3a;
+    transform: translateX(-100%);
+    animation: shimmer 2.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(58, 58, 58, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(58, 58, 58, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(58, 58, 58, 0);
+    }
+}
+
+@keyframes shimmer {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.hover-scale {
+    transition: transform 0.3s ease;
+}
+
+.hover-scale:hover {
+    transform: scale(1.05);
+}
+
+.support-icon-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(13, 110, 253, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.support-icon-container:hover {
+    background: rgba(13, 110, 253, 0.2);
+    transform: rotate(15deg);
+}
+
+.support-icon {
+    font-size: 1.5rem;
+    color: 	#a8a079;
+}
+
+/* Card Styles */
+.bg-white {
+    background-color: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.bg-white:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Total Price Styles */
+#total-price {
+    font-size: 1.8rem;
+    background: linear-gradient(45deg, #3a3a3a, #a8a079);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+</style>
 @endsection

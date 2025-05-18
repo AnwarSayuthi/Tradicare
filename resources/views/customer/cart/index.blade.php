@@ -172,7 +172,7 @@
                                     <a href="{{ route('customer.products.index') }}" class="btn btn-outline-secondary py-2 px-4">
                                         <i class="bi bi-arrow-left me-2"></i> Continue Shopping
                                     </a>
-                                    <button type="button" class="btn btn-primary-custom checkout-btn py-2 px-4" data-bs-toggle="modal" data-bs-target="#checkoutModal">
+                                    <button type="button" class="btn btn-primary-custom checkout-btn py-2 px-4 pulse-animation" data-bs-toggle="modal" data-bs-target="#checkoutModal">
                                         <i class="bi bi-credit-card me-2"></i> Proceed to Checkout
                                     </button>
                                 </div>
@@ -331,7 +331,7 @@
                             </div>
                             
                             <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary-custom py-2" id="place-order-btn">
+                                <button type="submit" class="btn btn-primary-custom py-2 pulse-animation" id="place-order-btn">
                                     <i class="bi bi-check-circle me-2"></i> Place Order
                                 </button>
                             </div>
@@ -676,6 +676,43 @@
             padding-bottom: 1rem;
             margin-bottom: 1rem;
             border-bottom: 1px solid #dee2e6;
+        }
+    }
+
+    .pulse-animation {
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 0 rgba(13, 110, 253, 0.4);
+    position: relative;
+    overflow: hidden;
+    }
+
+    .pulse-animation::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translateX(-100%);
+        animation: shimmer 2.5s infinite;
+    }
+
+    @keyframes pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
+        }
+    }
+
+    @keyframes shimmer {
+        100% {
+            transform: translateX(100%);
         }
     }
 </style>

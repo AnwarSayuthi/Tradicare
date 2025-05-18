@@ -55,20 +55,17 @@
                 <p class="mb-0">Showing {{ $products->firstItem() ?? 0 }} - {{ $products->lastItem() ?? 0 }} of {{ $products->total() }} products</p>
             </div>
             <div class="sort-dropdown">
-                <form id="sortForm" action="{{ route('customer.products.index') }}" method="GET">
-                    @if(request('category'))
-                        <input type="hidden" name="category" value="{{ request('category') }}">
-                    @endif
-                    @if(request('search'))
-                        <input type="hidden" name="search" value="{{ request('search') }}">
-                    @endif
-                    <select name="sort" id="sortSelect" class="form-select" onchange="document.getElementById('sortForm').submit()">
-                        <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name (A-Z)</option>
-                        <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Price (Low to High)</option>
-                        <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Price (High to Low)</option>
-                        <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest First</option>
-                    </select>
-                </form>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="sortDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-sort-down me-1"></i> Sort By
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sortDropdown">
+                        <li><a class="dropdown-item {{ request('sort') == 'name_asc' ? 'active' : '' }}" href="{{ route('customer.products.index', array_merge(request()->except('sort', 'page'), ['sort' => 'name_asc'])) }}">Name (A-Z)</a></li>
+                        <li><a class="dropdown-item {{ request('sort') == 'price_asc' ? 'active' : '' }}" href="{{ route('customer.products.index', array_merge(request()->except('sort', 'page'), ['sort' => 'price_asc'])) }}">Price (Low to High)</a></li>
+                        <li><a class="dropdown-item {{ request('sort') == 'price_desc' ? 'active' : '' }}" href="{{ route('customer.products.index', array_merge(request()->except('sort', 'page'), ['sort' => 'price_desc'])) }}">Price (High to Low)</a></li>
+                        <li><a class="dropdown-item {{ request('sort') == 'newest' ? 'active' : '' }}" href="{{ route('customer.products.index', array_merge(request()->except('sort', 'page'), ['sort' => 'newest'])) }}">Newest First</a></li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>

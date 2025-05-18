@@ -80,15 +80,17 @@ Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->gr
 Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('customer.')->group(function() 
 {
     Route::get('/profile/location/{id}/get', [App\Http\Controllers\Process\ProfileController::class, 'getLocation'])->name('location.get');
-    // Appointments
-    Route::get('/appointments', [CustomerViewController::class, 'appointments'])->name('appointments');
+    
+    // Appointments - consolidated and consistent naming
+    Route::get('/appointments', [CustomerViewController::class, 'appointments'])->name('appointments.index');
     Route::get('/appointments/create', [CustomerViewController::class, 'createAppointment'])->name('appointments.create');
     Route::post('/appointments', [CustomerViewController::class, 'storeAppointment'])->name('appointments.store');
-    Route::get('/appointment/create', [CustomerViewController::class, 'createAppointment'])->name('appointment.create');
     Route::get('/appointments/available-slots', [CustomerViewController::class, 'getAvailableTimeSlots'])->name('appointments.available-slots');
-    Route::get('/appointment/payment/{id}', [CustomerViewController::class, 'appointmentPayment'])->name('appointment.payment');
-    Route::post('/appointment/payment/{id}/process', [CustomerViewController::class, 'processPayment'])->name('appointment.process-payment');
-
+    Route::get('/appointments/payment/{id}', [CustomerViewController::class, 'appointmentPayment'])->name('appointments.payment');
+    Route::post('/appointments/payment/{id}/process', [CustomerViewController::class, 'processPayment'])->name('appointments.process-payment');
+    Route::put('/appointments/{id}/cancel', [CustomerViewController::class, 'cancelAppointment'])->name('appointments.cancel');
+    Route::get('/appointments/{id}/reschedule', [CustomerViewController::class, 'rescheduleAppointment'])->name('appointments.reschedule');
+    
     // Products
     Route::get('/products', [CustomerViewController::class, 'products'])->name('products.index');
     Route::get('/products/{product}', [CustomerViewController::class, 'showProduct'])->name('products.show');
