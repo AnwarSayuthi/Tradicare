@@ -50,12 +50,6 @@ Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->gr
     Route::put('/appointments/{id}/status', [App\Http\Controllers\Process\AppointmentController::class, 'updateStatus'])->name('appointments.update-status');
     Route::delete('/appointments/{id}', [App\Http\Controllers\Process\AppointmentController::class, 'destroy'])->name('appointments.destroy');
     
-    // Add these customer routes
-    Route::get('/customerDetails', [AdminViewController::class, 'customerDetails'])->name('customers.index');
-    Route::get('/customers/{user}', [AdminViewController::class, 'showCustomer'])->name('customers.show');
-    Route::post('/customers', [AdminViewController::class, 'storeCustomer'])->name('customers.store');
-    Route::put('/customers/{user}/update-status', [AdminViewController::class, 'updateCustomerStatus'])->name('customers.update-status');
-    
     // Admin Order Process routes
     Route::put('/orders/{order}/status', [App\Http\Controllers\Process\DashboardController::class, 'updateOrderStatus'])->name('orders.update-status');
     
@@ -135,8 +129,8 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     // Services and Appointments
     Route::get('/services', [CustomerViewController::class, 'services'])->name('services');
     Route::get('/services/{service}', [CustomerViewController::class, 'showService'])->name('services.show');
-    Route::get('/appointment/create', [CustomerViewController::class, 'createAppointment'])->name('appointment.create');
-    Route::post('/appointment/store', [CustomerViewController::class, 'storeAppointment'])->name('appointment.store');
+    Route::get('/appointment/create', [CustomerViewController::class, 'createAppointment'])->name('appointments.create');
+    Route::post('/appointment/store', [CustomerViewController::class, 'storeAppointment'])->name('appointments.store');
     
     // Add this to your customer routes section
     Route::get('/about', [CustomerViewController::class, 'about'])->name('about');

@@ -30,7 +30,7 @@
                                             <option value="{{ $service->service_id }}" 
                                                     data-duration="{{ $service->duration_minutes }}"
                                                     data-price="{{ $service->price }}"
-                                                    {{ isset($selectedService) && $selectedService->service_id == $service->service_id ? 'selected' : '' }}>
+                                                    {{ (old('service_id') == $service->service_id || (isset($selectedServiceId) && $selectedServiceId == $service->service_id)) ? 'selected' : '' }}>
                                                 {{ $service->service_name }} - {{ $service->duration_minutes }} mins (RM{{ number_format($service->price, 2) }})
                                             </option>
                                         @endforeach
@@ -185,10 +185,10 @@
                                     </div>
                                     <div>
                                         <h6 class="mb-1 fw-bold">We can help you</h6>
-                                        <p class="mb-0 small">Call +60 123 456 789 for chat with our customer support team</p>
+                                        <p class="mb-0 small">Call +60193325968 for chat with our customer support team</p>
                                     </div>
                                 </div>
-                                <a href="#" class="btn btn-outline-dark btn-sm mt-3 w-100 hover-scale">
+                                <a href="https://wa.me/60193325968" class="btn btn-outline-dark btn-sm mt-3 w-100 hover-scale" target="_blank">
                                     <i class="bi bi-chat-dots me-2"></i>Chat with us
                                 </a>
                             </div>

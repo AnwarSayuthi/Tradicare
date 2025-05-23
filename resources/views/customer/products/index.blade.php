@@ -77,7 +77,7 @@
                 <div class="product-card">
                     <div class="product-image">
                         @if($product->product_image)
-                            <img src="{{ asset('storage/' . $product->product_image) }}" alt="{{ $product->product_name }}" class="img-fluid">
+                            <img src="{{ $product->getImageUrl() }}" alt="{{ $product->product_name }}" class="img-fluid">
                         @else
                             <img src="{{ asset('images/placeholder.jpg') }}" alt="{{ $product->product_name }}" class="img-fluid">
                         @endif

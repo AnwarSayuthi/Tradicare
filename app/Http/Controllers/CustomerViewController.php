@@ -459,13 +459,15 @@ class CustomerViewController extends Controller
     }
 
     // Update the createAppointment method to handle service_id parameter
-    public function createAppointment()
-    {
-        $services = Service::where('active', 1)
-            ->where('deleted', 0)  // Add this line to filter out deleted services
-            ->get();
-            
-        return view('customer.appointments.create', compact('services'));
+    public function createAppointment(Request $request) 
+    { 
+        $services = Service::all(); 
+        $selectedServiceId = $request->query('service_id'); 
+        
+        return view('customer.appointments.create', [ 
+            'services' => $services, 
+            'selectedServiceId' => $selectedServiceId 
+        ]); 
     }
 
     // Helper method to get available time slots
@@ -583,14 +585,12 @@ class CustomerViewController extends Controller
     }
 
     // Add a new method for appointment payment
-    public function appointmentPayment($appointmentId)
+    public function showPayment(Appointment $appointment)
     {
-        $appointment = Appointment::with('service')->findOrFail($appointmentId);
-        
-        // Check if this appointment belongs to the logged-in user
+        // Ensure the appointment belongs to the logged-in user
         if ($appointment->user_id !== auth()->id()) {
-            return redirect()->route('customer.appointments')
-                ->with('error', 'Unauthorized access to appointment.');
+            return redirect()->route('customer.appointments.index')
+                ->with('error', 'You do not have permission to view this appointment.');
         }
         
         return view('customer.appointments.payment', compact('appointment'));

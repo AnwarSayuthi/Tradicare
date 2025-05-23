@@ -65,14 +65,52 @@
                         
                         <!-- Payment Form Column -->
                         <div class="col-md-8 p-4 p-md-5">
-                            <div class="d-flex align-items-center mb-4">
-                                <a href="{{ route('customer.appointments.create') }}" class="text-decoration-none text-dark me-3">
-                                    <i class="bi bi-arrow-left"></i>
-                                </a>
-                                <h5 class="mb-0 fw-bold">Payment Details</h5>
+                            <h4 class="fw-bold mb-4">Payment Information</h4>
+                            
+                            <!-- Payment Method Selection -->
+                            <div class="payment-methods mb-4">
+                                <div class="form-check payment-method-option mb-3">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="credit_card" checked>
+                                    <label class="form-check-label d-flex align-items-center" for="credit_card">
+                                        <div class="payment-icon me-3">
+                                            <i class="bi bi-credit-card"></i>
+                                        </div>
+                                        <div>
+                                            <span class="d-block fw-medium">Credit/Debit Card</span>
+                                            <small class="text-muted">Pay securely with your card</small>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check payment-method-option mb-3">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
+                                    <label class="form-check-label d-flex align-items-center" for="paypal">
+                                        <div class="payment-icon me-3">
+                                            <i class="bi bi-paypal"></i>
+                                        </div>
+                                        <div>
+                                            <span class="d-block fw-medium">PayPal</span>
+                                            <small class="text-muted">Pay via PayPal</small>
+                                        </div>
+                                    </label>
+                                </div>
+                                
+                                <div class="form-check payment-method-option">
+                                    <input class="form-check-input" type="radio" name="payment_method" id="cash" value="cash">
+                                    <label class="form-check-label d-flex align-items-center" for="cash">
+                                        <div class="payment-icon me-3">
+                                            <i class="bi bi-cash"></i>
+                                        </div>
+                                        <div>
+                                            <span class="d-block fw-medium">Cash on Arrival</span>
+                                            <small class="text-muted">Pay when you arrive for your appointment</small>
+                                        </div>
+                                    </label>
+                                </div>
                             </div>
                             
-                            <form action="{{ route('customer.appointments.process-payment', $appointment->appointment_id) }}" method="POST" id="payment-form">
+                            <!-- Payment Form -->
+                            <form action="{{ route('customer.appointments.payment', $appointment->appointment_id) }}" method="POST">
                                 @csrf
                                 
                                 <div class="mb-4">
@@ -189,6 +227,13 @@
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <!-- Submit Button -->
+                        <div class="mt-4">
+                            <x-ui.button type="submit" class="w-100">
+                                <i class="bi bi-lock-fill me-2"></i>Complete Payment
+                            </x-ui.button>
                         </div>
                     </div>
                 </div>

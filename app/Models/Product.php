@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class Product extends Model
 {
@@ -98,5 +99,28 @@ class Product extends Model
         $nextId = $maxId ? $maxId + 1 : 1;
         
         return DB::statement("ALTER TABLE products AUTO_INCREMENT = {$nextId}");
+    }
+    
+    /**
+     * Get the product image URL with cache busting
+     *
+     * @return string|null
+     */
+    public function getImageUrl()
+    {
+        if (!$this->product_image) {
+            return null;
+        }
+
+        $imagePath = 'storage/' . $this->product_image;
+        
+        // Add cache busting parameter using file modification time
+        if (file_exists(public_path($imagePath))) {
+            $timestamp = filemtime(public_path($imagePath));
+            return asset($imagePath) . '?v=' . $timestamp;
+        }
+        
+        // Fallback to regular asset URL if file doesn't exist
+        return asset($imagePath);
     }
 }

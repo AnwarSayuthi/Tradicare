@@ -186,7 +186,7 @@
         <p class="lead mb-5 animate__animated animate__fadeInUp">Indulge in our premium massage services and products for ultimate relaxation and rejuvenation</p>
         
         <div class="animate__animated animate__fadeInUp animate__delay-1s">
-            <x-ui.button href="{{ route('customer.appointment.create') }}" class="btn-lg">
+            <x-ui.button href="{{ route('customer.appointments.create') }}" class="btn-lg">
                 <i class="bi bi-calendar-plus me-2"></i> Book Appointment
             </x-ui.button>
         </div>
@@ -249,7 +249,7 @@
                             <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
                         </div>
                         <p class="service-description">{{ $service->description }}</p>
-                        <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
+                        <a href="{{ route('customer.appointments.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">Book Now</a>
                     </div>
                 </div>
             </div>
@@ -274,7 +274,7 @@
                     </div>
                     <div class="p-3">
                         <h4 class="h6 mb-2">{{ $product->product_name }}</h4>
-                        <p class="fw-bold mb-3" style="color: var(--primary);">${{ $product->price }}</p>
+                        <p class="fw-bold mb-3" style="color: var(--primary);">RM{{ $product->price }}</p>
                         <form action="{{ route('customer.cart.add', $product->product_id) }}" method="POST">
                             @csrf
                             <x-ui.button type="submit" class="w-100">
@@ -367,4 +367,3 @@
     });
 </script>
 @endsection
-

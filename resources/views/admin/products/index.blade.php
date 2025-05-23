@@ -124,7 +124,7 @@
                             <td>{{ ($products->currentPage() - 1) * $products->perPage() + $index + 1 }}</td>
                             <td>
                                 @if($product->product_image)
-                                <img src="{{ asset('storage/' . $product->product_image) }}" alt="{{ $product->product_name }}" class="img-thumbnail" width="50">
+                                <img src="{{ $product->getImageUrl() }}" alt="{{ $product->product_name }}" class="img-thumbnail" width="50">
                                 @else
                                 <div class="no-image-placeholder">
                                     <i class="bi bi-image text-muted"></i>
@@ -133,15 +133,15 @@
                             </td>
                             <td>
                                 <div class="d-flex flex-column">
-                                    <h6 class="mb-1">{{ $product->product_name }}</h6>
+                                    <h6 class="mb-1 fs-6">{{ $product->product_name }}</h6>
                                 </div>
                             </td>
-                            <td>{{ ucfirst($product->category) }}</td>
-                            <td>RM{{ number_format($product->price, 2) }}</td>
-                            <td>{{ $product->stock_quantity ?? '0' }} in stock</td>
+                            <td><span class="small">{{ ucfirst($product->category) }}</span></td>
+                            <td><span class="small">RM{{ number_format($product->price, 2) }}</span></td>
+                            <td><span class="small">{{ $product->stock_quantity ?? '0' }} in stock</span></td>
                             <td>
                                 <div class="form-check form-switch">
-                                    <span class="badge rounded-pill px-3 py-2 {{ $product->active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
+                                    <span class="badge rounded-pill px-2 py-1 small {{ $product->active ? 'bg-success-subtle text-success' : 'bg-danger-subtle text-danger' }}">
                                         <i class="bi {{ $product->active ? 'bi-check-circle' : 'bi-x-circle' }} me-1"></i>
                                         {{ $product->active ? 'Active' : 'Inactive' }}
                                     </span>

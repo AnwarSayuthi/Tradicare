@@ -6,49 +6,6 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <!-- Product Statistics - Added to match the reference image style -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-container me-3">
-                        <i class="bi bi-box-seam fs-1 text-primary"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-1">All Products</h6>
-                        <h2 class="mb-0 fw-bold">{{ $totalProducts }}</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-container me-3">
-                        <i class="bi bi-check-circle fs-1 text-success"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-1">Active Products</h6>
-                        <h2 class="mb-0 fw-bold">{{ $activeProducts }}</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-container me-3">
-                        <i class="bi bi-x-circle fs-1 text-danger"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-1">Inactive Products</h6>
-                        <h2 class="mb-0 fw-bold">{{ $inactiveProducts }}</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
@@ -64,32 +21,21 @@
                                     <div class="card-body p-4">
                                         <h5 class="card-title mb-4 fw-semibold border-bottom pb-3">Product Information</h5>
                                         
-                                        <div class="mb-4">
-                                            <label for="product_name" class="form-label fw-medium">Product Name <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control form-control-lg @error('product_name') is-invalid @enderror" id="product_name" name="product_name" value="{{ old('product_name') }}" required>
-                                            @error('product_name')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
-                                        </div>
-                                        
                                         <div class="row mb-4">
-                                            <div class="col-md-6 mb-3 mb-md-0">
+                                            <div class="col-md-6">
+                                                <label for="product_name" class="form-label fw-medium">Product Name <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control form-control-lg @error('product_name') is-invalid @enderror" id="product_name" name="product_name" value="{{ old('product_name') }}" required>
+                                                @error('product_name')
+                                                    <div class="invalid-feedback">{{ $message }}</div>
+                                                @enderror
+                                            </div>
+                                            
+                                            <div class="col-md-6">
                                                 <label for="price" class="form-label fw-medium">Regular Price (RM) <span class="text-danger">*</span></label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text bg-light">RM</span>
                                                     <input type="number" step="0.01" min="0" class="form-control @error('price') is-invalid @enderror" id="price" name="price" value="{{ old('price') }}" required>
                                                     @error('price')
-                                                        <div class="invalid-feedback">{{ $message }}</div>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                            
-                                            <div class="col-md-6">
-                                                <label for="sale_price" class="form-label fw-medium">Sale Price (RM)</label>
-                                                <div class="input-group input-group-lg">
-                                                    <span class="input-group-text bg-light">RM</span>
-                                                    <input type="number" step="0.01" min="0" class="form-control @error('sale_price') is-invalid @enderror" id="sale_price" name="sale_price" value="{{ old('sale_price') }}">
-                                                    @error('sale_price')
                                                         <div class="invalid-feedback">{{ $message }}</div>
                                                     @enderror
                                                 </div>

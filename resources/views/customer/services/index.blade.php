@@ -29,7 +29,7 @@
                         <span><i class="bi bi-tag"></i> RM{{ number_format($service->price, 2) }}</span>
                     </div>
                     <p class="service-description">{{ $service->description }}</p>
-                    <a href="{{ route('customer.appointment.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">
+                    <a href="{{ route('customer.appointments.create', ['service_id' => $service->service_id]) }}" class="btn btn-primary-custom">
                         <i class="bi bi-gem me-2"></i>Book Now
                     </a>
                 </div>

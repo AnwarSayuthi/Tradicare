@@ -19,11 +19,8 @@
                     <a href="{{ route('customer.products.index', ['category' => $product->category]) }}" class="back-button">
                         <i class="bi bi-arrow-left"></i>
                     </a>
-                    @php
-                        $imagePath = $product->product_image ? 'storage/' . $product->product_image : null;
-                    @endphp
-                    @if($imagePath && file_exists(public_path($imagePath)))
-                        <img src="{{ asset($imagePath) }}" alt="{{ $product->product_name }}" class="product-main-image rounded shadow-sm" style="object-fit:cover;aspect-ratio:1/1;">
+                    @if($product->product_image)
+                        <img src="{{ $product->getImageUrl() }}" alt="{{ $product->product_name }}" class="product-main-image rounded shadow-sm" style="object-fit:cover;aspect-ratio:1/1;">
                     @else
                         <img src="{{ asset('images/default-product.png') }}" alt="No image" class="product-main-image rounded shadow-sm" style="object-fit:cover;aspect-ratio:1/1;">
                     @endif
@@ -96,7 +93,7 @@
                     <a href="{{ route('customer.products.show', $relatedProduct->product_id) }}" class="product-link">
                         <div class="product-image">
                             @if($relatedProduct->product_image)
-                                <img src="{{ asset('storage/' . $relatedProduct->product_image) }}" alt="{{ $relatedProduct->product_name }}" class="img-fluid">
+                                <img src="{{ $relatedProduct->getImageUrl() }}" alt="{{ $relatedProduct->product_name }}" class="img-fluid">
                             @else
                                 <img src="{{ asset('images/placeholder.jpg') }}" alt="{{ $relatedProduct->product_name }}" class="img-fluid">
                             @endif

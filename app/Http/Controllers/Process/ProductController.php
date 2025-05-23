@@ -121,31 +121,27 @@ class ProductController extends Controller
      * Store a newly created product in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
-        // Validate the request
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'description' => 'required|string',
+            'category' => 'required|string|max:100',
             'stock_quantity' => 'required|integer|min:0',
-            'category' => 'required|string',
+            'description' => 'nullable|string',
             'product_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'active' => 'sometimes|boolean',
         ]);
         
-        // Handle the image upload
+        // Handle image upload if provided
         if ($request->hasFile('product_image')) {
-            $image = $request->file('product_image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->storeAs('public/products', $imageName);
-            $validated['product_image'] = 'products/' . $imageName;
-        } else {
-            // Ensure product_image is null if no image is uploaded
-            $validated['product_image'] = null;
+            $validated['product_image'] = $request->file('product_image')->store('products', 'public');
         }
+        
+        // Set active status (default to true if not provided)
+        $validated['active'] = $request->has('active') ? true : false;
         
         // Create the product
         $product = Product::create($validated);
@@ -158,45 +154,36 @@ class ProductController extends Controller
      * Update the specified product in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * @param  \App\Models\Product  $product
+     * @return \Illuminate\Http\RedirectResponse
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Product $product)
     {
-        $product = Product::findOrFail($id);
-        
-        // Validate the request
         $validated = $request->validate([
             'product_name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
-            'description' => 'required|string',
+            'category' => 'required|string|max:100',
             'stock_quantity' => 'required|integer|min:0',
-            'category' => 'required|string',
+            'description' => 'nullable|string',
             'product_image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'active' => 'sometimes|boolean',
         ]);
         
-        // Handle the image upload
+        // Handle image upload if provided
         if ($request->hasFile('product_image')) {
-            // Delete the old image if it exists
+            // Delete old image if exists
             if ($product->product_image) {
-                Storage::delete('public/' . $product->product_image);
+                Storage::disk('public')->delete($product->product_image);
             }
             
-            $image = $request->file('product_image');
-            $imageName = time() . '_' . $image->getClientOriginalName();
-            $image->storeAs('public/products', $imageName);
-            $validated['product_image'] = 'products/' . $imageName;
-        } else if ($request->has('remove_image')) {
-            // If user wants to remove the image
-            if ($product->product_image) {
-                Storage::delete('public/' . $product->product_image);
-            }
-            $validated['product_image'] = null;
-        } else {
-            // Keep the existing image
-            unset($validated['product_image']);
+            // Store new image with unique filename to prevent caching issues
+            $file = $request->file('product_image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $validated['product_image'] = $file->storeAs('products', $filename, 'public');
         }
+        
+        // Set active status based on hidden input from JS toggle
+        $validated['active'] = $request->input('active', false);
         
         // Update the product
         $product->update($validated);

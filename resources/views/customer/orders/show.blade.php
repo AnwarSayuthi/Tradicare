@@ -64,9 +64,13 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="order-item-img me-3">
-                                                <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
-                                            </div>
+                                            @if($item->product && $item->product->product_image)
+                                                <img src="{{ $item->product->getImageUrl() }}" alt="{{ $item->product->product_name }}" class="img-thumbnail me-3" width="60">
+                                            @else
+                                                <div class="placeholder-image me-3">
+                                                    <i class="bi bi-image"></i>
+                                                </div>
+                                            @endif
                                             <div>
                                                 <h6 class="mb-0">{{ $item->product->product_name }}</h6>
                                                 <small class="text-muted">{{ ucfirst($item->product->category) }}</small>

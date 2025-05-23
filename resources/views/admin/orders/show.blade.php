@@ -94,11 +94,10 @@
                                                 <td>
                                                     <div class="product-img-small bg-light rounded">
                                                         @if($item->product && $item->product->product_image)
-                                                            <img src="{{ asset('storage/' . $item->product->product_image) }}" 
-                                                                alt="{{ $item->product_name }}" class="img-fluid rounded">
+                                                            <img src="{{ $item->product->getImageUrl() }}" alt="{{ $item->product->product_name }}" class="img-thumbnail me-3" width="60">
                                                         @else
-                                                            <div class="text-center p-2">
-                                                                <i class="bi bi-image text-muted"></i>
+                                                            <div class="placeholder-image me-3">
+                                                                <i class="bi bi-image"></i>
                                                             </div>
                                                         @endif
                                                     </div>

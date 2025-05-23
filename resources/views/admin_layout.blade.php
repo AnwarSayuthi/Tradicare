@@ -467,19 +467,11 @@ body {
                     </a>
                 </li>
                 <li class="sidebar-item">
-                    <a href="{{ route('admin.customers.index') }}" class="sidebar-link {{ request()->routeIs('admin.customers.*') ? 'active' : '' }}">
-                        <i class="bi bi-people sidebar-icon"></i>
-                        <span class="sidebar-text">Customers</span>
-                    </a>
-                </li>
-                <li class="sidebar-item">
-                    
                     <a href="{{ route('admin.products.index') }}" class="sidebar-link {{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                         <i class="bi bi-box-seam sidebar-icon"></i>
                         <span class="sidebar-text">Products</span>
                     </a>
                 </li>
-                <!-- Update the appointments link in the sidebar menu -->
                 <li class="sidebar-item">
                     <a href="{{ route('admin.appointments.index') }}" class="sidebar-link {{ request()->routeIs('admin.appointments*') ? 'active' : '' }}">
                         <i class="bi bi-calendar-check sidebar-icon"></i>
@@ -584,4 +576,3 @@ body {
     @yield('scripts')
 </body>
 </html>
-

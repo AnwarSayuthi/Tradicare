@@ -6,49 +6,6 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <!-- Product Statistics -->
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-container me-3">
-                        <i class="bi bi-box-seam fs-1 text-primary"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-1">All Products</h6>
-                        <h2 class="mb-0 fw-bold">{{ $totalProducts }}</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-container me-3">
-                        <i class="bi bi-check-circle fs-1 text-success"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-1">Active Products</h6>
-                        <h2 class="mb-0 fw-bold">{{ $activeProducts }}</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm rounded-3">
-                <div class="card-body d-flex align-items-center p-4">
-                    <div class="icon-container me-3">
-                        <i class="bi bi-x-circle fs-1 text-danger"></i>
-                    </div>
-                    <div>
-                        <h6 class="text-muted mb-1">Inactive Products</h6>
-                        <h2 class="mb-0 fw-bold">{{ $inactiveProducts }}</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow-sm border-0 rounded-3 overflow-hidden">
@@ -71,7 +28,7 @@
                     <div class="row g-0">
                         <div class="col-md-4 bg-light d-flex align-items-center justify-content-center p-4" style="min-height: 300px;">
                             @if($product->product_image)
-                                <img src="{{ asset('storage/' . $product->product_image) }}" alt="{{ $product->product_name }}" class="img-fluid rounded-3 product-image" style="max-height: 300px; object-fit: contain;">
+                                <img src="{{ $product->getImageUrl() }}" alt="{{ $product->product_name }}" class="img-fluid rounded-3 product-image" style="max-height: 300px; object-fit: contain;">
                             @else
                                 <div class="text-center text-muted">
                                     <i class="bi bi-image fs-1"></i>
@@ -93,54 +50,40 @@
                                 
                                 <div class="row mb-4">
                                     <div class="col-md-6 mb-3 mb-md-0">
-                                        <div class="info-card p-3 rounded-3 h-100">
-                                            <h6 class="text-muted mb-1">Regular Price</h6>
-                                            <h5 class="mb-0">RM{{ number_format($product->price, 2) }}</h5>
+                                        <div class="info-card p-3 rounded-3 h-100 bg-light">
+                                            <h6 class="text-muted mb-1">Price</h6>
+                                            <h5 class="mb-0 fw-bold text-primary">RM{{ number_format($product->price, 2) }}</h5>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="info-card p-3 rounded-3 h-100">
-                                            <h6 class="text-muted mb-1">Sale Price</h6>
-                                            <h5 class="fw-bold">
-                                                @if($product->sale_price)
-                                                    <span class="text-success">RM{{ number_format($product->sale_price, 2) }}</span>
-                                                @else
-                                                    <span class="text-muted">Not set</span>
-                                                @endif
-                                            </h5>
+                                        <div class="info-card p-3 rounded-3 h-100 bg-light">
+                                            <h6 class="text-muted mb-1">Category</h6>
+                                            <h5 class="fw-bold">{{ ucfirst($product->category) }}</h5>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div class="row mb-4">
-                                    <div class="col-md-6 mb-3 mb-md-0">
-                                        <div class="info-card p-3 rounded-3 h-100">
-                                            <h6 class="text-muted mb-1">Category</h6>
-                                            <h5 class="fw-bold">{{ $product->category }}</h5>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="info-card p-3 rounded-3 h-100">
-                                            <h6 class="text-muted mb-1">Stock Quantity</h6>
-                                            <h5 class="fw-bold">
-                                                @if($product->stock_quantity > 10)
-                                                    <span class="text-success">
-                                                        <i class="bi bi-check-circle-fill me-1"></i>
-                                                        {{ $product->stock_quantity }} in stock
-                                                    </span>
-                                                @elseif($product->stock_quantity > 0)
-                                                    <span class="text-warning">
-                                                        <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                                                        {{ $product->stock_quantity }} in stock
-                                                    </span>
-                                                @else
-                                                    <span class="text-danger">
-                                                        <i class="bi bi-x-circle-fill me-1"></i>
-                                                        Out of stock
-                                                    </span>
-                                                @endif
-                                            </h5>
-                                        </div>
+                                <div class="mb-4">
+                                    <div class="info-card p-3 rounded-3 h-100 bg-light">
+                                        <h6 class="text-muted mb-1">Stock Quantity</h6>
+                                        <h5 class="fw-bold">
+                                            @if($product->stock_quantity > 10)
+                                                <span class="text-success">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>
+                                                    {{ $product->stock_quantity }} in stock
+                                                </span>
+                                            @elseif($product->stock_quantity > 0)
+                                                <span class="text-warning">
+                                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                                    {{ $product->stock_quantity }} in stock
+                                                </span>
+                                            @else
+                                                <span class="text-danger">
+                                                    <i class="bi bi-x-circle-fill me-1"></i>
+                                                    Out of stock
+                                                </span>
+                                            @endif
+                                        </h5>
                                     </div>
                                 </div>
                                 
