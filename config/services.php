@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'toyyibpay' => [
+        'secret_key' => env('TOYYIBPAY_SECRET_KEY'),
+        'category_code' => env('TOYYIBPAY_CATEGORY_CODE'),
+        'redirect_url' => env('APP_URL') . '/customer/payment/callback',
+        'callback_url' => env('APP_URL') . '/customer/payment/callback',
+        'sandbox' => env('TOYYIBPAY_SANDBOX', true),
+    ],
+
 ];

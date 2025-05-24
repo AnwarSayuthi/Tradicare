@@ -33,7 +33,7 @@
                     
                     <div class="order-summary">
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Subtotal</span>
+                            <span>Subtotal (Products)</span>
                             <span class="text-end">RM{{ number_format($subtotal, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
@@ -41,13 +41,13 @@
                             <span class="text-end">RM{{ number_format($shippingCost, 2) }}</span>
                         </div>
                         <div class="d-flex justify-content-between mb-2">
-                            <span>Tax</span>
-                            <span>RM0.00</span>
+                            <span>Service Tax</span>
+                            <span class="text-end">RM1.00</span>
                         </div>
                         <hr>
                         <div class="d-flex justify-content-between fw-bold">
-                            <span>Total</span>
-                            <span class="text-end fw-bold">RM{{ number_format($total, 2) }}</span>
+                            <span>Total Payment</span>
+                            <span class="text-end fw-bold">RM{{ number_format($subtotal + $shippingCost + 1, 2) }}</span>
                         </div>
                     </div>
                     
@@ -152,7 +152,68 @@
 
 <!-- Address Selection Modal remains unchanged -->
 <div class="modal fade" id="addressSelectionModal" tabindex="-1" aria-labelledby="addressSelectionModalLabel" aria-hidden="true">
-    <!-- Modal content remains the same -->
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addressSelectionModalLabel">Select Shipping Address</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if(isset($addresses) && count($addresses) > 0)
+                    <form id="address-select-form">
+                        @foreach($addresses as $address)
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="address_id" id="address_{{ $address->location_id }}" value="{{ $address->location_id }}" @if(isset($selectedAddress) && $selectedAddress->location_id == $address->location_id) checked @endif>
+                            <label class="form-check-label" for="address_{{ $address->location_id }}">
+                                <strong>{{ $address->location_name }}</strong><br>
+                                {{ $address->address_line1 }}<br>
+                                @if($address->address_line2){{ $address->address_line2 }}<br>@endif
+                                {{ $address->city }}, {{ $address->state }} {{ $address->postal_code }}<br>
+                                @if($address->phone_number){{ $address->phone_number }}@endif
+                                @if($address->is_default)
+                                    <span class="badge bg-danger ms-2">Default</span>
+                                @endif
+                            </label>
+                        </div>
+                        @endforeach
+                    </form>
+                @else
+                    <div class="mb-3">
+                        <label for="new_address_name" class="form-label">Location Name</label>
+                        <input type="text" class="form-control" id="new_address_name" name="new_address_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_address_line1" class="form-label">Address Line 1</label>
+                        <input type="text" class="form-control" id="new_address_line1" name="new_address_line1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_address_line2" class="form-label">Address Line 2</label>
+                        <input type="text" class="form-control" id="new_address_line2" name="new_address_line2">
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_city" class="form-label">City</label>
+                        <input type="text" class="form-control" id="new_city" name="new_city" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_state" class="form-label">State</label>
+                        <input type="text" class="form-control" id="new_state" name="new_state" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_postal_code" class="form-label">Postal Code</label>
+                        <input type="text" class="form-control" id="new_postal_code" name="new_postal_code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_phone_number" class="form-label">Phone Number</label>
+                        <input type="text" class="form-control" id="new_phone_number" name="new_phone_number">
+                    </div>
+                @endif
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="select-address-btn">Select</button>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 

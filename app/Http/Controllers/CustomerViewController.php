@@ -184,14 +184,6 @@ class CustomerViewController extends Controller
         return view('customer.cart.index', compact('cart', 'totalPrice'));
     }
 
-    // Remove the addToCart method as it's now handled by the Process\CartController
-    // public function addToCart(Request $request, $productId) { ... }
-
-    // Remove the removeFromCart method as it's now handled by the Process\CartController
-    // public function removeFromCart($itemId) { ... }
-
-    // Add this to the checkout method in CustomerViewController.php
-    // Update the checkout method to include address selection
     public function checkout()
     {
         // Get the active cart for the current user
@@ -228,89 +220,110 @@ class CustomerViewController extends Controller
 
     // Update the placeOrder method to handle the location_id
     public function placeOrder(Request $request)
-    {
-        // Validate the request
-        $request->validate([
-            'shipping_address' => 'required',
-            'payment_method' => 'required|in:credit_card,paypal,cash_on_delivery',
-        ]);
-        
-        // Get the active cart
-        $cart = Cart::where('user_id', auth()->id())
-                    ->where('status', 'active')
-                    ->first();
-        
-        if (!$cart || $cart->cartItems->isEmpty()) {
-            return redirect()->route('customer.cart')->with('error', 'Your cart is empty.');
-        }
-        
-        // Get the selected location
-        $location = auth()->user()->locations()->where('location_id', $request->shipping_address)->first();
-        
-        if (!$location) {
-            return redirect()->route('customer.checkout')->with('error', 'Please select a valid shipping address.');
-        }
-        
-        // Format the shipping address
-        $shippingAddress = $location->address_line1;
-        if ($location->address_line2) {
-            $shippingAddress .= ', ' . $location->address_line2;
-        }
-        $shippingAddress .= ', ' . $location->city . ', ' . $location->state . ' ' . $location->postal_code;
-        
-        // Calculate total amount
-        $totalAmount = 0;
-        foreach ($cart->cartItems as $item) {
-            $totalAmount += $item->unit_price * $item->quantity;
-        }
-        
-        // Add shipping cost
-        $totalAmount += 5; // $5 shipping
-        
-        // Create order
-        $order = Order::create([
-            'user_id' => auth()->id(),
-            'cart_id' => $cart->cart_id,
-            'order_date' => now(),
-            'total_amount' => $totalAmount,
-            'payment_status' => 'pending',
-            'shipping_address' => $shippingAddress,
-            'status' => 'processing'
-        ]);
-        
-        // Create order items
-        foreach ($cart->cartItems as $cartItem) {
-            OrderItem::create([
-                'order_id' => $order->order_id,
-                'product_id' => $cartItem->product_id,
-                'quantity' => $cartItem->quantity,
-                'unit_price' => $cartItem->unit_price,
-                'subtotal' => $cartItem->unit_price * $cartItem->quantity
-            ]);
-            
-            // Update product stock
-            $product = Product::find($cartItem->product_id);
-            $product->stock_quantity -= $cartItem->quantity;
-            $product->save();
-        }
-        
-        // Create payment record
-        Payment::create([
-            'user_id' => auth()->id(),
+{
+    // Validate the request
+    $request->validate([
+        'shipping_address' => 'required',
+        'payment_method' => 'required|in:toyyibpay,cash_on_delivery',
+    ]);
+    
+    // Get the active cart
+    $cart = Cart::where('user_id', auth()->id())
+                ->where('status', 'active')
+                ->with('cartItems.product')
+                ->first();
+    
+    if (!$cart || $cart->cartItems->isEmpty()) {
+        return redirect()->route('customer.cart')->with('error', 'Your cart is empty.');
+    }
+    
+    // Get the selected location
+    $location = auth()->user()->locations()->where('location_id', $request->shipping_address)->first();
+    
+    if (!$location) {
+        return redirect()->route('customer.checkout')->with('error', 'Please select a valid shipping address.');
+    }
+    
+    // Use the location's full address attribute
+    $shippingAddress = $location->full_address;
+    
+    // Calculate total amount
+    $totalAmount = 0;
+    foreach ($cart->cartItems as $item) {
+        $totalAmount += $item->unit_price * $item->quantity;
+    }
+    
+    // Add shipping cost
+    $totalAmount += 5; // $5 shipping
+    
+    // Create order
+    $order = Order::create([
+        'user_id' => auth()->id(),
+        'cart_id' => $cart->cart_id,
+        'order_date' => now(),
+        'total_amount' => $totalAmount,
+        'payment_status' => 'pending',
+        'shipping_address' => $shippingAddress,
+        'status' => 'processing'
+    ]);
+    
+    // Create order items
+    foreach ($cart->cartItems as $cartItem) {
+        OrderItem::create([
             'order_id' => $order->order_id,
-            'amount' => $totalAmount,
-            'payment_date' => now(),
-            'payment_method' => $request->payment_method,
-            'status' => $request->payment_method === 'cash_on_delivery' ? 'pending' : 'paid',
-            'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+            'product_id' => $cartItem->product_id,
+            'quantity' => $cartItem->quantity,
+            'unit_price' => $cartItem->unit_price,
+            'subtotal' => $cartItem->unit_price * $cartItem->quantity
         ]);
         
+        // Update product stock
+        $product = Product::find($cartItem->product_id);
+        $product->stock_quantity -= $cartItem->quantity;
+        $product->save();
+    }
+    
+    // Create payment record
+    $payment = Payment::create([
+        'user_id' => auth()->id(),
+        'order_id' => $order->order_id,
+        'amount' => $totalAmount,
+        'payment_date' => now(),
+        'payment_method' => $request->payment_method,
+        'status' => 'pending',
+        'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+    ]);
+    
+    // Handle payment based on method
+    if ($request->payment_method === 'toyyibpay') {
+        // Initiate ToyyibPay payment
+        $toyyibpay = new ToyyibPayService();
+        $billResponse = $toyyibpay->createBill($payment);
+
+        if (isset($billResponse[0]['BillCode'])) {
+            // Update payment with transaction ID
+            $payment->update(['transaction_id' => $billResponse[0]['BillCode']]);
+            
+            // Mark cart as completed
+            $cart->status = 'completed';
+            $cart->save();
+            
+            return redirect('https://dev.toyyibpay.com/'.$billResponse[0]['BillCode']);
+        }
+
+        // If payment failed, delete the order and payment
+        $payment->delete();
+        $order->delete();
+        return back()->with('error', 'Payment initialization failed. Please try again.');
+    } else {
+        // For cash on delivery
         // Mark cart as completed
         $cart->status = 'completed';
         $cart->save();
         
-        return redirect()->route('customer.orders')->with('success', 'Order placed successfully!');
+        return redirect()->route('customer.orders')->with('success', 'Order placed successfully! You will pay upon delivery.');
     }
+}
 
     public function orders()
     {
@@ -597,33 +610,47 @@ class CustomerViewController extends Controller
     }
 
     // Add a method to process appointment payment
-    public function processPayment(Request $request, $appointmentId)
+    public function processPayment(Request $request, $id)
     {
-        $appointment = Appointment::with('service')->findOrFail($appointmentId);
+        $order = Order::findOrFail($id);
+        $toyyibPay = new ToyyibPayService();
         
-        // Check if this appointment belongs to the logged-in user
-        if ($appointment->user_id !== auth()->id()) {
-            return redirect()->route('customer.appointments')
-                ->with('error', 'Unauthorized access to appointment.');
+        $response = $toyyibPay->createBill(
+            $order->order_id,
+            $order->total_amount,
+            auth()->user()
+        );
+    
+        if ($response[0]['BillCode']) {
+            Payment::updateOrCreate(
+                ['order_id' => $order->order_id],
+                [
+                    'transaction_id' => $response[0]['BillCode'],
+                    'status' => 'pending'
+                ]
+            );
+    
+            return redirect('https://dev.toyyibpay.com/'.$response[0]['BillCode']);
         }
+    
+        return back()->with('error', 'Payment initialization failed');
+    }
+    
+    public function paymentCallback(Request $request)
+    {
+        $billCode = $request->billcode;
+        $status = $request->status_id;
+    
+        $payment = Payment::where('transaction_id', $billCode)->firstOrFail();
         
-        $validated = $request->validate([
-            'payment_method' => 'required|in:credit_card,paypal,cash',
-        ]);
-        
-        // Create a payment record
-        $payment = Payment::create([
-            'user_id' => auth()->id(),
-            'appointment_id' => $appointmentId,
-            'amount' => $appointment->service->price,
-            'payment_date' => now(),
-            'payment_method' => $validated['payment_method'],
-            'status' => 'completed',
-            'transaction_id' => 'TRX-' . time() . '-' . auth()->id(),
-        ]);
-        
-        return redirect()->route('customer.appointments')
-            ->with('success', 'Payment completed successfully. Your appointment is confirmed.');
+        if ($status == 1) {
+            $payment->update(['status' => 'completed']);
+            $payment->order->update(['status' => 'paid']);
+            return redirect()->route('customer.orders')->with('success', 'Payment successful!');
+        }
+    
+        $payment->update(['status' => 'failed']);
+        return redirect()->route('customer.orders')->with('error', 'Payment failed');
     }
 
     /**
