@@ -315,7 +315,7 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">My Appointments</h5>
-                            <a href="{{ route('customer.appointment.create') }}" class="btn btn-sm btn-primary-custom">
+                            <a href="{{ route('customer.appointments.create') }}" class="btn btn-sm btn-primary-custom">
                                 <i class="bi bi-plus-circle me-2"></i> Book New Appointment
                             </a>
                         </div>
@@ -325,7 +325,7 @@
                                     <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="mt-3">No appointments found</h5>
                                     <p class="text-muted mb-4">You haven't booked any appointments yet.</p>
-                                    <a href="{{ route('customer.appointment.create') }}" class="btn btn-primary-custom">
+                                    <a href="{{ route('customer.appointments.create') }}" class="btn btn-primary-custom">
                                         <i class="bi bi-calendar-plus me-2"></i> Book an Appointment
                                     </a>
                                 </div>
