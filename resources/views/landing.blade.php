@@ -312,7 +312,7 @@
                         "The massage therapy at Tradicare was absolutely amazing. The ambiance, the service, and the attention to detail made it a truly luxurious experience. I left feeling completely rejuvenated!"
                     </p>
                     <div class="text-center">
-                        <h5 class="mb-1">Sarah Johnson</h5>
+                        <h5 class="mb-1">Ahmad Furqan</h5>
                         <p class="text-muted">Regular Client</p>
                     </div>
                 </div>
