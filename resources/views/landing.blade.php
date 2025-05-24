@@ -277,6 +277,7 @@
                         <p class="fw-bold mb-3" style="color: var(--primary);">RM{{ $product->price }}</p>
                         <form action="{{ route('customer.cart.add', $product->product_id) }}" method="POST">
                             @csrf
+                            <input type="hidden" name="quantity" value="1">
                             <x-ui.button type="submit" class="w-100">
                                 <i class="bi bi-cart-plus me-2"></i> Add to Cart
                             </x-ui.button>
