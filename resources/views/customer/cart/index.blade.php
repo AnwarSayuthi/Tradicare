@@ -35,6 +35,7 @@
             <div class="col-12">
                 <div class="card shadow-sm border-0 rounded-lg mb-4">
                     <div class="card-body p-0">
+                        <!-- Desktop view for cart items -->
                         <div class="table-responsive d-none d-md-block">
                             <table class="table align-middle mb-0">
                                 <thead class="bg-light">
@@ -180,8 +181,6 @@
                         </div>
                     </div>
                 </div>
-                
-                <!-- Clear Cart Button - Removed from here and moved to card footer -->
             </div>
         </div>
     @else
@@ -197,7 +196,6 @@
         </div>
     @endif
 </div>
-@endsection
 
 <!-- Checkout Modal -->
 <div class="modal fade" id="checkoutModal" tabindex="-1" aria-labelledby="checkoutModalLabel" aria-hidden="true">
@@ -230,11 +228,11 @@
                                 @endforeach
                             </div>
                             
-                            <!-- Updated Order Summary with Subtotal, Shipping, Service Tax and Total -->
+                            <!-- Order Summary section -->
                             <div class="order-summary">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="small">Subtotal (Products)</span>
-                                    <span class="text-end small">RM{{ number_format($total, 2) }}</span>
+                                    <span class="text-end small">RM{{ number_format($totalPrice, 2) }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="small">Shipping</span>
@@ -247,7 +245,7 @@
                                 <hr class="my-2">
                                 <div class="d-flex justify-content-between fw-bold">
                                     <span>Total Payment</span>
-                                    <span class="text-end fw-bold">RM{{ number_format($total + (isset($shippingCost) ? $shippingCost : 5) + 1, 2) }}</span>
+                                    <span class="text-end fw-bold">RM{{ number_format($totalPrice + (isset($shippingCost) ? $shippingCost : 5) + 1, 2) }}</span>
                                 </div>
                             </div>
                         </div>
@@ -255,10 +253,10 @@
                     
                     <!-- Shipping Address -->
                     <div class="col-md-7">
+                        <!-- Inside your checkout form, add a hidden input for cart_id -->
                         <form action="{{ route('customer.place.order') }}" method="POST" id="checkout-form">
                             @csrf
                             <h6 class="fw-bold mb-3">Shipping Address</h6>
-                            
                             <div class="shipping-address-container mb-4 p-3 border rounded bg-light">
                                 <div id="address-selection-area">
                                     @if(auth()->user()->locations()->exists())
@@ -285,7 +283,7 @@
                                                 @if($defaultAddress->phone_number)
                                                     <p class="mb-0 small">{{ $defaultAddress->phone_number }}</p>
                                                 @endif
-                                                <input type="hidden" name="shipping_address" value="{{ $defaultAddress->location_id }}">
+                                                <input type="hidden" name="location_id" value="{{ $defaultAddress->location_id }}">
                                             </div>
                                             <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addressSelectionModal">
                                                 Change
@@ -303,6 +301,30 @@
                                 </div>
                             </div>
                             
+                            <!-- Add this hidden input for cart_id -->
+                            <input type="hidden" name="cart_id" value="{{ $cart->cart_id }}">
+                            
+                            <div class="mb-4">
+                                <h6 class="fw-bold mb-3">Payment Method</h6>
+                                <div class="payment-methods">
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="payment_toyyibpay" value="toyyibpay" checked>
+                                        <label class="form-check-label d-flex align-items-center" for="payment_toyyibpay">
+                                            <i class="bi bi-credit-card payment-icon me-2"></i>
+                                            Online Payment (Credit/Debit Card)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="payment_method" id="payment_cod" value="cash_on_delivery">
+                                        <label class="form-check-label d-flex align-items-center" for="payment_cod">
+                                            <i class="bi bi-cash-coin payment-icon me-2"></i>
+                                            Cash on Delivery
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Keep the existing Place Order button -->
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary-custom py-2 pulse-animation" id="place-order-btn">
                                     <i class="bi bi-check-circle me-2"></i> Place Order
@@ -317,450 +339,404 @@
 </div>
 
 <!-- Address Selection Modal -->
-<div class="modal fade" id="addressSelectionModal" tabindex="-1" aria-labelledby="addressSelectionModalLabel" aria-hidden="true">
+<div class="modal fade" id="addressSelectionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addressSelectionModalLabel">Select Shipping Address</h5>
+                <h5 class="modal-title">Select Address</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                @if(auth()->user()->locations()->exists())
-                    <form id="address-select-form">
-                        @foreach(auth()->user()->locations as $address)
-                        <div class="form-check mb-3">
-                            <input class="form-check-input" type="radio" name="address_id" id="address_{{ $address->location_id }}" value="{{ $address->location_id }}" 
-                                @if(isset($defaultAddress) && $defaultAddress->location_id == $address->location_id) checked @endif>
-                            <label class="form-check-label" for="address_{{ $address->location_id }}">
-                                <strong>{{ $address->location_name }}</strong><br>
-                                {{ $address->address_line1 }}<br>
-                                @if($address->address_line2){{ $address->address_line2 }}<br>@endif
-                                {{ $address->city }}, {{ $address->state }} {{ $address->postal_code }}<br>
-                                @if($address->phone_number){{ $address->phone_number }}@endif
-                                @if($address->is_default)
-                                    <span class="badge bg-danger ms-2">Default</span>
-                                @endif
-                            </label>
-                        </div>
-                        @endforeach
-                    </form>
-                @else
-                    <div class="mb-3">
-                        <label for="new_address_name" class="form-label">Location Name</label>
-                        <input type="text" class="form-control" id="new_address_name" name="new_address_name" required>
+                @foreach(auth()->user()->locations as $location)
+                <div class="address-option mb-3 p-3 border rounded">
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="selected_address" 
+                               id="address-{{ $location->location_id }}" 
+                               value="{{ $location->location_id }}">
+                        <label class="form-check-label" for="address-{{ $location->location_id }}">
+                            <strong>{{ $location->location_name }}</strong>
+                            <p class="mb-1 small">{{ $location->address_line1 }}</p>
+                            @if($location->address_line2)
+                                <p class="mb-1 small">{{ $location->address_line2 }}</p>
+                            @endif
+                            <p class="mb-1 small">{{ $location->city }}, {{ $location->state }} {{ $location->postal_code }}</p>
+                        </label>
                     </div>
-                    <div class="mb-3">
-                        <label for="new_address_line1" class="form-label">Address Line 1</label>
-                        <input type="text" class="form-control" id="new_address_line1" name="new_address_line1" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_address_line2" class="form-label">Address Line 2</label>
-                        <input type="text" class="form-control" id="new_address_line2" name="new_address_line2">
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_city" class="form-label">City</label>
-                        <input type="text" class="form-control" id="new_city" name="new_city" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_state" class="form-label">State</label>
-                        <input type="text" class="form-control" id="new_state" name="new_state" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_postal_code" class="form-label">Postal Code</label>
-                        <input type="text" class="form-control" id="new_postal_code" name="new_postal_code" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="new_phone_number" class="form-label">Phone Number</label>
-                        <input type="text" class="form-control" id="new_phone_number" name="new_phone_number">
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="new_is_default" name="new_is_default">
-                        <label class="form-check-label" for="new_is_default">Set as default address</label>
-                    </div>
-                @endif
+                </div>
+                @endforeach
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" id="select-address-btn">Select</button>
+                <button type="button" class="btn btn-primary" id="selectAddressBtn">Select</button>
             </div>
         </div>
     </div>
 </div>
-
-@section('scripts')
-<script>
-// Address selection handling for modal 
-document.addEventListener('DOMContentLoaded', function() { 
-    const selectAddressBtn = document.getElementById('select-address-btn'); 
-    
-    if (selectAddressBtn) { 
-        selectAddressBtn.addEventListener('click', function() { 
-            // For existing addresses 
-            const selectedAddressRadio = document.querySelector('input[name="address_id"]:checked'); 
-            
-            if (selectedAddressRadio) { 
-                const locationId = selectedAddressRadio.value; 
-                const addressLabel = document.querySelector(`label[for="address_${locationId}"]`).innerHTML; 
-                
-                // Update the hidden input in the main form 
-                document.querySelector('input[name="shipping_address"]').value = locationId; 
-                
-                // Update the displayed address 
-                const addressSelectionArea = document.getElementById('address-selection-area'); 
-                
-                // Extract address details from the label 
-                const addressName = addressLabel.match(/<strong>(.*?)<\/strong>/)[1]; 
-                const addressLines = addressLabel.split('<br>'); 
-                
-                // Create HTML for the selected address 
-                let addressHTML = ` 
-                <div class="d-flex justify-content-between align-items-start"> 
-                    <div> 
-                        <div class="d-flex align-items-center mb-1"> 
-                            <i class="bi bi-geo-alt-fill text-danger me-2"></i> 
-                            <strong>${addressName}</strong> 
-                            ${addressLabel.includes('Default') ? '<span class="badge bg-danger ms-2">Default</span>' : ''} 
-                        </div>`; 
-                
-                // Add address lines 
-                for (let i = 1; i < addressLines.length - 1; i++) { 
-                    addressHTML += `<p class="mb-1 small">${addressLines[i].trim()}</p>`; 
-                } 
-                
-                addressHTML += ` 
-                        <input type="hidden" name="shipping_address" value="${locationId}"> 
-                    </div> 
-                    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addressSelectionModal"> 
-                        Change 
-                    </button> 
-                </div>`; 
-                
-                addressSelectionArea.innerHTML = addressHTML; 
-                
-                // Close the modal 
-                const modal = bootstrap.Modal.getInstance(document.getElementById('addressSelectionModal')); 
-                modal.hide(); 
-            } 
-            // For new address 
-            else if (document.getElementById('new_address_name')) { 
-                // Get form data for new address 
-                const formData = new FormData(); 
-                formData.append('location_name', document.getElementById('new_address_name').value); 
-                formData.append('address_line1', document.getElementById('new_address_line1').value); 
-                formData.append('address_line2', document.getElementById('new_address_line2').value || ''); 
-                formData.append('city', document.getElementById('new_city').value); 
-                formData.append('state', document.getElementById('new_state').value); 
-                formData.append('postal_code', document.getElementById('new_postal_code').value); 
-                formData.append('phone_number', document.getElementById('new_phone_number').value || ''); 
-                formData.append('is_default', document.getElementById('new_is_default').checked ? 1 : 0); 
-                formData.append('_token', '{{ csrf_token() }}'); 
-                
-                // Send AJAX request to save address 
-                fetch('{{ route("customer.location.add") }}', { 
-                    method: 'POST', 
-                    body: formData, 
-                    headers: { 
-                        'X-Requested-With': 'XMLHttpRequest' 
-                    } 
-                }) 
-                .then(response => response.json()) 
-                .then(data => { 
-                    if (data.success) { 
-                        // Reload the page to show the new address 
-                        window.location.reload(); 
-                    } else { 
-                        alert('There was an error saving your address. Please try again.'); 
-                    } 
-                }) 
-                .catch(error => { 
-                    console.error('Error:', error); 
-                    alert('There was an error saving your address. Please try again.'); 
-                }); 
-            } else { 
-                alert('Please select an address or add a new one.'); 
-            } 
-        }); 
-    } 
-});
-</script>
 @endsection
 
-@section('css')
-<style>
-    /* Cart Styling */
-    .cart-title {
-        font-weight: 600;
-        color: var(--primary);
-    }
+@section('scripts')
+<!-- SweetAlert2 library is already included -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Address selection handling for modal
+    initAddressSelection();
     
-    /* Table column widths */
-    .product-col {
-        width: 50%;
-    }
+    // Form submission handling
+    initCheckoutForm();
     
-    .price-col, .quantity-col, .subtotal-col {
-        width: 16.66%;
-    }
+    // Handle return from payment gateway
+    handlePaymentReturn();
+});
+
+// Function to handle address selection
+function initAddressSelection() {
+    console.log('initAddressSelection function called');
+    const selectAddressBtn = document.getElementById('selectAddressBtn');
+    console.log('selectAddressBtn element:', selectAddressBtn);
     
-    /* Center align table headers */
-    .table th {
-        font-weight: 600;
-        padding: 1rem;
+    if (selectAddressBtn) {
+        selectAddressBtn.addEventListener('click', function() {
+            console.log('selectAddressBtn clicked');
+            // For existing addresses
+            const selectedAddressRadio = document.querySelector('input[name="selected_address"]:checked');
+            console.log('Selected address radio:', selectedAddressRadio);
+            
+            if (selectedAddressRadio) {
+                const locationId = selectedAddressRadio.value;
+                console.log('Selected location ID:', locationId);
+                const addressLabel = document.querySelector(`label[for="address-${locationId}"]`).innerHTML;
+                console.log('Address label HTML:', addressLabel);
+                
+                // Update the hidden input in the main form
+                const locationIdInput = document.querySelector('input[name="location_id"]');
+                console.log('Location ID input element:', locationIdInput);
+                
+                if (locationIdInput) {
+                    locationIdInput.value = locationId;
+                    console.log('Updated location_id input value to:', locationId);
+                } else {
+                    console.error('Could not find location_id input element');
+                }
+                
+                // Update the displayed address
+                const addressSelectionArea = document.getElementById('address-selection-area');
+                console.log('Address selection area element:', addressSelectionArea);
+                
+                if (addressSelectionArea) {
+                    // Extract address details from the label
+                    const addressName = addressLabel.match(/<strong>(.*?)<\/strong>/)[1];
+                    console.log('Extracted address name:', addressName);
+                    const addressLines = addressLabel.split('<p class="mb-1 small">');
+                    console.log('Address lines array:', addressLines);
+                    
+                    // Create HTML for the selected address
+                    let addressHTML = `
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="d-flex align-items-center mb-1">
+                                <i class="bi bi-geo-alt-fill text-danger me-2"></i>
+                                <strong>${addressName}</strong>
+                            </div>`;
+                    
+                    // Add address lines (skip the first element which is before the first <p>)
+                    for (let i = 1; i < addressLines.length; i++) {
+                        const line = addressLines[i].split('</p>')[0];
+                        addressHTML += `<p class="mb-1 small">${line}</p>`;
+                    }
+                    
+                    addressHTML += `
+                            <input type="hidden" name="location_id" value="${locationId}">
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addressSelectionModal">
+                            Change
+                        </button>
+                    </div>`;
+                    
+                    console.log('New address HTML to be inserted:', addressHTML);
+                    addressSelectionArea.innerHTML = addressHTML;
+                    console.log('Address selection area updated with new HTML');
+                } else {
+                    console.error('Could not find address-selection-area element');
+                }
+                
+                // Close the modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addressSelectionModal'));
+                console.log('Modal instance:', modal);
+                modal.hide();
+                console.log('Modal hidden');
+            } else {
+                console.warn('No address selected');
+                alert('Please select an address');
+            }
+        });
+        console.log('Event listener added to selectAddressBtn');
+    } else {
+        console.error('selectAddressBtn element not found');
     }
+}
+
+// Also add console logs to the second implementation at the end of the file
+// Replace or modify the existing code around line 659
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded event fired for second implementation');
+    const selectBtn = document.getElementById('selectAddressBtn');
+    console.log('Second implementation - selectBtn element:', selectBtn);
     
-    /* Center align table cells */
-    .table td {
-        padding: 1.25rem 1rem;
-        vertical-align: middle;
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function() {
+            console.log('Second implementation - selectBtn clicked');
+            const selectedAddress = document.querySelector('input[name="selected_address"]:checked');
+            console.log('Second implementation - selected address:', selectedAddress);
+            
+            if (selectedAddress) {
+                const locationId = selectedAddress.value;
+                console.log('Second implementation - location ID:', locationId);
+                const locationIdInput = document.querySelector('input[name="location_id"]');
+                console.log('Second implementation - location ID input:', locationIdInput);
+                
+                if (locationIdInput) {
+                    locationIdInput.value = locationId;
+                    console.log('Second implementation - updated location_id to:', locationId);
+                } else {
+                    console.error('Second implementation - could not find location_id input');
+                }
+                
+                $('#addressSelectionModal').modal('hide');
+                console.log('Second implementation - modal hidden');
+            } else {
+                console.warn('Second implementation - no address selected');
+                alert('Please select an address');
+            }
+        });
+        console.log('Second implementation - event listener added');
+    } else {
+        console.error('Second implementation - selectBtn not found');
     }
+});
+
+// Add console logs to validateShippingAddress function
+function validateShippingAddress() {
+    console.log('validateShippingAddress function called');
+    const locationIdInput = document.querySelector('input[name="selected_address"]');
+    console.log('Location ID input in validation:', locationIdInput);
     
-    /* Cart actions styling */
-    .cart-actions {
-        gap: 10px;
+    if (locationIdInput) {
+        console.log('Location ID value:', locationIdInput.value);
+        if (!locationIdInput.value) {
+            console.error('No location ID selected');
+            alert('Please select a shipping address');
+            return false;
+        }
+        console.log('Shipping address validation passed');
+        return true;
+    } else {
+        console.error('Location ID input not found during validation');
+        alert('Please select a shipping address');
+        return false;
     }
+}
+
+// Add console logs to initCheckoutForm function
+function initCheckoutForm() {
+    console.log('initCheckoutForm function called');
+    const checkoutForm = document.getElementById('checkout-form');
+    console.log('Checkout form element:', checkoutForm);
     
-    .cart-actions .btn {
-        min-width: 160px;
-        border-radius: 6px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-        padding: 10px 20px;
-        height: 46px;
+    if (checkoutForm) {
+        checkoutForm.addEventListener('submit', function(e) {
+            console.log('Checkout form submit event triggered');
+            // Prevent default form submission
+            e.preventDefault();
+
+            // Validate shipping address
+            console.log('Calling validateShippingAddress()');
+            if (!validateShippingAddress()) {
+                console.log('Shipping address validation failed');
+                return false;
+            }
+            
+            // Get selected payment method
+            const paymentMethod = document.querySelector('input[name="payment_method"]:checked').value;
+            console.log('Selected payment method:', paymentMethod);
+            
+            // Prepare the form for submission (show loading indicators, etc.)
+            prepareFormForSubmission(paymentMethod);
+            
+            // For online payment, you might want to use AJAX to submit the form
+            if (paymentMethod === 'toyyibpay') {
+                // Option 1: Submit form normally (will refresh the page but your prepareFormForSubmission handles this)
+                console.log('Form validation passed, submitting form');
+                this.submit(); // Use 'this' instead of checkoutForm to avoid the recursive event loop
+                
+                // Option 2: Use AJAX to submit the form (won't refresh the page)
+                // const formData = new FormData(this);
+                // fetch(this.action, {
+                //     method: 'POST',
+                //     body: formData,
+                //     headers: {
+                //         'X-Requested-With': 'XMLHttpRequest'
+                //     }
+                // })
+                // .then(response => response.json())
+                // .then(data => {
+                //     // Handle the response (redirect to payment gateway, etc.)
+                //     if (data.redirect_url) {
+                //         window.location.href = data.redirect_url;
+                //     }
+                // })
+                // .catch(error => {
+                //     console.error('Error:', error);
+                //     // Handle error
+                // });
+            } else {
+                // For cash on delivery, submit normally
+                console.log('Form validation passed, submitting form');
+                this.submit(); // Use 'this' instead of checkoutForm
+            }
+        });
+        console.log('Submit event listener added to checkout form');
+    } else {
+        console.error('Checkout form element not found');
     }
+}
+
+// // Function to validate shipping address
+// function validateShippingAddress() {
+//     const shippingAddressInput = document.querySelector('input[name="shipping_address"]');
+//     if (!shippingAddressInput || !shippingAddressInput.value) {
+//         Swal.fire({
+//             icon: 'error',
+//             title: 'Address Required',
+//             text: 'Please select a shipping address before placing your order.',
+//             confirmButtonColor: '#3085d6'
+//         });
+//         return false;
+//     }
+//     return true;
+// }
+
+// Function to prepare form for submission
+function prepareFormForSubmission(paymentMethod) {
+    // Update button state
+    const placeOrderBtn = document.getElementById('place-order-btn');
+    placeOrderBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+    placeOrderBtn.disabled = true;
     
-    @media (max-width: 767.98px) {
-        .cart-actions {
-            gap: 12px;
+    // Add a security token to prevent CSRF
+    const securityToken = document.createElement('input');
+    securityToken.type = 'hidden';
+    securityToken.name = 'security_token';
+    securityToken.value = Date.now().toString() + Math.random().toString(36).substring(2, 15);
+    document.getElementById('checkout-form').appendChild(securityToken);
+    
+    // Show processing overlay for better UX
+    if (paymentMethod === 'toyyibpay') {
+        showProcessingOverlay();
+        setupRedirectTimeout();
+    }
+}
+
+// Function to show processing overlay
+function showProcessingOverlay() {
+    const processingOverlay = document.createElement('div');
+    processingOverlay.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center';
+    processingOverlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
+    processingOverlay.style.zIndex = '9999';
+    processingOverlay.innerHTML = `
+        <div class="bg-white p-4 rounded shadow-lg text-center">
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <h5>Processing Your Order</h5>
+            <p class="mb-0 text-muted small">Please do not close this window...</p>
+        </div>
+    `;
+    document.body.appendChild(processingOverlay);
+}
+
+// Function to setup redirect timeout
+function setupRedirectTimeout() {
+    // Set a timeout to handle potential redirect issues
+    const redirectTimeout = setTimeout(() => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Connection Issue',
+            text: 'We\'re having trouble connecting to the payment gateway. Please try again.',
+            confirmButtonColor: '#3085d6'
+        }).then(() => {
+            const placeOrderBtn = document.getElementById('place-order-btn');
+            placeOrderBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i> Place Order';
+            placeOrderBtn.disabled = false;
+            
+            // Remove the processing overlay
+            const processingOverlay = document.querySelector('.position-fixed.top-0.start-0.w-100.h-100');
+            if (processingOverlay) {
+                processingOverlay.remove();
+            }
+        });
+    }, 30000); // 30 seconds timeout
+    
+    // Store the timeout ID in sessionStorage to clear it if redirect is successful
+    sessionStorage.setItem('redirectTimeoutId', redirectTimeout);
+    
+    // Add event listener for beforeunload to detect successful redirect
+    window.addEventListener('beforeunload', function() {
+        sessionStorage.setItem('redirecting', 'true');
+    });
+}
+
+// Function to handle return from payment gateway
+function handlePaymentReturn() {
+    // Check if returning from payment gateway
+    if (sessionStorage.getItem('redirecting') === 'true') {
+        // Clear the timeout to prevent error message
+        const timeoutId = sessionStorage.getItem('redirectTimeoutId');
+        if (timeoutId) {
+            clearTimeout(parseInt(timeoutId));
         }
         
-        .cart-actions .btn {
-            width: 100%;
-        }
-    }
-    .cart-item-img {
-        width: 60px;
-        height: 60px;
-        overflow: hidden;
-        border-radius: 8px;
-    }
-    
-    .quantity-selector {
-        display: flex;
-        align-items: center;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        overflow: hidden;
-        width: fit-content;
-    }
-    
-    .quantity-btn {
-        background: #f8f9fa;
-        border: none;
-        padding: 0.25rem 0.5rem;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .quantity-btn:hover {
-        background: #e9ecef;
-    }
-    
-    .quantity-input {
-        width: 40px;
-        border: none;
-        text-align: center;
-        font-weight: 500;
-        padding: 0.25rem 0;
-    }
-    
-    .quantity-input:focus {
-        outline: none;
-    }
-    
-    /* Remove spinner from number input */
-    .quantity-input::-webkit-outer-spin-button,
-    .quantity-input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-    
-    .quantity-input[type=number] {
-        -moz-appearance: textfield;
-    }
-    
-    .cart-item-mobile {
-        background-color: white;
-    }
-    
-    .cart-quantity-sm {
-        transform: scale(0.9);
-    }
-    
-    /* Checkout button styling */
-    .checkout-btn {
-        font-weight: 500;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    
-    .checkout-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    
-    .cart-total {
-        font-size: 1.1rem;
-    }
-    
-    .card-footer {
-        border-top: 1px solid rgba(0,0,0,0.05);
-    }
-    
-    .cart-actions .btn {
-        min-width: 160px;
-        border-radius: 6px;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-    
-    .cart-actions .btn:hover {
-        transform: translateY(-1px);
-    }
-    
-    .cart-actions .btn-outline-danger:hover {
-        background-color: #dc3545;
-        color: white;
-    }
-    
-    .cart-actions .btn-outline-secondary:hover {
-        background-color: #6c757d;
-        color: white;
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 767.98px) {
-        .cart-item-mobile {
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-        }
+        // Clear session storage
+        sessionStorage.removeItem('redirecting');
+        sessionStorage.removeItem('redirectTimeoutId');
         
-        .card-footer {
-            text-align: center;
-            padding: 1.5rem;
-        }
-        
-        .cart-total {
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .cart-actions .btn {
-            width: 100%;
-            padding: 0.75rem 1rem;
-            margin-bottom: 0.75rem;
+        // Show success message if needed
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('payment_status')) {
+            const status = urlParams.get('payment_status');
+            if (status === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Payment Successful',
+                    text: 'Your order has been placed successfully!',
+                    confirmButtonColor: '#3085d6'
+                });
+            }
         }
     }
+}
+</script>
+{{-- <script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectBtn = document.getElementById('selectAddressBtn');
     
-    /* Checkout Modal Styling */
-    .modal-content {
-        border-radius: 12px;
-        overflow: hidden;
+    if (selectBtn) {
+        selectBtn.addEventListener('click', function() {
+            const selectedAddress = document.querySelector('input[name="selected_address"]:checked');
+            
+            if (selectedAddress) {
+                const locationId = selectedAddress.value;
+                document.querySelector('input[name="location_id"]').value = locationId;
+                $('#addressSelectionModal').modal('hide');
+                
+                // Update the displayed address (optional)
+                // You would need to fetch the address details via AJAX or reload the page
+            } else {
+                alert('Please select an address');
+            }
+        });
     }
-    
-    .modal-header {
-        padding: 1.25rem 1.5rem;
-    }
-    
-    .modal-title {
-        font-weight: 600;
-        color: var(--primary);
-    }
-    
-    .order-item-img {
-        width: 40px;
-        height: 40px;
-        overflow: hidden;
-        border-radius: 6px;
-    }
-    
-    .order-item-img img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    
-    .shipping-address-container {
-        border-radius: 8px;
-    }
-    
-    #place-order-btn {
-        font-weight: 500;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    
-    #place-order-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    }
-    
-    /* Form styling */
-    .form-control-sm {
-        padding: 0.4rem 0.75rem;
-        font-size: 0.875rem;
-        border-radius: 0.25rem;
-    }
-    
-    .form-control:focus {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 0.25rem rgba(73, 54, 40, 0.25);
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 767.98px) {
-        .order-summary-container {
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid #dee2e6;
-        }
-    }
-
-    .pulse-animation {
-    animation: pulse 2s infinite;
-    box-shadow: 0 0 0 rgba(13, 110, 253, 0.4);
-    position: relative;
-    overflow: hidden;
-    }
-
-    .pulse-animation::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(255, 255, 255, 0.2);
-        transform: translateX(-100%);
-        animation: shimmer 2.5s infinite;
-    }
-
-    @keyframes pulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0.4);
-        }
-        70% {
-            box-shadow: 0 0 0 10px rgba(13, 110, 253, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(13, 110, 253, 0);
-        }
-    }
-
-    @keyframes shimmer {
-        100% {
-            transform: translateX(100%);
-        }
-    }
-</style>
+});
+</script> --}}
 @endsection

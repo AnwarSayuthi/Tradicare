@@ -89,7 +89,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($order->orderItems as $item)
+                                        @foreach($order->items as $item)
                                             <tr>
                                                 <td>
                                                     <div class="product-img-small bg-light rounded">

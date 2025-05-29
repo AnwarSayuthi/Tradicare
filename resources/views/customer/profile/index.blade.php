@@ -505,46 +505,46 @@
                     <input type="hidden" name="location_id" id="edit_location_id">
                     
                     <div class="mb-3">
-                        <label for="location_name" class="form-label">Address Name</label>
-                        <input type="text" class="form-control" id="location_name" name="location_name" placeholder="Home, Office, etc." required>
+                        <label for="edit_location_name" class="form-label">Address Name</label>
+                        <input type="text" class="form-control" id="edit_location_name" name="location_name" placeholder="Home, Office, etc." required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="address_line1" class="form-label">Address Line 1</label>
-                        <input type="text" class="form-control" id="address_line1" name="address_line1" required>
+                        <label for="edit_address_line1" class="form-label">Address Line 1</label>
+                        <input type="text" class="form-control" id="edit_address_line1" name="address_line1" required>
                     </div>
                     
                     <div class="mb-3">
-                        <label for="address_line2" class="form-label">Address Line 2 (Optional)</label>
-                        <input type="text" class="form-control" id="address_line2" name="address_line2">
+                        <label for="edit_address_line2" class="form-label">Address Line 2 (Optional)</label>
+                        <input type="text" class="form-control" id="edit_address_line2" name="address_line2">
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="city" class="form-label">City</label>
-                            <input type="text" class="form-control" id="city" name="city" required>
+                            <label for="edit_city" class="form-label">City</label>
+                            <input type="text" class="form-control" id="edit_city" name="city" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="state" class="form-label">State</label>
-                            <input type="text" class="form-control" id="state" name="state" required>
+                            <label for="edit_state" class="form-label">State</label>
+                            <input type="text" class="form-control" id="edit_state" name="state" required>
                         </div>
                     </div>
                     
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="postal_code" class="form-label">Postal Code</label>
-                            <input type="text" class="form-control" id="postal_code" name="postal_code" required>
+                            <label for="edit_postal_code" class="form-label">Postal Code</label>
+                            <input type="text" class="form-control" id="edit_postal_code" name="postal_code" required>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="phone_number" class="form-label">Phone Number (Optional)</label>
-                            <input type="tel" class="form-control" id="phone_number" name="phone_number">
+                            <label for="edit_phone_number" class="form-label">Phone Number (Optional)</label>
+                            <input type="tel" class="form-control" id="edit_phone_number" name="phone_number">
                         </div>
                     </div>
                     
                     <div class="mb-3">
                         <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="is_default" name="is_default">
-                            <label class="form-check-label" for="is_default">
+                            <input class="form-check-input" type="checkbox" id="edit_is_default" name="is_default">
+                            <label class="form-check-label" for="edit_is_default">
                                 Set as default address
                             </label>
                         </div>
@@ -783,6 +783,7 @@
     });
 
     // Handle edit address modal
+    // Handle edit address modal
     document.querySelectorAll('.edit-address-btn').forEach(button => {
         button.addEventListener('click', function() {
             const locationId = this.getAttribute('data-location-id');
@@ -792,18 +793,19 @@
             fetch(`/customer/profile/location/${locationId}/get`)
                 .then(response => response.json())
                 .then(data => {
-                    // Populate the form fields
-                    document.querySelector('#editAddressForm #location_name').value = data.location_name;
-                    document.querySelector('#editAddressForm #address_line1').value = data.address_line1;
-                    document.querySelector('#editAddressForm #address_line2').value = data.address_line2 || '';
-                    document.querySelector('#editAddressForm #city').value = data.city;
-                    document.querySelector('#editAddressForm #state').value = data.state;
-                    document.querySelector('#editAddressForm #postal_code').value = data.postal_code;
-                    document.querySelector('#editAddressForm #phone_number').value = data.phone_number || '';
-                    document.querySelector('#editAddressForm #is_default').checked = data.is_default;
+                    // Populate the form fields with the updated IDs
+                    document.getElementById('edit_location_name').value = data.location_name;
+                    document.getElementById('edit_address_line1').value = data.address_line1;
+                    document.getElementById('edit_address_line2').value = data.address_line2 || '';
+                    document.getElementById('edit_city').value = data.city;
+                    document.getElementById('edit_state').value = data.state;
+                    document.getElementById('edit_postal_code').value = data.postal_code;
+                    document.getElementById('edit_phone_number').value = data.phone_number || '';
+                    document.getElementById('edit_is_default').checked = data.is_default;
                 })
                 .catch(error => {
                     console.error('Error fetching address details:', error);
+                    alert('Failed to load address details. Please try again.');
                 });
             
             // Update the form action URL

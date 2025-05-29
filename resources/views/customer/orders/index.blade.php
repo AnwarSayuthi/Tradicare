@@ -54,7 +54,7 @@
                         <span class="badge {{ getStatusBadgeClass($order->status) }}">{{ ucfirst($order->status) }}</span>
                     </div>
                     <div class="card-body">
-                        @foreach($order->orderItems->take(2) as $item)
+                        @foreach($order->items as $item)
                         <div class="order-item d-flex align-items-center mb-3">
                             <div class="order-item-img me-3">
                                 <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
@@ -69,9 +69,9 @@
                         </div>
                         @endforeach
                         
-                        @if($order->orderItems->count() > 2)
+                        @if($order->items->count() > 2)
                             <div class="more-items text-muted">
-                                <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
+                                <small>+ {{ $order->items->count() - 2 }} more items</small>
                             </div>
                         @endif
                         

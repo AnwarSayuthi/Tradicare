@@ -112,7 +112,7 @@
                             <i class="bi bi-credit-card text-primary me-2"></i>
                             <div>
                                 <small class="text-muted d-block">Payment</small>
-                                <p class="mb-0 fw-medium">Rs.{{ number_format($appointment->payment->amount, 2) }} 
+                                <p class="mb-0 fw-medium">RM{{ number_format($appointment->payment->amount, 2) }} 
                                     <span class="badge bg-{{ $appointment->payment->status == 'completed' ? 'success' : ($appointment->payment->status == 'pending' ? 'warning' : 'danger') }} ms-2">
                                         {{ ucfirst($appointment->payment->status) }}
                                     </span>
@@ -128,6 +128,7 @@
                         </div>
                         @endif
                         
+                        <!-- Inside the appointment card, add payment button if needed -->
                         <div class="d-flex mt-4">
                             @if($appointment->status === 'scheduled')
                                 <form action="{{ route('customer.appointments.cancel', $appointment->appointment_id) }}" 
@@ -142,6 +143,12 @@
                                 
                                 <a href="{{ route('customer.appointments.reschedule', $appointment->appointment_id) }}" class="btn btn-outline-primary">
                                     <i class="bi bi-calendar-plus me-1"></i>Reschedule
+                                </a>
+                            @endif
+                            
+                            @if(!$appointment->payment || $appointment->payment->status === 'pending')
+                                <a href="{{ route('customer.appointments.payment', $appointment->appointment_id) }}" class="btn btn-primary ms-auto">
+                                    <i class="bi bi-credit-card me-1"></i>Complete Payment
                                 </a>
                             @endif
                         </div>

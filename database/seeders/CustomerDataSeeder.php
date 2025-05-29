@@ -35,13 +35,14 @@ class CustomerDataSeeder extends Seeder
                     $orderDate = $faker->dateTimeBetween('-6 months', 'now');
                     $order = Order::create([
                         'user_id' => $customer->id,
-                        'cart_id' => $cart->cart_id,
                         'order_date' => $orderDate,
-                        'total_amount' => $faker->numberBetween(50, 500), // Random order amount
+                        'total_amount' => $faker->numberBetween(50, 500),
                         'payment_status' => $faker->randomElement(['pending', 'paid']),
-                        'shipping_address' => $faker->address,
                         'status' => $faker->randomElement(['processing', 'shipped', 'delivered'])
                     ]);
+                    
+                    // Update the cart with the order_id after creating the order
+                    $cart->update(['order_id' => $order->order_id]);
                     
                     // Create payment for paid orders
                     if ($order->payment_status === 'paid') {

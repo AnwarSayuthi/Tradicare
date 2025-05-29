@@ -19,7 +19,7 @@ return new class extends Migration
             $table->decimal('total_amount', 10, 2);
             $table->enum('payment_status', ['pending', 'paid', 'failed']);
             $table->text('shipping_address');
-            $table->enum('status', ['processing', 'shipped', 'delivered', 'cancelled']);
+            $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled']);
         });
     }
 

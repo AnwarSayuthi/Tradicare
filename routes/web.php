@@ -6,7 +6,9 @@ use App\Http\Controllers\AdminViewController;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
+use App\Http\Controllers\Process\PaymentController;
 use App\Http\Controllers\Process\ReportController;
+
 
 // Public routes
 // Route::get('/', [CustomerViewController::class, 'landing']);
@@ -80,8 +82,8 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::get('/appointments/create', [CustomerViewController::class, 'createAppointment'])->name('appointments.create');
     Route::post('/appointments', [CustomerViewController::class, 'storeAppointment'])->name('appointments.store');
     Route::get('/appointments/available-slots', [CustomerViewController::class, 'getAvailableTimeSlots'])->name('appointments.available-slots');
-    Route::get('/appointments/payment/{id}', [CustomerViewController::class, 'appointmentPayment'])->name('appointments.payment');
-    Route::post('/appointments/payment/{id}/process', [CustomerViewController::class, 'processPayment'])->name('appointments.process-payment');
+    Route::get('/appointments/payment/{appointment}', [CustomerViewController::class, 'showPayment'])->name('appointments.payment');
+    Route::post('/appointments/payment/{appointment}', [CustomerViewController::class, 'processPayment'])->name('appointments.process-payment');
     Route::put('/appointments/{id}/cancel', [CustomerViewController::class, 'cancelAppointment'])->name('appointments.cancel');
     Route::get('/appointments/{id}/reschedule', [CustomerViewController::class, 'rescheduleAppointment'])->name('appointments.reschedule');
     
@@ -109,7 +111,7 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::post('/profile/location/add', [App\Http\Controllers\Process\ProfileController::class, 'addLocation'])->name('location.add');
     Route::put('/profile/location/{id}/update', [App\Http\Controllers\Process\ProfileController::class, 'updateLocation'])->name('location.update');
     Route::delete('/profile/location/{id}', [App\Http\Controllers\Process\ProfileController::class, 'deleteLocation'])->name('location.delete');
-    Route::get('/profile/location/{id}/get', [App\Http\Controllers\Process\ProfileController::class, 'getLocation'])->name('location.get');
+    Route::get('/customer/profile/location/{id}/get', [App\Http\Controllers\Process\ProfileController::class, 'getLocation'])->name('customer.location.get');
     
     // Password change route
     Route::post('/profile/change-password', [App\Http\Controllers\Process\ProfileController::class, 'changePassword'])->name('password.change');
@@ -140,4 +142,10 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::get('/profile/orders/{order}', [CustomerViewController::class, 'orderDetails'])->name('profile.orders.show');
     // Add this route definition if it doesn't exist
     Route::put('/profile/update-password', [App\Http\Controllers\Process\ProfileController::class, 'updatePassword'])->name('profile.update-password');
+    
+    
+    // Add this outside any middleware group
+    // Payment routes
+    Route::post('/payment/{type}/{id}', [PaymentController::class, 'processPayment'])->name('payment.process');
+    Route::get('/payment/callback', [PaymentController::class, 'paymentCallback'])->name('payment.callback');
 });

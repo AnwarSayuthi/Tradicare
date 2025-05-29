@@ -110,7 +110,8 @@
                             </div>
                             
                             <!-- Payment Form -->
-                            <form action="{{ route('customer.appointments.payment', $appointment->appointment_id) }}" method="POST">
+                            <!-- Update the payment form to use the new process-payment route -->
+                            <form action="{{ route('customer.appointments.process-payment', $appointment->appointment_id) }}" method="POST">
                                 @csrf
                                 
                                 <div class="mb-4">
@@ -118,27 +119,14 @@
                                     
                                     <div class="payment-methods">
                                         <div class="form-check payment-method-option mb-3">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="credit_card" value="credit_card" checked>
-                                            <label class="form-check-label d-flex align-items-center" for="credit_card">
+                                            <input class="form-check-input" type="radio" name="payment_method" id="toyyibpay" value="toyyibpay" checked>
+                                            <label class="form-check-label d-flex align-items-center" for="toyyibpay">
                                                 <div class="payment-icon me-3">
                                                     <i class="bi bi-credit-card"></i>
                                                 </div>
                                                 <div>
                                                     <span class="d-block fw-medium">Credit/Debit Card</span>
-                                                    <small class="text-muted">Pay securely with your card</small>
-                                                </div>
-                                            </label>
-                                        </div>
-                                        
-                                        <div class="form-check payment-method-option mb-3">
-                                            <input class="form-check-input" type="radio" name="payment_method" id="paypal" value="paypal">
-                                            <label class="form-check-label d-flex align-items-center" for="paypal">
-                                                <div class="payment-icon me-3">
-                                                    <i class="bi bi-paypal"></i>
-                                                </div>
-                                                <div>
-                                                    <span class="d-block fw-medium">PayPal</span>
-                                                    <small class="text-muted">Pay via PayPal</small>
+                                                    <small class="text-muted">Pay securely with ToyyibPay</small>
                                                 </div>
                                             </label>
                                         </div>

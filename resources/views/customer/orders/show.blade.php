@@ -60,7 +60,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($order->orderItems as $item)
+                                @foreach($order->items as $item)
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">

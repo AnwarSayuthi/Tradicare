@@ -173,13 +173,9 @@ class ProfileController extends Controller
     {
         $location = Location::where('location_id', $id)
             ->where('user_id', auth()->id())
-            ->first();
+            ->firstOrFail();
         
-        if (!$location) {
-            return response()->json(['success' => false, 'message' => 'Location not found'], 404);
-        }
-        
-        return response()->json(['success' => true, 'location' => $location]);
+        return response()->json($location);
     }
     public function updatePassword(Request $request)
     {

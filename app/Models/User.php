@@ -61,4 +61,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Payment::class, 'user_id');
     }
+
+    public function activeCartItemsCount()
+    {
+        $activeCart = $this->cart()->where('status', 'active')->first();
+        return $activeCart ? $activeCart->cartItems()->count() : 0;
+    }
 }
