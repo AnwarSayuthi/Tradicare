@@ -201,10 +201,15 @@
                                                     <span class="mx-2">|</span>
                                                     <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
                                                 </div>
-                                                <span class="badge {{ getStatusBadgeClass($order->status) }}">{{ ucfirst($order->status) }}</span>
+                                                <span class="badge {{ $order->status == 'processing' ? 'badge-processing' : 
+                                                                      ($order->status == 'shipped' ? 'badge-shipped' : 
+                                                                      ($order->status == 'completed' ? 'badge-completed' : 
+                                                                      ($order->status == 'cancelled' ? 'badge-cancelled' : 'bg-secondary'))) }}">
+                                                    {{ ucfirst($order->status) }}
+                                                </span>
                                             </div>
                                             <div class="card-body">
-                                                @foreach($order->orderItems->take(2) as $item)
+                                                @foreach($order->items as $item)
                                                 <div class="order-item d-flex align-items-center mb-3">
                                                     <div class="order-item-img me-3">
                                                         <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
@@ -219,17 +224,244 @@
                                                 </div>
                                                 @endforeach
                                                 
-                                                @if($order->orderItems->count() > 2)
+                                                @if($order->items->count() > 2)
                                                     <div class="more-items text-muted">
-                                                        <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
+                                                        <small>+ {{ $order->items->count() - 2 }} more items</small>
                                                     </div>
                                                 @endif
+                                                
+                                                <div class="order-summary mt-3 pt-3 border-top">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            @if($order->tracking && $order->tracking->tracking_number)
+                                                            <div>
+                                                                <span class="text-muted">Tracking:</span>
+                                                                <span class="ms-2">{{ $order->tracking->tracking_number }}</span>
+                                                            </div>
+                                                            @endif
+                                                        </div>
+                                                        <div class="d-flex flex-column align-items-end">
+                                                            <div>
+                                                                <span class="text-muted">Total:</span>
+                                                                <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <a href="{{ route('customer.profile.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                                                    View Details
+                                                                </a>
+                                                                
+                                                                @if($order->status === 'shipped')
+                                                                    <form action="{{ route('customer.profile.orders.receive', $order->order_id) }}" method="POST" class="d-inline">
+                                                                        @csrf
+                                                                        <button type="submit" class="btn btn-primary-custom btn-sm ms-2">
+                                                                            Received
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                                
+                                                                @if($order->status === 'processing')
+                                                                    <button class="btn btn-outline-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
+                                                                        Cancel Order
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Cancel Order Modal -->
+                                        <div class="modal fade" id="cancelOrderModal{{ $order->order_id }}" tabindex="-1" aria-labelledby="cancelOrderModalLabel{{ $order->order_id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="cancelOrderModalLabel{{ $order->order_id }}">Cancel Order #{{ $order->order_id }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        <form action="{{ route('customer.orders.cancel', $order->order_id) }}" method="POST">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-danger">Cancel Order</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                        
+                                        <div class="d-flex justify-content-center mt-4">
+                                            {{ $orders->links() }}
+                                        </div>
+                                    @endif
+                                </div>
+                                
+                                <!-- To Pay Tab -->
+                                <div class="tab-pane fade" id="to-pay" role="tabpanel" aria-labelledby="to-pay-tab">
+                                    @php
+                                        $toPayOrders = isset($orders) ? $orders->filter(function($order) {
+                                            // First check if order status is pending
+                                            if ($order->status !== \App\Models\Order::STATUS_PENDING) {
+                                                return false;
+                                            }
+                                            
+                                            // Check if the order has any pending payments
+                                            // This assumes you've added the payments() relationship
+                                            return $order->payments->where('status', \App\Models\Payment::STATUS_PENDING)->count() > 0;
+                                        }) : collect([]);
+                                    @endphp
+                                    
+                                    @if($toPayOrders->isEmpty())
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-credit-card text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="mt-3">No pending payments</h5>
+                                            <p class="text-muted">You don't have any orders waiting for payment.</p>
+                                        </div>
+                                    @else
+                                        @foreach($toPayOrders as $order)
+                                        <div class="card shadow-sm border-0 rounded-lg mb-4 order-card order-item" data-status="{{ $order->status }}">
+                                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                                <div>
+                                                    <span class="text-muted">Order #{{ $order->order_id }}</span>
+                                                    <span class="mx-2">|</span>
+                                                    <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                                                </div>
+                                                <span class="badge {{ $order->status == 'processing' ? 'badge-processing' : 
+                                                                      ($order->status == 'shipped' ? 'badge-shipped' : 
+                                                                      ($order->status == 'completed' ? 'badge-completed' : 
+                                                                      ($order->status == 'cancelled' ? 'badge-cancelled' : 'bg-secondary'))) }}">{{ ucfirst($order->status) }}</span>
+                                            </div>
+                                            <div class="card-body">
+                                                @foreach($order->items as $item)
+                                                <div class="order-item d-flex align-items-center mb-3">
+                                                    <div class="order-item-img me-3">
+                                                        <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                                                    </div>
+                                                    <div class="order-item-details flex-grow-1">
+                                                        <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                                            <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endforeach
+                                                
+                                                <div class="order-summary mt-3 pt-3 border-top">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            @if($order->tracking && $order->tracking->tracking_number)
+                                                            <div>
+                                                                <span class="text-muted">Tracking:</span>
+                                                                <span class="ms-2">{{ $order->tracking->tracking_number }}</span>
+                                                            </div>
+                                                            @endif
+                                                        </div>
+                                                        <div class="d-flex flex-column align-items-end">
+                                                            <div>
+                                                                <span class="text-muted">Total:</span>
+                                                                <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <a href="{{ route('customer.profile.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                                                    View Details
+                                                                </a>
+                                                                
+                                                                <button class="btn btn-outline-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
+                                                                    Cancel Order
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Cancel Order Modal -->
+                                        <div class="modal fade" id="cancelOrderModal{{ $order->order_id }}" tabindex="-1" aria-labelledby="cancelOrderModalLabel{{ $order->order_id }}" aria-hidden="true">
+                                            <div class="modal-dialog">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="cancelOrderModalLabel{{ $order->order_id }}">Cancel Order #{{ $order->order_id }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                        <form action="{{ route('customer.orders.cancel', $order->order_id) }}" method="POST">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-danger">Cancel Order</button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                                
+                                <!-- To Ship Tab -->
+                                <div class="tab-pane fade" id="to-ship" role="tabpanel" aria-labelledby="to-ship-tab">
+                                    @php
+                                        $toShipOrders = isset($orders) ? $orders->filter(function($order) {
+                                            return $order->status === \App\Models\Order::STATUS_PROCESSING && 
+                                                   $order->payments && $order->payments->where('status', \App\Models\Payment::STATUS_COMPLETED)->count() > 0;
+                                        }) : collect([]);
+                                    @endphp
+                                    
+                                    @if($toShipOrders->isEmpty())
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="mt-3">No orders to ship</h5>
+                                            <p class="text-muted">You don't have any orders being processed.</p>
+                                        </div>
+                                    @else
+                                        @foreach($toShipOrders as $order)
+                                        <div class="card shadow-sm border-0 rounded-lg mb-4 order-card order-item" data-status="{{ $order->status }}">
+                                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                                <div>
+                                                    <span class="text-muted">Order #{{ $order->order_id }}</span>
+                                                    <span class="mx-2">|</span>
+                                                    <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                                                </div>
+                                                <span class="badge {{ $order->status == 'processing' ? 'badge-processing' : 
+                                                                      ($order->status == 'shipped' ? 'badge-shipped' : 
+                                                                      ($order->status == 'completed' ? 'badge-completed' : 
+                                                                      ($order->status == 'cancelled' ? 'badge-cancelled' : 'bg-secondary'))) }}">{{ ucfirst($order->status) }}</span>
+                                            </div>
+                                            <div class="card-body">
+                                                @foreach($order->items as $item)
+                                                <div class="order-item d-flex align-items-center mb-3">
+                                                    <div class="order-item-img me-3">
+                                                        <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                                                    </div>
+                                                    <div class="order-item-details flex-grow-1">
+                                                        <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                                            <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endforeach
                                                 
                                                 <div class="order-summary mt-3 pt-3 border-top">
                                                     <div class="d-flex justify-content-between align-items-center">
                                                         <div>
                                                             <span class="text-muted">Total:</span>
                                                             <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                                            @if($order->tracking && $order->tracking->tracking_number)
+                                                            <div class="mt-2">
+                                                                <span class="text-muted">Tracking:</span>
+                                                                <span class="ms-2">{{ $order->tracking->tracking_number }}</span>
+                                                            </div>
+                                                            @endif
                                                         </div>
                                                         <div>
                                                             <a href="{{ route('customer.profile.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
@@ -240,15 +472,6 @@
                                                                 <button class="btn btn-outline-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
                                                                     Cancel Order
                                                                 </button>
-                                                            @endif
-                                                            
-                                                            @if($order->status === 'shipped')
-                                                                <form action="{{ route('customer.profile.orders.receive', $order->order_id) }}" method="POST" class="d-inline">
-                                                                    @csrf
-                                                                    <button type="submit" class="btn btn-primary-custom btn-sm ms-2">
-                                                                        Received
-                                                                    </button>
-                                                                </form>
                                                             @endif
                                                         </div>
                                                     </div>
@@ -269,7 +492,7 @@
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        <form action="{{ route('customer.profile.orders.cancel', $order->order_id) }}" method="POST">
+                                                        <form action="{{ route('customer.orders.cancel', $order->order_id) }}" method="POST">
                                                             @csrf
                                                             <button type="submit" class="btn btn-danger">Cancel Order</button>
                                                         </form>
@@ -278,33 +501,238 @@
                                             </div>
                                         </div>
                                         @endforeach
-                                        
-                                        <div class="d-flex justify-content-center mt-4">
-                                            {{ $orders->links() }}
-                                        </div>
                                     @endif
                                 </div>
                                 
-                                <!-- To Pay Tab -->
-                                <div class="tab-pane fade" id="to-pay" role="tabpanel" aria-labelledby="to-pay-tab">
+                                <!-- To Receive Tab -->
+                                <div class="tab-pane fade" id="to-receive" role="tabpanel" aria-labelledby="to-receive-tab">
                                     @php
-                                        $toPayOrders = isset($orders) ? $orders->where('payment.status', 'pending') : collect([]);
+                                        $toReceiveOrders = isset($orders) ? $orders->filter(function($order) {
+                                            return $order->status === \App\Models\Order::STATUS_SHIPPED && 
+                                                   $order->payments && $order->payments->where('status', \App\Models\Payment::STATUS_COMPLETED)->count() > 0 &&
+                                                   $order->tracking && !empty($order->tracking->tracking_number);
+                                        }) : collect([]);
                                     @endphp
                                     
-                                    @if($toPayOrders->isEmpty())
+                                    @if($toReceiveOrders->isEmpty())
                                         <div class="text-center py-5">
-                                            <i class="bi bi-credit-card text-muted" style="font-size: 3rem;"></i>
-                                            <h5 class="mt-3">No pending payments</h5>
-                                            <p class="text-muted">You don't have any orders waiting for payment.</p>
+                                            <i class="bi bi-truck text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="mt-3">No orders to receive</h5>
+                                            <p class="text-muted">You don't have any orders in transit.</p>
                                         </div>
                                     @else
-                                        @foreach($toPayOrders as $order)
-                                        <!-- Order card content similar to All Orders tab -->
+                                        @foreach($toReceiveOrders as $order)
+                                        <div class="card shadow-sm border-0 rounded-lg mb-4 order-card order-item" data-status="{{ $order->status }}">
+                                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                                <div>
+                                                    <span class="text-muted">Order #{{ $order->order_id }}</span>
+                                                    <span class="mx-2">|</span>
+                                                    <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                                                </div>
+                                                <span class="badge {{ $order->status == 'processing' ? 'badge-processing' : 
+                                                                      ($order->status == 'shipped' ? 'badge-shipped' : 
+                                                                      ($order->status == 'completed' ? 'badge-completed' : 
+                                                                      ($order->status == 'cancelled' ? 'badge-cancelled' : 'bg-secondary'))) }}">{{ ucfirst($order->status) }}</span>
+                                            </div>
+                                            <div class="card-body">
+                                                @foreach($order->items as $item)
+                                                <div class="order-item d-flex align-items-center mb-3">
+                                                    <div class="order-item-img me-3">
+                                                        <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                                                    </div>
+                                                    <div class="order-item-details flex-grow-1">
+                                                        <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                                            <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endforeach
+                                                
+                                                <div class="order-summary mt-3 pt-3 border-top">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            @if($order->tracking && $order->tracking->tracking_number)
+                                                            <div>
+                                                                <span class="text-muted">Tracking:</span>
+                                                                <span class="ms-2">{{ $order->tracking->tracking_number }}</span>
+                                                            </div>
+                                                            @endif
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div>
+                                                                <span class="text-muted">Total:</span>
+                                                                <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <a href="{{ route('customer.profile.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                                                    View Details
+                                                                </a>
+                                                                
+                                                                @if($order->status === 'shipped')
+                                                                    <form action="{{ route('customer.profile.orders.receive', $order->order_id) }}" method="POST" class="d-inline">
+                                                                        @csrf
+                                                                        <button type="submit" class="btn btn-primary-custom btn-sm ms-2">
+                                                                            Received
+                                                                        </button>
+                                                                    </form>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                         @endforeach
                                     @endif
                                 </div>
                                 
-                                <!-- Other order status tabs with similar structure -->
+                                <!-- Completed Tab -->
+                                <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
+                                    @php
+                                        $completedOrders = isset($orders) ? $orders->filter(function($order) {
+                                            return $order->status === \App\Models\Order::STATUS_DELIVERED;
+                                        }) : collect([]);
+                                    @endphp
+                                    
+                                    @if($completedOrders->isEmpty())
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-check-circle text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="mt-3">No completed orders</h5>
+                                            <p class="text-muted">You don't have any completed orders yet.</p>
+                                        </div>
+                                    @else
+                                        @foreach($completedOrders as $order)
+                                        <div class="card shadow-sm border-0 rounded-lg mb-4 order-card order-item" data-status="{{ $order->status }}">
+                                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                                <div>
+                                                    <span class="text-muted">Order #{{ $order->order_id }}</span>
+                                                    <span class="mx-2">|</span>
+                                                    <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                                                </div>
+                                                <span class="badge {{ $order->status == 'processing' ? 'badge-processing' : 
+                                                                      ($order->status == 'shipped' ? 'badge-shipped' : 
+                                                                      ($order->status == 'completed' ? 'badge-completed' : 
+                                                                      ($order->status == 'cancelled' ? 'badge-cancelled' : 'bg-secondary'))) }}">{{ ucfirst($order->status) }}</span>
+                                            </div>
+                                            <div class="card-body">
+                                                @foreach($order->items as $item)
+                                                <div class="order-item d-flex align-items-center mb-3">
+                                                    <div class="order-item-img me-3">
+                                                        <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                                                    </div>
+                                                    <div class="order-item-details flex-grow-1">
+                                                        <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                                            <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endforeach
+                                                
+                                                <div class="order-summary mt-3 pt-3 border-top">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            @if($order->tracking && $order->tracking->tracking_number)
+                                                            <div>
+                                                                <span class="text-muted">Tracking:</span>
+                                                                <span class="tracking-number">{{ $order->tracking->tracking_number }}</span>
+                                                            </div>
+                                                            @endif
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div>
+                                                                <span class="text-muted">Total:</span>
+                                                                <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <a href="{{ route('customer.profile.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                                                    View Details
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    @endif
+                                </div>
+                                
+                                <!-- Cancelled Tab -->
+                                <div class="tab-pane fade" id="cancelled" role="tabpanel" aria-labelledby="cancelled-tab">
+                                    @php
+                                        $cancelledOrders = isset($orders) ? $orders->filter(function($order) {
+                                            return $order->status === \App\Models\Order::STATUS_CANCELLED || 
+                                                   $order->status === \App\Models\Order::STATUS_REFUNDED;
+                                        }) : collect([]);
+                                    @endphp
+                                    
+                                    @if($cancelledOrders->isEmpty())
+                                        <div class="text-center py-5">
+                                            <i class="bi bi-x-circle text-muted" style="font-size: 3rem;"></i>
+                                            <h5 class="mt-3">No cancelled orders</h5>
+                                            <p class="text-muted">You don't have any cancelled orders.</p>
+                                        </div>
+                                    @else
+                                        @foreach($cancelledOrders as $order)
+                                        <div class="card shadow-sm border-0 rounded-lg mb-4 order-card order-item" data-status="{{ $order->status }}">
+                                            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                                                <div>
+                                                    <span class="text-muted">Order #{{ $order->order_id }}</span>
+                                                    <span class="mx-2">|</span>
+                                                    <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                                                </div>
+                                                <span class="badge {{ $order->status == 'processing' ? 'badge-processing' : 
+                                                                      ($order->status == 'shipped' ? 'badge-shipped' : 
+                                                                      ($order->status == 'completed' ? 'badge-completed' : 
+                                                                      ($order->status == 'cancelled' ? 'badge-cancelled' : 'bg-secondary'))) }}">{{ ucfirst($order->status) }}</span>
+                                            </div>
+                                            <div class="card-body">
+                                                @foreach($order->items as $item)
+                                                <div class="order-item d-flex align-items-center mb-3">
+                                                    <div class="order-item-img me-3">
+                                                        <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                                                    </div>
+                                                    <div class="order-item-details flex-grow-1">
+                                                        <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                                            <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                @endforeach
+                                                
+                                                <div class="order-summary mt-3 pt-3 border-top">
+                                                    <div class="d-flex justify-content-between align-items-start">
+                                                        <div>
+                                                            <!-- Empty div to maintain layout -->
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <div>
+                                                                <span class="text-muted">Total:</span>
+                                                                <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                                            </div>
+                                                            <div class="mt-2">
+                                                                <a href="{{ route('customer.profile.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                                                    View Details
+                                                                </a>
+                                                                
+                                                                <button class="btn btn-outline-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
+                                                                    Cancel Order
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -615,7 +1043,11 @@
         margin-right: 10px;
         color: #6b4c35;
     }
-    
+    .highlight-order {
+        border: 2px solid #4e73df;
+        box-shadow: 0 0 10px rgba(78, 115, 223, 0.3);
+        transition: all 0.3s ease;
+    }
     .profile-nav .nav-link.active i {
         color: white;
     }
@@ -737,89 +1169,152 @@
 </style>
 @endsection
 
-@section('js')
+@section('scripts')
 <script>
-    // Handle tab functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Fix for the personal info tab (it's using wrong ID)
-        const personalTab = document.getElementById('personal-tab');
-        if (personalTab) {
-            personalTab.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelector('#profile').classList.add('show', 'active');
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    if (pane.id !== 'profile') {
-                        pane.classList.remove('show', 'active');
-                    }
-                });
-                document.querySelectorAll('.nav-link').forEach(link => {
-                    link.classList.remove('active');
-                });
-                this.classList.add('active');
-            });
+        // Helper function for badge classes
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'processing':
+                    return 'badge-processing';
+                case 'shipped':
+                    return 'badge-shipped';
+                case 'completed':
+                    return 'badge-completed';
+                case 'cancelled':
+                    return 'badge-cancelled';
+                default:
+                    return 'bg-secondary';
+            }
         }
         
-        // Make sure all tab links work correctly
-        document.querySelectorAll('.profile-nav .nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = this.getAttribute('href');
-                
+        // Make the helper function available to the blade template
+        window.getStatusBadgeClass = getStatusBadgeClass;
+        
+        // Get the 'tab' parameter from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
+        const statusParam = urlParams.get('status');
+        
+        // If tab parameter exists, activate the corresponding tab
+        if (tabParam) {
+            const tabElement = document.getElementById(tabParam + '-tab');
+            if (tabElement) {
                 // Remove active class from all tabs
+                document.querySelectorAll('.nav-link').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Remove active class from all tab panes
                 document.querySelectorAll('.tab-pane').forEach(pane => {
                     pane.classList.remove('show', 'active');
                 });
                 
-                // Add active class to current tab
-                document.querySelector(target).classList.add('show', 'active');
+                // Add active class to selected tab
+                tabElement.classList.add('active');
                 
-                // Update active state on nav links
-                document.querySelectorAll('.profile-nav .nav-link').forEach(navLink => {
-                    navLink.classList.remove('active');
-                });
-                this.classList.add('active');
+                // Add active class to corresponding tab pane
+                const tabPane = document.getElementById(tabParam);
+                if (tabPane) {
+                    tabPane.classList.add('show', 'active');
+                    
+                    // If we're on the orders tab and there's a status parameter
+                    if (tabParam === 'orders' && statusParam) {
+                        // Map status to the corresponding order tab ID
+                        let orderTabId;
+                        switch(statusParam) {
+                            case 'pending':
+                                orderTabId = 'to-pay-tab';
+                                break;
+                            case 'processing':
+                                orderTabId = 'to-ship-tab';
+                                break;
+                            case 'shipped':
+                                orderTabId = 'to-receive-tab';
+                                break;
+                            case 'completed':
+                                orderTabId = 'completed-tab';
+                                break;
+                            case 'cancelled':
+                                orderTabId = 'cancelled-tab';
+                                break;
+                            default:
+                                orderTabId = 'all-tab';
+                        }
+                        
+                        // Find the order tab element
+                        const orderTabElement = document.getElementById(orderTabId);
+                        if (orderTabElement) {
+                            // Remove active class from all order tabs
+                            document.querySelectorAll('#orderTabs .nav-link').forEach(tab => {
+                                tab.classList.remove('active');
+                            });
+                            
+                            // Remove active class from all order tab panes
+                            document.querySelectorAll('#orderTabsContent .tab-pane').forEach(pane => {
+                                pane.classList.remove('show', 'active');
+                            });
+                            
+                            // Add active class to selected order tab
+                            orderTabElement.classList.add('active');
+                            
+                            // Add active class to corresponding order tab pane
+                            const orderTabPaneId = orderTabId.replace('-tab', '');
+                            const orderTabPane = document.getElementById(orderTabPaneId);
+                            if (orderTabPane) {
+                                orderTabPane.classList.add('show', 'active');
+                            }
+                        }
+                        
+                        // Highlight orders with matching status (if needed)
+                        document.querySelectorAll('.order-item').forEach(orderItem => {
+                            if (orderItem.dataset.status === statusParam) {
+                                orderItem.classList.add('highlight-order');
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // Handle edit address modal
+        document.querySelectorAll('.edit-address-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const locationId = this.getAttribute('data-location-id');
+                document.getElementById('edit_location_id').value = locationId;
+                
+                // Fetch the address details via AJAX
+                fetch(`/customer/profile/location/${locationId}/get`)
+                    .then(response => response.json())
+                    .then(data => {
+                        // Populate the form fields with the updated IDs
+                        document.getElementById('edit_location_name').value = data.location_name;
+                        document.getElementById('edit_address_line1').value = data.address_line1;
+                        document.getElementById('edit_address_line2').value = data.address_line2 || '';
+                        document.getElementById('edit_city').value = data.city;
+                        document.getElementById('edit_state').value = data.state;
+                        document.getElementById('edit_postal_code').value = data.postal_code;
+                        document.getElementById('edit_phone_number').value = data.phone_number || '';
+                        document.getElementById('edit_is_default').checked = data.is_default;
+                    })
+                    .catch(error => {
+                        console.error('Error fetching address details:', error);
+                        alert('Failed to load address details. Please try again.');
+                    });
+                
+                // Update the form action URL
+                const form = document.getElementById('editAddressForm');
+                form.action = form.action.replace(/\/\d+$/, '/' + locationId);
             });
         });
-    });
-
-    // Handle edit address modal
-    // Handle edit address modal
-    document.querySelectorAll('.edit-address-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const locationId = this.getAttribute('data-location-id');
-            document.getElementById('edit_location_id').value = locationId;
-            
-            // Fetch the address details via AJAX
-            fetch(`/customer/profile/location/${locationId}/get`)
-                .then(response => response.json())
-                .then(data => {
-                    // Populate the form fields with the updated IDs
-                    document.getElementById('edit_location_name').value = data.location_name;
-                    document.getElementById('edit_address_line1').value = data.address_line1;
-                    document.getElementById('edit_address_line2').value = data.address_line2 || '';
-                    document.getElementById('edit_city').value = data.city;
-                    document.getElementById('edit_state').value = data.state;
-                    document.getElementById('edit_postal_code').value = data.postal_code;
-                    document.getElementById('edit_phone_number').value = data.phone_number || '';
-                    document.getElementById('edit_is_default').checked = data.is_default;
-                })
-                .catch(error => {
-                    console.error('Error fetching address details:', error);
-                    alert('Failed to load address details. Please try again.');
-                });
-            
-            // Update the form action URL
-            const form = document.getElementById('editAddressForm');
-            form.action = form.action.replace(/\/\d+$/, '/' + locationId);
-        });
-    });
-    
-    // Confirm delete address
-    document.querySelectorAll('.delete-address-form').forEach(form => {
-        form.addEventListener('submit', function(e) {
-            if (!confirm('Are you sure you want to delete this address?')) {
-                e.preventDefault();
-            }
+        
+        // Confirm delete address
+        document.querySelectorAll('.delete-address-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                if (!confirm('Are you sure you want to delete this address?')) {
+                    e.preventDefault();
+                }
+            });
         });
     });
 </script>

@@ -515,7 +515,7 @@
                                 </div>
                             </div>
                             <div class="col">
-                                <h6 class="mb-0">{{ $product->product->product_name }}</h6>
+                                <h6 class="mb-0">{{ $product->product_name }}</h6>
                                 <p class="text-sm text-muted mb-0">{{ $product->total_quantity }} units sold</p>
                             </div>
                             <div class="col-auto">

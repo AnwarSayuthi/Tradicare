@@ -51,7 +51,35 @@ class ToyyibPayService
             if (empty($this->secretKey) || empty($this->categoryCode)) {
                 throw new \RuntimeException('ToyyibPay configuration is incomplete');
             }
-
+            
+            // Verify payment amount against cart total if it's an order payment
+            if ($payment->isOrderPayment() && $payment->order && $payment->order->cart) {
+                $order = $payment->order;
+                $cart = $order->cart;
+                
+                // Calculate current cart total
+                $cartTotal = $cart->getTotalPrice();
+                // Add shipping cost
+                $shippingCost = 5.00;
+                $cartTotal += $shippingCost;
+                
+                // If cart total doesn't match payment amount, update the payment amount
+                if (abs($cartTotal - $payment->amount) > 0.01) { // Using small epsilon for float comparison
+                    Log::info('Updating payment amount to match cart total', [
+                        'payment_id' => $payment->payment_id,
+                        'old_amount' => $payment->amount,
+                        'new_amount' => $cartTotal
+                    ]);
+                    
+                    $payment->amount = $cartTotal;
+                    $payment->save();
+                    
+                    // Also update the order total_amount
+                    $order->total_amount = $cartTotal;
+                    $order->save();
+                }
+            }
+            
             // Determine payment type and get relevant details
             $paymentType = $this->getPaymentType($payment);
             $billDetails = $this->prepareBillDetails($payment, $paymentType);
@@ -64,7 +92,7 @@ class ToyyibPayService
                 'billDescription' => trim($billDetails['description']),
                 'billPriceSetting' => 1, // Add this line - 1 for fixed amount bill
                 'billPayorInfo' => 1, // Add this line - 1 to collect payer information
-                'billAmount' => (int)($payment->amount * 100), // Convert to cents and ensure integer
+                'billAmount' => (double)($payment->amount * 100), // Convert to cents and ensure integer
                 'billReturnUrl' => trim(route('customer.payment.callback')),
                 'billCallbackUrl' => trim(route('customer.payment.callback')),
                 'billExternalReferenceNo' => trim($billDetails['reference']),
@@ -74,7 +102,7 @@ class ToyyibPayService
                 'billSplitPayment' => 0,
                 'billPaymentChannel' => 0,
                 'billContentEmail' => 'Thank you for your payment!',
-                'billChargeToCustomer' => 1
+                'billChargeToCustomer' => 2  // Change from 1 to 2 to charge customer for both FPX and Credit Card
             ];
             
             // Validate required parameters
@@ -177,6 +205,38 @@ class ToyyibPayService
                 'billcode' => $data['billcode']
             ]);
             return false;
+        }
+        
+        // Verify payment amount against cart total if it's an order payment
+        if ($payment->isOrderPayment() && $payment->order) {
+            $order = $payment->order;
+            if ($order->cart) {
+                // Calculate current cart total
+                $cartTotal = $order->cart->getTotalPrice();
+                // Add shipping cost
+                $shippingCost = 5.00;
+                $cartTotal += $shippingCost;
+                
+                // If cart total doesn't match payment amount, mark payment as failed
+                if (abs($cartTotal - $payment->amount) > 0.01) { // Using small epsilon for float comparison
+                    Log::warning('Payment amount mismatch', [
+                        'payment_id' => $payment->payment_id,
+                        'payment_amount' => $payment->amount,
+                        'cart_total' => $cartTotal
+                    ]);
+                    $payment->status = Payment::STATUS_FAILED;
+                    $payment->payment_details = array_merge($payment->payment_details ?? [], $data, [
+                        'failure_reason' => 'Payment amount does not match cart total'
+                    ]);
+                    $payment->save();
+                    
+                    // Update order status
+                    $order->payment_status = Order::PAYMENT_FAILED;
+                    $order->save();
+                    
+                    return false;
+                }
+            }
         }
         
         // Update payment status based on callback

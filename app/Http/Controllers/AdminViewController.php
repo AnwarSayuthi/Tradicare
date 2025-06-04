@@ -61,14 +61,18 @@ class AdminViewController extends Controller
             ->get();
             
         // Get top selling products
-        $topProducts = OrderItem::select('product_id', DB::raw('SUM(quantity) as total_quantity'), DB::raw('SUM(subtotal) as total_sales'))
-            ->with('product')
-            ->whereHas('order', function($query) use ($startDate, $endDate) {
-                $query->whereBetween('order_date', [$startDate, $endDate]);
-            })
-            ->groupBy('product_id')
+        $topProducts = DB::table('cart_items')
+            ->join('carts', 'cart_items.cart_id', '=', 'carts.cart_id')
+            ->join('orders', 'carts.order_id', '=', 'orders.order_id')
+            ->join('products', 'cart_items.product_id', '=', 'products.product_id')
+            ->select('cart_items.product_id', 
+                    DB::raw('SUM(cart_items.quantity) as total_quantity'), 
+                    DB::raw('SUM(cart_items.quantity * cart_items.unit_price) as total_sales'),
+                    'products.product_name')
+            ->whereBetween('orders.order_date', [$startDate, $endDate])
+            ->groupBy('cart_items.product_id', 'products.product_name')
             ->orderBy('total_quantity', 'desc')
-            ->take(5)
+            ->limit(5)
             ->get();
             
         // Get sales data for chart
@@ -181,7 +185,9 @@ class AdminViewController extends Controller
         $search = $request->input('search');
         
         // Start with a base query
-        $ordersQuery = Order::with(['user', 'orderItems.product', 'payment']);
+        $ordersQuery = Order::with(['user', 'items.product', 'payments' => function($query) {
+            $query->latest('payment_date');
+        }]);
         
         // Apply filters if provided
         if ($status) {
@@ -244,7 +250,7 @@ class AdminViewController extends Controller
     public function showOrder(Order $order)
     {
         // Load order with relationships
-        $order->load(['user', 'orderItems.product', 'payment']);
+        $order->load(['user', 'items.product', 'payments', 'tracking', 'location']);
         
         return view('admin.orders.show', compact('order'));
     }

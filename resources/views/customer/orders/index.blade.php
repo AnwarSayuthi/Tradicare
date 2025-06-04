@@ -50,11 +50,11 @@
                             <span class="text-muted">Order #{{ $order->order_id }}</span>
                             <span class="mx-2">|</span>
                             <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
-                        </div>
-                        <span class="badge {{ getStatusBadgeClass($order->status) }}">{{ ucfirst($order->status) }}</span>
+                        </div>     
+                        <span class="badge getStatusBadgeClass({{$order->status}})">{{ ucfirst($order->status) }}</span>
                     </div>
                     <div class="card-body">
-                        @foreach($order->items as $item)
+                        @foreach($order->items->take(2) as $item)
                         <div class="order-item d-flex align-items-center mb-3">
                             <div class="order-item-img me-3">
                                 <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
@@ -163,7 +163,7 @@
                         </div>
                         {{-- ... card body ... --}}
                         <div class="card-body">
-                            @foreach($order->orderItems->take(2) as $item)
+                            @foreach($order->items->take(2) as $item)
                             <div class="order-item d-flex align-items-center mb-3">
                                 <div class="order-item-img me-3">
                                     <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
@@ -178,9 +178,9 @@
                             </div>
                             @endforeach
                             
-                            @if($order->orderItems->count() > 2)
+                            @if($order->items->count() > 2)
                                 <div class="more-items text-muted">
-                                    <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
+                                    <small>+ {{ $order->items->count() - 2 }} more items</small>
                                 </div>
                             @endif
                             
@@ -194,32 +194,28 @@
                                         <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
                                             View Details
                                         </a>
-                                        <a href="{{ route('customer.orders.pay', $order->order_id) }}" class="btn btn-primary-custom btn-sm ms-2">
-                                            Pay Now
-                                        </a>
+                                        <form method="POST" action="{{ route('customer.payment.process', ['type' => 'order', 'id' => $order->order_id]) }}" class="d-inline">
+                                            @csrf
+                                            <input type="hidden" name="payment_method" value="toyyibpay">
+                                            <button type="submit" class="btn btn-primary-custom btn-sm ms-2">Pay Now</button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 @endforeach
-                {{-- Add pagination for this tab if needed, passing the filtered collection --}}
-                {{-- Note: Standard pagination might not work well directly on filtered collections within tabs. 
-                     Consider loading data via AJAX or passing separate paginated collections for each tab from the controller. 
-                     For simplicity, I'm omitting pagination here, assuming the main $orders variable handles 'All' tab pagination. --}}
+                {{-- Pagination for 'To Pay' if needed --}}
             @endif
         </div>
         
-        {{-- Repeat similar structure for other tabs (To Ship, To Receive, Completed, Cancelled) --}}
-        {{-- Remember to filter the $allOrders collection for each tab and potentially handle pagination separately if required. --}}
-
         <div class="tab-pane fade" id="to-ship" role="tabpanel" aria-labelledby="to-ship-tab">
-             @php
+            @php
                 // Filter orders for the "To Ship" tab
-                $toShipOrders = $allOrders->where('status', 'processing')->where('payment.status', 'paid');
+                $toShipOrders = $allOrders->where('status', 'processing');
             @endphp
-            {{-- ... content for To Ship tab ... --}}
-             @if($toShipOrders->isEmpty())
+            
+            @if($toShipOrders->isEmpty())
                 <div class="text-center py-5">
                     <i class="bi bi-box-seam text-muted" style="font-size: 3rem;"></i>
                     <h5 class="mt-3">No orders to ship</h5>
@@ -227,72 +223,89 @@
                 </div>
             @else
                 @foreach($toShipOrders as $order)
-                {{-- Similar card structure as above --}}
-                 <div class="card shadow-sm border-0 rounded-lg mb-4 order-card">
-                     {{-- ... card header ... --}}
-                     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                         <div>
-                             <span class="text-muted">Order #{{ $order->order_id }}</span>
-                             <span class="mx-2">|</span>
-                             <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
-                         </div>
-                         <span class="badge badge-processing">{{ ucfirst($order->status) }}</span> {{-- Use helper if defined --}}
-                     </div>
-                     {{-- ... card body ... --}}
-                     <div class="card-body">
-                         @foreach($order->orderItems->take(2) as $item)
-                         <div class="order-item d-flex align-items-center mb-3">
-                             <div class="order-item-img me-3">
-                                 <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
-                             </div>
-                             <div class="order-item-details flex-grow-1">
-                                 <h6 class="mb-0">{{ $item->product->product_name }}</h6>
-                                 <div class="d-flex justify-content-between align-items-center">
-                                     <small class="text-muted">Qty: {{ $item->quantity }}</small>
-                                     <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
-                                 </div>
-                             </div>
-                         </div>
-                         @endforeach
-                         
-                         @if($order->orderItems->count() > 2)
-                             <div class="more-items text-muted">
-                                 <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
-                             </div>
-                         @endif
-                         
-                         <div class="order-summary mt-3 pt-3 border-top">
-                             <div class="d-flex justify-content-between align-items-center">
-                                 <div>
-                                     <span class="text-muted">Total:</span>
-                                     <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
-                                 </div>
-                                 <div>
-                                     <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
-                                         View Details
-                                     </a>
-                                     <button class="btn btn-outline-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
-                                         Cancel Order
-                                     </button>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
-                 {{-- Include Cancel Modal for each order in this tab as well --}}
-                 @include('customer.orders._cancel_modal', ['order' => $order]) 
+                <div class="card shadow-sm border-0 rounded-lg mb-4 order-card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="text-muted">Order #{{ $order->order_id }}</span>
+                            <span class="mx-2">|</span>
+                            <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                        </div>
+                        <span class="badge badge-processing">{{ ucfirst($order->status) }}</span>
+                    </div>
+                    <div class="card-body">
+                        @foreach($order->items->take(2) as $item)
+                        <div class="order-item d-flex align-items-center mb-3">
+                            <div class="order-item-img me-3">
+                                <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                            </div>
+                            <div class="order-item-details flex-grow-1">
+                                <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                    <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                        
+                        @if($order->items->count() > 2)
+                            <div class="more-items text-muted">
+                                <small>+ {{ $order->items->count() - 2 }} more items</small>
+                            </div>
+                        @endif
+                        
+                        <div class="order-summary mt-3 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted">Total:</span>
+                                    <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                </div>
+                                <div>
+                                    <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                        View Details
+                                    </a>
+                                    <button class="btn btn-outline-danger btn-sm ms-2" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
+                                        Cancel Order
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cancel Order Modal -->
+                <div class="modal fade" id="cancelOrderModal{{ $order->order_id }}" tabindex="-1" aria-labelledby="cancelOrderModalLabel{{ $order->order_id }}" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="cancelOrderModalLabel{{ $order->order_id }}">Cancel Order #{{ $order->order_id }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p>Are you sure you want to cancel this order? This action cannot be undone.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <form action="{{ route('customer.orders.cancel', $order->order_id) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-danger">Cancel Order</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 @endforeach
-                 {{-- Pagination for 'To Ship' if needed --}}
+                {{-- Pagination for 'To Ship' if needed --}}
             @endif
         </div>
-
+        
         <div class="tab-pane fade" id="to-receive" role="tabpanel" aria-labelledby="to-receive-tab">
-             @php
+            @php
                 // Filter orders for the "To Receive" tab
                 $toReceiveOrders = $allOrders->where('status', 'shipped');
             @endphp
-            {{-- ... content for To Receive tab ... --}}
-             @if($toReceiveOrders->isEmpty())
+            
+            @if($toReceiveOrders->isEmpty())
                 <div class="text-center py-5">
                     <i class="bi bi-truck text-muted" style="font-size: 3rem;"></i>
                     <h5 class="mt-3">No orders to receive</h5>
@@ -300,73 +313,70 @@
                 </div>
             @else
                 @foreach($toReceiveOrders as $order)
-                {{-- Similar card structure as above --}}
-                 <div class="card shadow-sm border-0 rounded-lg mb-4 order-card">
-                     {{-- ... card header ... --}}
-                     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                         <div>
-                             <span class="text-muted">Order #{{ $order->order_id }}</span>
-                             <span class="mx-2">|</span>
-                             <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
-                         </div>
-                         <span class="badge badge-shipped">{{ ucfirst($order->status) }}</span> {{-- Use helper if defined --}}
-                     </div>
-                     {{-- ... card body ... --}}
-                     <div class="card-body">
-                         @foreach($order->orderItems->take(2) as $item)
-                         <div class="order-item d-flex align-items-center mb-3">
-                             <div class="order-item-img me-3">
-                                 <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
-                             </div>
-                             <div class="order-item-details flex-grow-1">
-                                 <h6 class="mb-0">{{ $item->product->product_name }}</h6>
-                                 <div class="d-flex justify-content-between align-items-center">
-                                     <small class="text-muted">Qty: {{ $item->quantity }}</small>
-                                     <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
-                                 </div>
-                             </div>
-                         </div>
-                         @endforeach
-                         
-                         @if($order->orderItems->count() > 2)
-                             <div class="more-items text-muted">
-                                 <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
-                             </div>
-                         @endif
-                         
-                         <div class="order-summary mt-3 pt-3 border-top">
-                             <div class="d-flex justify-content-between align-items-center">
-                                 <div>
-                                     <span class="text-muted">Total:</span>
-                                     <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
-                                 </div>
-                                 <div>
-                                     <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
-                                         View Details
-                                     </a>
-                                     <form action="{{ route('customer.orders.receive', $order->order_id) }}" method="POST" class="d-inline">
-                                         @csrf
-                                         <button type="submit" class="btn btn-primary-custom btn-sm ms-2">
-                                             Received
-                                         </button>
-                                     </form>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
+                <div class="card shadow-sm border-0 rounded-lg mb-4 order-card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="text-muted">Order #{{ $order->order_id }}</span>
+                            <span class="mx-2">|</span>
+                            <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                        </div>
+                        <span class="badge badge-shipped">{{ ucfirst($order->status) }}</span>
+                    </div>
+                    <div class="card-body">
+                        @foreach($order->items->take(2) as $item)
+                        <div class="order-item d-flex align-items-center mb-3">
+                            <div class="order-item-img me-3">
+                                <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                            </div>
+                            <div class="order-item-details flex-grow-1">
+                                <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                    <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                        
+                        @if($order->items->count() > 2)
+                            <div class="more-items text-muted">
+                                <small>+ {{ $order->items->count() - 2 }} more items</small>
+                            </div>
+                        @endif
+                        
+                        <div class="order-summary mt-3 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted">Total:</span>
+                                    <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                </div>
+                                <div>
+                                    <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                        View Details
+                                    </a>
+                                    <form action="{{ route('customer.orders.receive', $order->order_id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button type="submit" class="btn btn-primary-custom btn-sm ms-2">
+                                            Received
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 @endforeach
-                 {{-- Pagination for 'To Receive' if needed --}}
+                {{-- Pagination for 'To Receive' if needed --}}
             @endif
         </div>
-
+        
         <div class="tab-pane fade" id="completed" role="tabpanel" aria-labelledby="completed-tab">
-             @php
+            @php
                 // Filter orders for the "Completed" tab
                 $completedOrders = $allOrders->where('status', 'completed');
             @endphp
-            {{-- ... content for Completed tab ... --}}
-             @if($completedOrders->isEmpty())
+            
+            @if($completedOrders->isEmpty())
                 <div class="text-center py-5">
                     <i class="bi bi-check-circle text-muted" style="font-size: 3rem;"></i>
                     <h5 class="mt-3">No completed orders</h5>
@@ -374,58 +384,55 @@
                 </div>
             @else
                 @foreach($completedOrders as $order)
-                {{-- Similar card structure as above --}}
-                 <div class="card shadow-sm border-0 rounded-lg mb-4 order-card">
-                     {{-- ... card header ... --}}
-                     <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                         <div>
-                             <span class="text-muted">Order #{{ $order->order_id }}</span>
-                             <span class="mx-2">|</span>
-                             <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
-                         </div>
-                         <span class="badge badge-completed">{{ ucfirst($order->status) }}</span> {{-- Use helper if defined --}}
-                     </div>
-                     {{-- ... card body ... --}}
-                     <div class="card-body">
-                         @foreach($order->orderItems->take(2) as $item)
-                         <div class="order-item d-flex align-items-center mb-3">
-                             <div class="order-item-img me-3">
-                                 <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
-                             </div>
-                             <div class="order-item-details flex-grow-1">
-                                 <h6 class="mb-0">{{ $item->product->product_name }}</h6>
-                                 <div class="d-flex justify-content-between align-items-center">
-                                     <small class="text-muted">Qty: {{ $item->quantity }}</small>
-                                     <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
-                                 </div>
-                             </div>
-                         </div>
-                         @endforeach
-                         
-                         @if($order->orderItems->count() > 2)
-                             <div class="more-items text-muted">
-                                 <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
-                             </div>
-                         @endif
-                         
-                         <div class="order-summary mt-3 pt-3 border-top">
-                             <div class="d-flex justify-content-between align-items-center">
-                                 <div>
-                                     <span class="text-muted">Total:</span>
-                                     <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
-                                 </div>
-                                 <div>
-                                     <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
-                                         View Details
-                                     </a>
-                                     {{-- Add Re-order or Review button if applicable --}}
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
-                 </div>
+                <div class="card shadow-sm border-0 rounded-lg mb-4 order-card">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <span class="text-muted">Order #{{ $order->order_id }}</span>
+                            <span class="mx-2">|</span>
+                            <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
+                        </div>
+                        <span class="badge badge-completed">{{ ucfirst($order->status) }}</span>
+                    </div>
+                    <div class="card-body">
+                        @foreach($order->items->take(2) as $item)
+                        <div class="order-item d-flex align-items-center mb-3">
+                            <div class="order-item-img me-3">
+                                <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded">
+                            </div>
+                            <div class="order-item-details flex-grow-1">
+                                <h6 class="mb-0">{{ $item->product->product_name }}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <small class="text-muted">Qty: {{ $item->quantity }}</small>
+                                    <span class="fw-medium">RM{{ number_format($item->unit_price, 2) }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        @endforeach
+                        
+                        @if($order->items->count() > 2)
+                            <div class="more-items text-muted">
+                                <small>+ {{ $order->items->count() - 2 }} more items</small>
+                            </div>
+                        @endif
+                        
+                        <div class="order-summary mt-3 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="text-muted">Total:</span>
+                                    <span class="fw-bold ms-2">RM{{ number_format($order->total_amount, 2) }}</span>
+                                </div>
+                                <div>
+                                    <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
+                                        View Details
+                                    </a>
+                                    {{-- Add Re-order or Review button if applicable --}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 @endforeach
-                 {{-- Pagination for 'Completed' if needed --}}
+                {{-- Pagination for 'Completed' if needed --}}
             @endif
         </div>
 
@@ -456,7 +463,7 @@
                      </div>
                      {{-- ... card body ... --}}
                      <div class="card-body">
-                         @foreach($order->orderItems->take(2) as $item)
+                         @foreach($order->items as $item)
                          <div class="order-item d-flex align-items-center mb-3">
                              <div class="order-item-img me-3">
                                  <img src="{{ asset('storage/' . $item->product->product_image) }}" alt="{{ $item->product->product_name }}" class="img-fluid rounded" style="opacity: 0.7;"> {{-- Slightly faded image --}}
@@ -465,15 +472,15 @@
                                  <h6 class="mb-0 text-muted">{{ $item->product->product_name }}</h6> {{-- Muted text --}}
                                  <div class="d-flex justify-content-between align-items-center">
                                      <small class="text-muted">Qty: {{ $item->quantity }}</small>
-                                     <span class="fw-medium text-muted">${{ number_format($item->unit_price, 2) }}</span> {{-- Muted price --}}
+                                     <span class="fw-medium text-muted">RM{{ number_format($item->unit_price, 2) }}</span> {{-- Muted price --}}
                                  </div>
                              </div>
                          </div>
                          @endforeach
                          
-                         @if($order->orderItems->count() > 2)
+                         @if($order->items->count() > 2)
                              <div class="more-items text-muted">
-                                 <small>+ {{ $order->orderItems->count() - 2 }} more items</small>
+                                 <small>+ {{ $order->items->count() - 2 }} more items</small>
                              </div>
                          @endif
                          
@@ -481,12 +488,19 @@
                              <div class="d-flex justify-content-between align-items-center">
                                  <div>
                                      <span class="text-muted">Total:</span>
-                                     <span class="fw-bold ms-2 text-muted">${{ number_format($order->total_amount, 2) }}</span> {{-- Muted total --}}
+                                     <span class="fw-bold ms-2 text-muted">RM{{ number_format($order->total_amount, 2) }}</span> {{-- Muted total --}}
                                  </div>
                                  <div>
                                      <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-secondary btn-sm"> {{-- Secondary outline --}}
                                          View Details
                                      </a>
+                                     <div>
+                                        <form method="POST" action="{{ route('customer.payment.process', ['type' => 'order', 'id' => $order->order_id]) }}" class="d-inline">
+                                            @csrf
+                                            <input type="hidden" name="payment_method" value="toyyibpay">
+                                            <button type="submit" class="btn btn-primary-custom btn-sm ms-2">Pay Now</button>
+                                        </form>
+                                     </div>
                                  </div>
                              </div>
                          </div>
@@ -676,13 +690,48 @@
         
         // Get URL parameters to activate the correct tab
         const urlParams = new URLSearchParams(window.location.search);
+        const tabParam = urlParams.get('tab');
         const status = urlParams.get('status');
         
-        if (status) {
-            const tabEl = document.querySelector(`#${status}-tab`);
-            if (tabEl) {
-                const tab = new bootstrap.Tab(tabEl);
-                tab.show();
+        // If we're on the profile page and the tab parameter is 'orders'
+        if (tabParam === 'orders') {
+            // If there's a status parameter, map it to the corresponding tab ID
+            if (status) {
+                let tabId;
+                switch(status) {
+                    case 'pending':
+                        tabId = 'to-pay-tab';
+                        break;
+                    case 'processing':
+                        tabId = 'to-ship-tab';
+                        break;
+                    case 'shipped':
+                        tabId = 'to-receive-tab';
+                        break;
+                    case 'completed':
+                        tabId = 'completed-tab';
+                        break;
+                    case 'cancelled':
+                        tabId = 'cancelled-tab';
+                        break;
+                    default:
+                        tabId = 'all-tab';
+                }
+                
+                const tabEl = document.getElementById(tabId);
+                if (tabEl) {
+                    const tab = new bootstrap.Tab(tabEl);
+                    tab.show();
+                }
+            }
+        } else {
+            // Original code for direct status parameter (when not coming from profile page)
+            if (status) {
+                const tabEl = document.querySelector(`#${status}-tab`);
+                if (tabEl) {
+                    const tab = new bootstrap.Tab(tabEl);
+                    tab.show();
+                }
             }
         }
     });

@@ -54,7 +54,7 @@ class PaymentController extends Controller
         
         // Ensure the order belongs to the logged-in user
         if ($order->user_id !== auth()->id()) {
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile', ['tab' => 'orders'])
                 ->with('error', 'You do not have permission to process this payment.');
         }
         
@@ -98,14 +98,14 @@ class PaymentController extends Controller
             // If payment failed
             $payment->update(['status' => 'failed']);
             $order->update(['payment_status' => 'failed']);
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile', ['tab' => 'orders'])
                 ->with('error', 'Payment initialization failed. Please try again.');
         } else {
             // For cash on delivery
             $payment->update(['status' => 'pending']);
             $order->update(['payment_status' => 'pending', 'status' => 'processing']);
             
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile', ['tab' => 'orders', 'status' => $order->status])
                 ->with('success', 'Order placed successfully! You will pay upon delivery.');
         }
     }
@@ -178,23 +178,25 @@ class PaymentController extends Controller
         $billCode = $request->billcode;
         $status = $request->status_id;
     
-        $payment = Payment::where('transaction_id', $billCode)->firstOrFail();
+        $payment = Payment::where('billcode', $billCode)
+                     ->orWhere('transaction_id', $billCode)
+                     ->firstOrFail();
+        
+        $toyyibpay = new ToyyibPayService();
+        $isValid = $toyyibpay->verifyCallback($request->all());
+        
+        if (!$isValid) {
+            return redirect()->route('landing')
+                ->with('error', 'Payment verification failed. Please contact support.');
+        }
         
         if ($status == 1) {
             // Payment successful
-            $payment->update(['status' => 'completed']);
+            $payment->update(['status' => Payment::STATUS_COMPLETED]);
             
             // Handle order payment
             if ($payment->order_id) {
-                $payment->order->update(['payment_status' => 'paid', 'status' => 'processing']);
-                
-                // Now mark the cart as completed
-                $cart = Cart::where('order_id', $payment->order_id)->first();
-                if ($cart) {
-                    $cart->status = 'completed';
-                    $cart->save();
-                }
-                
+                $payment->order->update(['payment_status' => Order::PAYMENT_PAID, 'status' => Order::STATUS_PROCESSING]);
                 return redirect()->route('customer.orders')
                     ->with('success', 'Payment successful! Your order is being processed.');
             }
@@ -207,11 +209,11 @@ class PaymentController extends Controller
             }
         } else {
             // Payment failed
-            $payment->update(['status' => 'failed']);
+            $payment->update(['status' => Payment::STATUS_FAILED]);
             
             // Handle order payment failure
             if ($payment->order_id) {
-                $payment->order->update(['payment_status' => 'failed']);
+                $payment->order->update(['payment_status' => Order::PAYMENT_FAILED]);
                 return redirect()->route('customer.orders')
                     ->with('error', 'Payment failed. Please try again or contact support.');
             }
@@ -225,6 +227,6 @@ class PaymentController extends Controller
         }
         
         return redirect()->route('landing')
-            ->with('error', 'Payment failed. Please try again or contact support.');
+            ->with('error', 'Payment processing error. Please contact support.');
     }
 }

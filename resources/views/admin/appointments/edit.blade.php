@@ -53,7 +53,7 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="appointment_date" class="form-label">Date</label>
                                 <input type="date" class="form-control @error('appointment_date') is-invalid @enderror" id="appointment_date" name="appointment_date" value="{{ old('appointment_date', \Carbon\Carbon::parse($appointment->appointment_date)->format('Y-m-d')) }}" required>
                                 @error('appointment_date')
@@ -61,18 +61,21 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-4 mb-3">
-                                <label for="appointment_time" class="form-label">Time</label>
-                                <input type="time" class="form-control @error('appointment_time') is-invalid @enderror" id="appointment_time" name="appointment_time" value="{{ old('appointment_time', \Carbon\Carbon::parse($appointment->appointment_date)->format('H:i')) }}" required>
-                                @error('appointment_time')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label for="duration" class="form-label">Duration (minutes)</label>
-                                <input type="number" class="form-control @error('duration') is-invalid @enderror" id="duration" name="duration" min="15" step="15" value="{{ old('duration', \Carbon\Carbon::parse($appointment->appointment_date)->diffInMinutes(\Carbon\Carbon::parse($appointment->end_time))) }}" required>
-                                @error('duration')
+                            <div class="col-md-6 mb-3">
+                                <label for="available_time_id" class="form-label">Time Slot</label>
+                                <select class="form-select @error('available_time_id') is-invalid @enderror" id="available_time_id" name="available_time_id" required>
+                                    <option value="">Select Time Slot</option>
+                                    @php
+                                        $availableTimes = App\Models\AvailableTime::orderBy('start_time')->get();
+                                    @endphp
+                                    
+                                    @foreach($availableTimes as $time)
+                                        <option value="{{ $time->available_time_id }}" {{ old('available_time_id', $appointment->available_time_id) == $time->available_time_id ? 'selected' : '' }}>
+                                            {{ \Carbon\Carbon::parse($time->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($time->end_time)->format('H:i') }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('available_time_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -108,4 +111,54 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('appointment_date');
+        const timeSelect = document.getElementById('available_time_id');
+        const currentAppointmentTimeId = "{{ $appointment->available_time_id }}";
+        
+        // Function to check availability and update time slots
+        function checkAvailability() {
+            const date = dateInput.value;
+            if (!date) return;
+            
+            // Reset all options first
+            for (let i = 0; i < timeSelect.options.length; i++) {
+                timeSelect.options[i].disabled = false;
+            }
+            
+            // Fetch unavailable times for the selected date
+            fetch(`/admin/appointments/unavailable-times?date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Disable unavailable time slots, except the current appointment's time
+                    data.forEach(item => {
+                        // Skip if this unavailable time is for the current appointment
+                        // This allows keeping the current time slot selectable even if it's marked as unavailable
+                        if (date === "{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('Y-m-d') }}" && 
+                            item.available_time_id == currentAppointmentTimeId) {
+                            return;
+                        }
+                        
+                        for (let i = 0; i < timeSelect.options.length; i++) {
+                            if (timeSelect.options[i].value == item.available_time_id) {
+                                timeSelect.options[i].disabled = true;
+                                // If the currently selected option is now disabled, reset selection
+                                if (timeSelect.selectedIndex === i) {
+                                    timeSelect.selectedIndex = 0;
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+        
+        // Check availability on date change
+        dateInput.addEventListener('change', checkAvailability);
+        
+        // Initial check
+        checkAvailability();
+    });
+</script>
 @endsection

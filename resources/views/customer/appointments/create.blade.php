@@ -84,40 +84,36 @@
                                 <!-- Time Selection -->
                                 <div class="mb-4">
                                     <label class="form-label">Select Time</label>
-                                    <input type="hidden" id="selected_time" name="appointment_time" value="{{ $selectedTime ?? '' }}">
+                                    <input type="hidden" id="selected_time" name="available_time_id" value="{{ $selectedTime ?? '' }}">
                                     
                                     <div class="time-slots-container">
                                         <div class="morning-slots mb-3">
+                                            <h6 class="text-muted mb-2">Morning</h6>
                                             <div class="time-slots-grid">
-                                                <div class="time-slot-cell" data-time="08:00">
-                                                    <div class="time-slot">8.00 - 9.00 AM</div>
-                                                </div>
-                                                <div class="time-slot-cell" data-time="09:00">
-                                                    <div class="time-slot">9.00 - 10.00 AM</div>
-                                                </div>
-                                                <div class="time-slot-cell" data-time="10:00">
-                                                    <div class="time-slot">10.00 - 11.00 AM</div>
-                                                </div>
-                                                <div class="time-slot-cell" data-time="11:00">
-                                                    <div class="time-slot">11.00 - 12.00 PM</div>
-                                                </div>
+                                                @if(isset($morningSlots) && count($morningSlots) > 0)
+                                                    @foreach($morningSlots as $slot)
+                                                        <div class="time-slot-cell {{ $slot['available'] ? '' : 'unavailable' }}" data-time="{{ $slot['value'] }}">
+                                                            <div class="time-slot">{{ $slot['time'] }}</div>
+                                                        </div>
+                                                    @endforeach
+                                                @else
+                                                    <p class="text-muted">No morning slots available</p>
+                                                @endif
                                             </div>
                                         </div>
                                         
                                         <div class="afternoon-slots">
+                                            <h6 class="text-muted mb-2">Afternoon</h6>
                                             <div class="time-slots-grid">
-                                                <div class="time-slot-cell" data-time="14:00">
-                                                    <div class="time-slot">2.00 - 3.00 PM</div>
-                                                </div>
-                                                <div class="time-slot-cell" data-time="15:00">
-                                                    <div class="time-slot">3.00 - 4.00 PM</div>
-                                                </div>
-                                                <div class="time-slot-cell" data-time="16:00">
-                                                    <div class="time-slot">4.00 - 5.00 PM</div>
-                                                </div>
-                                                <div class="time-slot-cell" data-time="17:00">
-                                                    <div class="time-slot">5.00 - 6.00 PM</div>
-                                                </div>
+                                                @if(isset($afternoonSlots) && count($afternoonSlots) > 0)
+                                                    @foreach($afternoonSlots as $slot)
+                                                        <div class="time-slot-cell {{ $slot['available'] ? '' : 'unavailable' }}" data-time="{{ $slot['value'] }}">
+                                                            <div class="time-slot">{{ $slot['time'] }}</div>
+                                                        </div>
+                                                    @endforeach
+                                                @else
+                                                    <p class="text-muted">No afternoon slots available</p>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -170,8 +166,8 @@
                                 <h6 class="text-muted mb-3 detail-header"><i class="bi bi-cash-coin me-2"></i>Total Amount</h6>
                                 <div class="total-amount p-3 rounded-3 bg-white shadow-sm">
                                     <h4 class="fw-bold text-dark mb-3" id="total-price">RM0.00</h4>
-                                    <!-- Proceed Button -->
-                                    <button type="button" id="proceed-button" class="btn w-100 btn-lg pulse-animation" style="background-color: #3a3a3a; color: white;" onclick="document.getElementById('appointment-form').submit();">
+                                    <!-- Updated Proceed Button -->
+                                    <button type="button" id="proceed-button" class="btn w-100 btn-lg pulse-animation" style="background-color: #3a3a3a; color: white;" onclick="showPaymentModal()">
                                         <i class="bi bi-credit-card me-2"></i>Proceed to Pay
                                     </button>
                                 </div>
@@ -229,6 +225,27 @@ document.addEventListener('DOMContentLoaded', function() {
     renderWeek(currentWeekStart);
     updateServiceDetails();
     
+    // Initialize with selected date if available 
+    if ('{{ isset($selectedDate) }}') { 
+        selectedDate = new Date('{{ $selectedDate->format('Y-m-d') }}'); 
+        currentDate = new Date('{{ $selectedDate->format('Y-m-d') }}'); 
+        currentWeekStart = getWeekStart(currentDate); 
+        updateMonthDisplay(); 
+        renderWeek(currentWeekStart); 
+        
+        // Mark the selected date as active after rendering 
+        setTimeout(() => { 
+            document.querySelectorAll('.date-cell').forEach(cell => { 
+                const cellDate = new Date(currentWeekStart); 
+                cellDate.setDate(currentWeekStart.getDate() + Array.from(dateGrid.children).indexOf(cell)); 
+                
+                if (cellDate.toDateString() === selectedDate.toDateString()) { 
+                    cell.querySelector('.date-number').classList.add('active'); 
+                } 
+            }); 
+        }, 0); 
+    }
+    
     // Event Listeners
     prevMonthBtn.addEventListener('click', function() {
         currentDate.setMonth(currentDate.getMonth() - 1);
@@ -254,7 +271,14 @@ document.addEventListener('DOMContentLoaded', function() {
         renderWeek(currentWeekStart);
     });
     
-    serviceSelect.addEventListener('change', updateServiceDetails);
+    serviceSelect.addEventListener('change', function() {
+        updateServiceDetails();
+        
+        // Refresh time slots if a date is selected
+        if (selectedDate) {
+            window.location.href = `{{ route('customer.appointments.create') }}?service_id=${this.value}&date=${selectedDate.toISOString().split('T')[0]}`;
+        }
+    });
     
     // Functions
     function getWeekStart(date) {
@@ -306,6 +330,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     
                     // Update booking details
                     updateDateTimeDetails();
+                    
+                    // Refresh the page with the selected date to load new time slots
+                    const serviceId = serviceSelect.value;
+                    if (serviceId) {
+                        window.location.href = `{{ route('customer.appointments.create') }}?service_id=${serviceId}&date=${date.toISOString().split('T')[0]}`;
+                    }
                 });
             }
             
@@ -373,6 +403,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Time slot selection
     document.querySelectorAll('.time-slot-cell').forEach(slot => {
         slot.addEventListener('click', function() {
+            if (this.classList.contains('unavailable')) {
+                return; // Don't allow selection of unavailable slots
+            }
+            
             // Remove active class from all time slots
             document.querySelectorAll('.time-slot-cell').forEach(el => {
                 el.classList.remove('active');
@@ -383,7 +417,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update selected time
             selectedTime = this.querySelector('.time-slot').textContent;
-            selectedTimeInput.value = this.getAttribute('data-time');
+            selectedTimeInput.value = this.getAttribute('data-time'); // This will be the available_time_id
             
             // Update booking details
             updateDateTimeDetails();
@@ -626,6 +660,19 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .bg-white:hover {
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Time slot-cell unavailable */
+.time-slot-cell.unavailable {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.time-slot-cell.unavailable:hover {
+    border-color: #dee2e6;
+    transform: none;
 }
 
 /* Total Price Styles */

@@ -150,9 +150,9 @@
                                     <div>
                                         <h6 class="mb-0">{{ $order->user->name }}</h6>
                                         <p class="mb-0 text-muted small">
-                                            <a href="{{ route('admin.customers.show', $order->user->id) }}" class="text-decoration-none">
+                                            {{-- <a href="{{ route('admin.customers.show', $order->user->id) }}" class="text-decoration-none">
                                                 View customer profile
-                                            </a>
+                                            </a> --}}
                                         </p>
                                     </div>
                                 </div>
@@ -162,25 +162,34 @@
                                 </div>
                                 <div class="info-item mb-2">
                                     <span class="text-muted small">Phone:</span>
-                                    <p class="mb-0">{{ $order->user->phone ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $order->user->tel_number ?? 'N/A' }}</p>
                                 </div>
                             </div>
                             
                             <!-- Shipping Information -->
                             <div class="mb-4">
-                                <h5 class="fw-semibold mb-3 border-bottom pb-3">Shipping Information</h5>
+                                
+                                
+                                @if($order->location)
                                 <div class="info-card p-3 rounded-3 bg-light mb-3">
                                     <div class="d-flex align-items-center mb-2">
-                                        <i class="bi bi-geo-alt text-primary me-2"></i>
-                                        <h6 class="mb-0">Shipping Address</h6>
+                                        <i class="bi bi-pin-map text-primary me-2"></i>
+                                        <h6 class="mb-0">Shipping Information</h6>
                                     </div>
                                     <p class="mb-0">
-                                        {{ $order->shipping_address }}<br>
-                                        {{ $order->shipping_city }}, {{ $order->shipping_state }} {{ $order->shipping_zip }}<br>
-                                        {{ $order->shipping_country }}
+                                        <strong>{{ $order->location->location_name }}</strong><br>
+                                        {{ $order->location->address_line1 }}
+                                        @if($order->location->address_line2)
+                                            , {{ $order->location->address_line2 }}
+                                        @endif
+                                        <br>
+                                        {{ $order->location->city }}, {{ $order->location->state }} {{ $order->location->postal_code }}
+                                        @if($order->location->phone_number)
+                                            <br>Phone: {{ $order->location->phone_number }}
+                                        @endif
                                     </p>
                                 </div>
-                                
+                                @endif
                                 <div class="info-card p-3 rounded-3 bg-light">
                                     <div class="d-flex align-items-center mb-2">
                                         <i class="bi bi-truck text-primary me-2"></i>
@@ -198,21 +207,64 @@
                                         <i class="bi bi-credit-card text-primary me-2"></i>
                                         <h6 class="mb-0">Payment Details</h6>
                                     </div>
-                                    <div class="info-item mb-2">
-                                        <span class="text-muted small">Method:</span>
-                                        <p class="mb-0">{{ $order->payment_method ?? 'N/A' }}</p>
-                                    </div>
-                                    <div class="info-item mb-2">
-                                        <span class="text-muted small">Status:</span>
-                                        <span class="badge bg-{{ $order->payment_status == 'paid' ? 'success' : 'warning' }}">
-                                            {{ ucfirst($order->payment_status ?? 'pending') }}
-                                        </span>
-                                    </div>
-                                    @if($order->transaction_id)
-                                    <div class="info-item mb-0">
-                                        <span class="text-muted small">Transaction ID:</span>
-                                        <p class="mb-0">{{ $order->transaction_id }}</p>
-                                    </div>
+                                    
+                                    @if($order->payments->count() > 0)
+                                        <!-- Display the most recent payment information -->
+                                        @php
+                                            $latestPayment = $order->payments->sortByDesc('payment_date')->first();
+                                        @endphp
+                                        
+                                        <div class="info-item mb-2">
+                                            <span class="text-muted small">Method:</span>
+                                            <p class="mb-0">{{ $latestPayment->payment_method ?? 'N/A' }}</p>
+                                        </div>
+                                        <div class="info-item mb-2">
+                                            <span class="text-muted small">Status:</span>
+                                            <span class="badge bg-{{ $latestPayment->status == \App\Models\Payment::STATUS_COMPLETED ? 'success' : 'warning' }}">
+                                                {{ ucfirst($latestPayment->status ?? 'pending') }}
+                                            </span>
+                                        </div>
+                                        @if($latestPayment->transaction_id)
+                                        <div class="info-item mb-2">
+                                            <span class="text-muted small">Transaction ID:</span>
+                                            <p class="mb-0">{{ $latestPayment->transaction_id }}</p>
+                                        </div>
+                                        @endif
+                                        <div class="info-item mb-0">
+                                            <span class="text-muted small">Date:</span>
+                                            <p class="mb-0">{{ $latestPayment->payment_date->format('M d, Y, h:i A') }}</p>
+                                        </div>
+                                        
+                                        @if($order->payments->count() > 1)
+                                            <div class="mt-3 pt-2 border-top">
+                                                <a href="#" data-bs-toggle="collapse" data-bs-target="#allPayments" class="text-decoration-none small">
+                                                    <i class="bi bi-chevron-down me-1"></i> View all payments ({{ $order->payments->count() }})
+                                                </a>
+                                                
+                                                <div class="collapse mt-2" id="allPayments">
+                                                    @foreach($order->payments->sortByDesc('payment_date') as $payment)
+                                                        <div class="card card-body bg-light mb-2 p-2 small">
+                                                            <div class="d-flex justify-content-between">
+                                                                <span>{{ $payment->payment_date->format('M d, Y') }}</span>
+                                                                <span class="badge bg-{{ $payment->status == \App\Models\Payment::STATUS_COMPLETED ? 'success' : 'warning' }}">
+                                                                    {{ ucfirst($payment->status) }}
+                                                                </span>
+                                                            </div>
+                                                            <div>Method: {{ $payment->payment_method }}</div>
+                                                            <div>Amount: RM {{ number_format($payment->amount, 2) }}</div>
+                                                            @if($payment->transaction_id)
+                                                                <div>Transaction ID: {{ $payment->transaction_id }}</div>
+                                                            @endif
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        @endif
+                                    @else
+                                        <!-- No payments found -->
+                                        <div class="text-muted">
+                                            <p class="mb-0">No payment information available.</p>
+                                        </div>
                                     @endif
                                 </div>
                             </div>
@@ -226,18 +278,6 @@
                                 </div>
                             </div>
                             @endif
-                            
-                            <!-- Seller Message -->
-                            <div>
-                                <h5 class="fw-semibold mb-3 border-bottom pb-3">Seller Message</h5>
-                                <div class="p-3 rounded-3 bg-light">
-                                    @if($order->seller_message)
-                                        <p class="mb-0">{{ $order->seller_message }}</p>
-                                    @else
-                                        <p class="text-muted mb-0">No message added yet.</p>
-                                    @endif
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -260,7 +300,7 @@
                 <div class="modal-body p-4">
                     <div class="mb-3">
                         <label for="status" class="form-label fw-medium">Status</label>
-                        <select class="form-select form-select-lg" id="status" name="status">
+                        <select class="form-select form-select-lg" id="status" name="status" onchange="toggleTrackingField()">
                             <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Pending</option>
                             <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Processing</option>
                             <option value="shipped" {{ $order->status == 'shipped' ? 'selected' : '' }}>Shipped</option>
@@ -270,9 +310,17 @@
                             <option value="refunded" {{ $order->status == 'refunded' ? 'selected' : '' }}>Refunded</option>
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label for="seller_message" class="form-label fw-medium">Message to Customer (Optional)</label>
-                        <textarea class="form-control" id="seller_message" name="seller_message" rows="3" placeholder="Add a note about this status update">{{ $order->seller_message }}</textarea>
+                    
+                    <div class="mb-3" id="trackingNumberField" style="display: {{ in_array($order->status, ['shipped', 'delivered']) ? 'block' : 'none' }}">
+                        <label for="tracking_number" class="form-label fw-medium">Tracking Number</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="tracking_number" name="tracking_number" 
+                                   value="{{ $order->tracking ? $order->tracking->tracking_number : '' }}">
+                            <span class="input-group-text text-dark">
+                                <img src="{{ asset('image/JNT logo.png') }}" alt="JNT Logo" height="30" class="me-1">
+                            </span>
+                        </div>
+                        <small class="text-muted">Enter the shipping tracking number</small>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
@@ -280,6 +328,19 @@
                     <button type="submit" class="btn btn-primary px-4">Update Status</button>
                 </div>
             </form>
+            
+            <script>
+                function toggleTrackingField() {
+                    const status = document.getElementById('status').value;
+                    const trackingField = document.getElementById('trackingNumberField');
+                    
+                    if (status === 'shipped' || status === 'delivered') {
+                        trackingField.style.display = 'block';
+                    } else {
+                        trackingField.style.display = 'none';
+                    }
+                }
+            </script>
         </div>
     </div>
 </div>

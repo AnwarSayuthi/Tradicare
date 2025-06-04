@@ -12,7 +12,6 @@ class Order extends Model
         'total_amount', 
         'payment_status', 
         'status',
-        'seller_message'
     ];
     public $timestamps = false;
 
@@ -22,6 +21,8 @@ class Order extends Model
     const STATUS_SHIPPED = 'shipped';
     const STATUS_DELIVERED = 'delivered';
     const STATUS_CANCELLED = 'cancelled';
+    const STATUS_REFUNDED = 'refunded';
+
     
     // Payment status constants
     const PAYMENT_PENDING = 'pending';
@@ -39,32 +40,33 @@ class Order extends Model
         return $this->hasOne(Cart::class, 'order_id');
     }
 
-    public function payment()
+    public function payments()
     {
-        return $this->hasOne(Payment::class, 'order_id');
+        return $this->hasMany(Payment::class, 'order_id');
     }
     
     /**
-     * Get all cart items associated with this order
+     * Get all cart items associated with this order through the cart
      */
     public function items()
     {
-        return $this->cart ? $this->cart->cartItems : collect([]);
+        return $this->hasManyThrough(
+            CartItem::class,
+            Cart::class,
+            'order_id', // Foreign key on carts table
+            'cart_id',  // Foreign key on cart_items table
+            'order_id', // Local key on orders table
+            'cart_id'   // Local key on carts table
+        );
     }
-    
-    /**
-     * Check if the order is paid
-     */
-    public function isPaid()
+
+    public function tracking()
     {
-        return $this->payment_status === self::PAYMENT_PAID;
+        return $this->hasOne(Tracking::class, 'order_id', 'order_id');
     }
-    
-    /**
-     * Check if the order is cancelled
-     */
-    public function isCancelled()
+
+    public function location()
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return $this->belongsTo(Location::class, 'location_id', 'location_id');
     }
 }

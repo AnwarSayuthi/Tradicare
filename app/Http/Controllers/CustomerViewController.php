@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Appointment;
+use App\Models\AvailableTime;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
@@ -146,6 +147,7 @@ class CustomerViewController extends Controller
     {
         $appointments = Appointment::with('service')
             ->where('user_id', auth()->id())
+            ->where('status', '!=', 'cancelled') // Add this line to exclude cancelled appointments
             ->orderBy('appointment_date', 'desc')
             ->paginate(10);
 
@@ -230,6 +232,7 @@ class CustomerViewController extends Controller
         // Create order
         $order = Order::create([
             'user_id' => auth()->id(),
+            'location_id' => $request->location_id, // Add this line to store location_id
             'order_date' => now(),
             'total_amount' => $totalAmount,
             'payment_status' => Order::PAYMENT_PENDING,
@@ -242,8 +245,19 @@ class CustomerViewController extends Controller
         $cart->order_id = $order->order_id;
         $cart->status = 'active';
         $cart->save();
+    // After retrieving the order and before creating a new payment
     } else {
         $order = Order::findOrFail($cart->order_id);
+        
+        // Recalculate the total amount based on current cart items
+        $currentTotalAmount = $cart->getTotalPrice() + 5.00; // Adding $5 shipping
+        
+        // If the cart total has changed, update the order total_amount
+        if (abs($currentTotalAmount - $order->total_amount) > 0.01) { // Using small epsilon for float comparison
+            $order->total_amount = $currentTotalAmount;
+            $order->save();
+        }
+        
         $totalAmount = $order->total_amount;
     }
 
@@ -252,19 +266,30 @@ class CustomerViewController extends Controller
                      ->where('status', Payment::STATUS_PENDING)
                      ->first();
 
+    // If payment exists but amount doesn't match current total, mark it as failed and create a new one
+    if ($payment && abs($payment->amount - $totalAmount) > 0.01) {
+        $payment->status = Payment::STATUS_FAILED;
+        $payment->payment_details = array_merge($payment->payment_details ?? [], [
+            'failure_reason' => 'Payment amount does not match current cart total'
+        ]);
+        $payment->save();
+        
+        // Set payment to null so a new one will be created
+        $payment = null;
+    }
     // Create new payment if none exists
     if (!$payment) {
+        // Create a pending payment record
         $payment = Payment::create([
             'user_id' => auth()->id(),
-            'order_id' => $order->order_id,
-            'amount' => $totalAmount,
+            'appointment_id' => $appointment->appointment_id,
+            'amount' => $service->price,
             'payment_date' => now(),
-            'payment_method' => $request->payment_method,
+            'payment_method' => Payment::METHOD_TOYYIBPAY, // Set a default method
             'status' => Payment::STATUS_PENDING,
             'transaction_id' => 'TXN' . time() . rand(1000, 9999)
         ]);
     }
-    
     // Handle payment based on method
     if ($request->payment_method === Payment::METHOD_TOYYIBPAY) {
         // Check if payment already has a billcode
@@ -301,48 +326,18 @@ class CustomerViewController extends Controller
     }
 }
 
-    public function orders()
-    {
-        $orders = Order::with(['items.product', 'payment'])
-                      ->where('user_id', auth()->id())
-                      ->orderBy('order_date', 'desc')
-                      ->paginate(10);
-        
-        return view('customer.orders.index', compact('orders'));
-    }
-
-    public function orderDetails($id)
-    {
-        $order = Order::with(['items.product', 'payment'])
-                     ->where('user_id', auth()->id())
-                     ->where('order_id', $id)
-                     ->firstOrFail();
-        
-        return view('customer.orders.show', compact('order'));
-    }
-
-    // Add these methods to the CustomerViewController class
-    
-    // Add this method to your CustomerViewController class
-    public function about()
-    {
-        return view('customer.about');
-    }
-
-    // Update the profile method to include orders
-    public function profile()
+    public function profile(Request $request)
     {
         $user = auth()->user();
         $locations = $user->locations()->get();
         
-        // Get recent orders for profile page
-        $recentOrders = Order::with(['items.product', 'payment'])
-                              ->where('user_id', auth()->id())
-                              ->orderBy('order_date', 'desc')
-                              ->limit(3)
-                              ->get();
+        // Use paginate instead of get
+        $orders = Order::with(['items.product', 'payments', 'tracking'])
+                      ->where('user_id', auth()->id())
+                      ->orderBy('order_date', 'desc')
+                      ->paginate(10); // Show 10 orders per page
         
-        return view('customer.profile.index', compact('user', 'locations', 'recentOrders'));
+        return view('customer.profile.index', compact('user', 'locations', 'orders'));
     }
 
     // Add this method to handle adding new addresses
@@ -377,6 +372,124 @@ class CustomerViewController extends Controller
         }
         
         return redirect()->route('customer.profile')->with('success', 'Address added successfully!');
+    }
+    
+    /**
+     * Show payment page with appointment details
+     */
+    public function showPayment(Request $request)
+    {
+        $request->validate([
+            'service_id' => 'required|exists:services,service_id',
+            'appointment_date' => 'required|date',
+            'available_time_id' => 'required|exists:available_times,available_time_id',
+            'mobile_number' => 'required|string',
+        ]);
+    
+        $service = Service::findOrFail($request->service_id);
+        $timeSlot = AvailableTime::findOrFail($request->available_time_id);
+        
+        // Create appointment data array
+        $appointmentData = [
+            'service_id' => $request->service_id,
+            'appointment_date' => $request->appointment_date,
+            'available_time_id' => $request->available_time_id,
+            'mobile_number' => $request->mobile_number,
+            'notes' => $request->notes,
+        ];
+        
+        // Store appointment data in session
+        session(['appointment_data' => $appointmentData]);
+    
+        // Pass appointmentData to the view along with other variables
+        return view('customer.appointments.payment', compact('service', 'timeSlot', 'appointmentData'));
+    }
+
+    /**
+     * Process payment and create appointment
+     */
+    public function processPayment(Request $request)
+    {
+        $request->validate([
+            'payment_method' => 'required|in:toyyibpay,cash',
+        ]);
+
+        $appointmentData = session('appointment_data');
+        if (!$appointmentData) {
+            return redirect()->route('customer.appointments.create')
+                ->with('error', 'Session expired. Please try again.');
+        }
+
+        // Get service details
+        $service = Service::findOrFail($appointmentData['service_id']);
+        $timeSlot = AvailableTime::findOrFail($appointmentData['available_time_id']);
+        
+        // Create appointment
+        $appointment = Appointment::create([
+            'user_id' => auth()->id(),
+            'service_id' => $appointmentData['service_id'],
+            'appointment_date' => $appointmentData['appointment_date'],
+            'available_time_id' => $appointmentData['available_time_id'],
+            'status' => 'pending',
+            'notes' => $appointmentData['notes'] ?? null,
+        ]);
+
+        // Create payment record
+        $payment = Payment::create([
+            'appointment_id' => $appointment->appointment_id,
+            'user_id' => auth()->id(),
+            'amount' => $service->price,
+            'payment_date' => now(),
+            'payment_method' => $request->payment_method,
+            'status' => Payment::STATUS_PENDING,
+            'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+        ]);
+
+        // Handle payment based on method
+        if ($request->payment_method === 'toyyibpay') {
+            // Initiate ToyyibPay payment
+            $toyyibpay = new ToyyibPayService();
+            $billResponse = $toyyibpay->createBill($payment);
+
+            if (isset($billResponse[0]['BillCode'])) {
+                // Update payment with billcode
+                $payment->update([
+                    'billcode' => $billResponse[0]['BillCode'],
+                    'transaction_id' => $billResponse[0]['BillCode']
+                ]);
+                
+                // Clear session data
+                session()->forget('appointment_data');
+                
+                // Redirect to ToyyibPay
+                $baseUrl = env('TOYYIBPAY_SANDBOX', true) ? 'https://dev.toyyibpay.com' : 'https://toyyibpay.com';
+                return redirect($baseUrl . '/' . $billResponse[0]['BillCode']);
+            }
+
+            // If payment failed
+            $appointment->delete();
+            $payment->delete();
+            return redirect()->route('customer.appointments.create')
+                ->with('error', 'Payment initialization failed. Please try again.');
+        } else {
+            // For cash payment
+            $payment->update(['status' => 'pending']);
+            $appointment->update(['status' => 'scheduled']);
+            
+            // Clear session data
+            session()->forget('appointment_data');
+            
+            return redirect()->route('customer.appointments.payment.success')
+                ->with('success', 'Appointment booked successfully! You will pay with cash on arrival.');
+        }
+    }
+
+    /**
+     * Show payment success page
+     */
+    public function paymentSuccess()
+    {
+        return view('customer.appointments.payment-success');
     }
 
     // Add method to update address
@@ -452,152 +565,264 @@ class CustomerViewController extends Controller
     { 
         $services = Service::all(); 
         $selectedServiceId = $request->query('service_id'); 
+        $selectedDate = $request->query('date') ? Carbon::parse($request->query('date')) : Carbon::today();
+        
+        // Get available time slots if both service and date are selected
+        $availableTimeSlots = [];
+        if ($selectedServiceId && $selectedDate) {
+            $availableTimeSlots = $this->getAvailableTimeSlots($selectedDate->format('Y-m-d'), $selectedServiceId);
+        }
+        
+         // Group time slots into morning and afternoon
+        $morningSlots = [];
+        $afternoonSlots = [];
+        
+        foreach ($availableTimeSlots as $slot) {
+            // Extract the time from the formatted time string (e.g., "9:00 AM - 10:00 AM")
+            $timeString = explode(' - ', $slot['time'])[0]; // Get the start time part
+            $hour = (int)Carbon::createFromFormat('g:i A', $timeString)->format('H');
+            
+            if ($hour < 12) {
+                $morningSlots[] = $slot;
+            } else {
+                $afternoonSlots[] = $slot;
+            }
+        }
         
         return view('customer.appointments.create', [ 
             'services' => $services, 
-            'selectedServiceId' => $selectedServiceId 
+            'selectedServiceId' => $selectedServiceId,
+            'selectedDate' => $selectedDate,
+            'morningSlots' => $morningSlots,
+            'afternoonSlots' => $afternoonSlots
         ]); 
     }
 
     // Helper method to get available time slots
+    // Update the getAvailableTimeSlots method to use AvailableTime model
     private function getAvailableTimeSlots($date, $serviceId = null)
-    {
-        $date = Carbon::parse($date);
-        $timeSlots = [];
-        
-        // If Sunday, return empty (assuming clinic closed on Sundays)
-        if ($date->dayOfWeek === 0) {
-            return $timeSlots;
-        }
-        
-        // Get service duration if service_id is provided
-        $serviceDuration = 60; // Default 1 hour
-        if ($serviceId) {
-            $service = Service::find($serviceId);
-            if ($service) {
-                $serviceDuration = $service->duration_minutes;
-            }
-        }
-        
-        // Business hours: 9 AM to 8 PM
-        $startHour = 9; // 9 AM
-        $endHour = 20; // 8 PM
-        
-        // Get all appointments for this date
-        $appointments = Appointment::where('status', 'scheduled')
-            ->whereDate('appointment_date', $date)
-            ->get();
-        
-        // Generate time slots
-        for ($hour = $startHour; $hour < $endHour; $hour++) {
-            // Generate slots at 30-minute intervals
-            for ($minute = 0; $minute < 60; $minute += 30) {
-                $slotStart = Carbon::parse($date)->hour($hour)->minute($minute)->second(0);
-                
-                // Skip if this time slot has already passed
-                if ($slotStart < now()) {
-                    continue;
-                }
-                
-                // Calculate slot end time based on service duration
-                $slotEnd = (clone $slotStart)->addMinutes($serviceDuration);
-                
-                // Skip if slot end time is after business hours
-                if ($slotEnd->hour >= $endHour) {
-                    continue;
-                }
-                
-                // Change any instances of '$' to 'RM' in currency formatting
-                // Check if this slot overlaps with any booked appointment
-                $isAvailable = true;
-                foreach ($appointments as $appointment) {
-                    $appointmentStart = $appointment->appointment_date;
-                    $appointmentEnd = $appointment->end_time;
-                    
-                    // Check for overlap
-                    if (
-                        ($slotStart >= $appointmentStart && $slotStart < $appointmentEnd) ||
-                        ($slotEnd > $appointmentStart && $slotEnd <= $appointmentEnd) ||
-                        ($slotStart <= $appointmentStart && $slotEnd >= $appointmentEnd)
-                    ) {
-                        $isAvailable = false;
-                        break;
-                    }
-                }
-                
-                if ($isAvailable) {
-                    $timeSlots[] = [
-                        'time' => $slotStart->format('g:i A'),
-                        'value' => $slotStart->format('H:i'),
-                        'available' => true
-                    ];
-                }
-            }
-        }
-        
+{
+    $date = Carbon::parse($date);
+    $timeSlots = [];
+    
+    // Log the current time for comparison
+    \Log::info('Current time: ' . now()->format('Y-m-d H:i:s'));
+    \Log::info('Requested date: ' . $date->format('Y-m-d'));
+    
+    // If Sunday, return empty (assuming clinic closed on Sundays)
+    if ($date->dayOfWeek === 0) {
+        \Log::info('Sunday detected, returning empty slots');
         return $timeSlots;
     }
+    
+    // Get all available time slots from the database
+    $availableTimes = AvailableTime::all();
+    \Log::info('Total available time slots in database: ' . $availableTimes->count());
+    
+    // Get all unavailable times for this date
+    $unavailableTimes = \App\Models\UnavailableTime::where('date', $date->format('Y-m-d'))
+        ->pluck('available_time_id')
+        ->toArray();
+    \Log::info('Unavailable time slots for this date: ' . json_encode($unavailableTimes));
+    
+    // Get all booked appointments for this date
+    $bookedAppointments = Appointment::where('status', 'scheduled')
+        ->whereDate('appointment_date', $date)
+        ->pluck('available_time_id')
+        ->toArray();
+    \Log::info('Booked appointments for this date: ' . json_encode($bookedAppointments));
+    
+    foreach ($availableTimes as $availableTime) {
+        \Log::info('Processing time slot ID: ' . $availableTime->available_time_id . 
+                 ', Start: ' . $availableTime->start_time->format('H:i:s') . 
+                 ', End: ' . $availableTime->end_time->format('H:i:s'));
+        
+        // Skip if this time slot is marked as unavailable for this date
+        if (in_array($availableTime->available_time_id, $unavailableTimes)) {
+            \Log::info('Skipping - marked as unavailable for this date');
+            continue;
+        }
+        
+        // Skip if this time slot is already booked
+        if (in_array($availableTime->available_time_id, $bookedAppointments)) {
+            \Log::info('Skipping - already booked');
+            continue;
+        }
+        
+        // Format the start and end times
+        $startTime = Carbon::parse($date->format('Y-m-d') . ' ' . $availableTime->start_time->format('H:i:s'));
+        $endTime = Carbon::parse($date->format('Y-m-d') . ' ' . $availableTime->end_time->format('H:i:s'));
+        
+        \Log::info('Comparing times - Start time: ' . $startTime->format('Y-m-d H:i:s') . 
+                 ', Current time: ' . now()->format('Y-m-d H:i:s') . 
+                 ', Is past? ' . ($startTime < now() ? 'Yes' : 'No'));
+        
+        // Skip if this time slot has already passed
+        if ($startTime < now()) {
+            \Log::info('Skipping - time slot has already passed');
+            continue;
+        }
+        
+        // Add to morning or afternoon slots directly in the array
+        $timeSlots[] = [
+            'time' => $startTime->format('g:i A') . ' - ' . $endTime->format('g:i A'),
+            'value' => $availableTime->available_time_id, // Use the available_time_id as the value
+            'available' => true
+        ];
+        \Log::info('Added time slot to available slots');
+    }
+    
+    \Log::info('Final number of available time slots: ' . count($timeSlots));
+    return $timeSlots;
+}
 
     // Update the storeAppointment method to handle payment redirection
     public function storeAppointment(Request $request)
     {
         $validated = $request->validate([
             'service_id' => 'required|exists:services,service_id',
-            'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required',
-            'notes' => 'nullable|string',
-            'terms_agreed' => 'required|accepted',
+            'appointment_date' => 'required|date',
+            'available_time_id' => 'required|exists:available_times,available_time_id',
+            'tel_number' => 'required|string',
         ]);
         
-        // Combine date and time
-        $appointmentDateTime = Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
+        // Get the available time slot
+        $availableTime = AvailableTime::findOrFail($validated['available_time_id']);
         
-        // Get service to calculate end time
+        // Get service
         $service = Service::findOrFail($validated['service_id']);
         
-        // Calculate end time based on service duration
-        $endTime = (clone $appointmentDateTime)->addMinutes($service->duration_minutes);
+        // Create appointment with pending_payment status
+        $appointment = Appointment::create([
+            'user_id' => auth()->id(),
+            'service_id' => $validated['service_id'],
+            'available_time_id' => $validated['available_time_id'],
+            'appointment_date' => Carbon::parse($validated['appointment_date']),
+            'status' => 'scheduled', // Changed to an allowed value
+            'notes' => $request->notes ?? null,
+        ]);
+        
+        // Create a pending payment record
+        $payment = Payment::create([
+            'user_id' => auth()->id(),
+            'appointment_id' => $appointment->appointment_id,
+            'amount' => $service->price,
+            'payment_date' => now(),
+            'payment_method' => Payment::METHOD_TOYYIBPAY, // Set a default method
+            'status' => Payment::STATUS_PENDING,
+            'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+        ]);
+        
+        // Redirect to payment page
+        return redirect()->route('customer.appointments.payment', $appointment->appointment_id)
+            ->with('success', 'Appointment reserved. Please complete your payment to confirm booking.');
+    }
+
+
+
+    // Add a method to process appointment payment
+    /**
+     * Create a new appointment and process payment in one step
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createAppointmentPayment(Request $request)
+    {
+        $request->validate([
+            'service_id' => 'required|exists:services,service_id',
+            'appointment_date' => 'required|date|after:today',
+            'available_time_id' => 'required|exists:available_times,available_time_id',
+            'mobile_number' => 'required|string',
+            'payment_method' => 'required|in:toyyibpay,cash',
+        ]);
+    
+        // Get service details
+        $service = Service::findOrFail($request->service_id);
+        $timeSlot = AvailableTime::findOrFail($request->available_time_id);
         
         // Create appointment
         $appointment = Appointment::create([
             'user_id' => auth()->id(),
-            'service_id' => $validated['service_id'],
-            'appointment_date' => $appointmentDateTime,
-            'end_time' => $endTime,
-            'status' => 'scheduled',
-            'notes' => $validated['notes'] ?? null,
+            'service_id' => $request->service_id,
+            'appointment_date' => $request->appointment_date,
+            'available_time_id' => $request->available_time_id,
+            'start_time' => $timeSlot->start_time,
+            'end_time' => $timeSlot->end_time,
+            'tel_number' => $request->tel_number,
+            'status' => 'pending',
+            'notes' => $request->notes ?? null,
         ]);
         
-        // Redirect to payment page
-        return redirect()->route('customer.appointment.payment', $appointment->appointment_id)
-            ->with('success', 'Appointment scheduled successfully. Please complete your payment.');
-    }
-
-    // Add a new method for appointment payment
-    public function showPayment(Appointment $appointment)
-    {
-        // Ensure the appointment belongs to the logged-in user
-        if ($appointment->user_id !== auth()->id()) {
-            return redirect()->route('customer.appointments.index')
-                ->with('error', 'You do not have permission to view this appointment.');
+        // Create payment record
+        $payment = Payment::create([
+            'appointment_id' => $appointment->appointment_id,
+            'user_id' => auth()->id(),
+            'amount' => $service->price,
+            'payment_date' => now(),
+            'payment_method' => $request->payment_method,
+            'status' => Payment::STATUS_PENDING,
+            'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+        ]);
+        
+        // Handle payment based on method
+        if ($request->payment_method === 'toyyibpay') {
+            // Initiate ToyyibPay payment
+            $toyyibpay = new ToyyibPayService();
+            $billResponse = $toyyibpay->createBill($payment);
+    
+            if (isset($billResponse[0]['BillCode'])) {
+                // Update payment with billcode
+                $payment->update([
+                    'billcode' => $billResponse[0]['BillCode'],
+                    'transaction_id' => $billResponse[0]['BillCode']
+                ]);
+                
+                // Determine the correct payment URL (sandbox or production)
+                $baseUrl = env('TOYYIBPAY_SANDBOX', true) ? 'https://dev.toyyibpay.com' : 'https://toyyibpay.com';
+                
+                return response()->json([
+                    'success' => true,
+                    'show_popup' => true,
+                    'payment_url' => $baseUrl . '/' . $billResponse[0]['BillCode']
+                ]);
+            }
+    
+            // If payment failed
+            $appointment->delete();
+            $payment->delete();
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initialization failed. Please try again.'
+            ]);
+        } else {
+            // For cash payment
+            $payment->update(['status' => 'pending']);
+            $appointment->update(['status' => 'scheduled']);
+            
+            return response()->json([
+                'success' => true,
+                'show_success' => true,
+                'message' => 'Appointment booked successfully! You will pay with cash on arrival.'
+            ]);
         }
-        
-        return view('customer.appointments.payment', compact('appointment'));
     }
-
-    // Add a method to process appointment payment
-    public function processPayment(Request $request, $appointmentId)
+    
+    /**
+     * Process payment for an existing appointment
+     *
+     * @param Request $request
+     * @param Appointment $appointment
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processAppointmentPayment(Request $request, Appointment $appointment)
     {
-        $request->validate([
-            'payment_method' => 'required|in:toyyibpay,cash',
-        ]);
-
-        $appointment = Appointment::findOrFail($appointmentId);
-        
         // Ensure the appointment belongs to the logged-in user
         if ($appointment->user_id !== auth()->id()) {
-            return redirect()->route('customer.appointments.index')
-                ->with('error', 'You do not have permission to process this payment.');
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to process this payment.'
+            ]);
         }
         
         // Create or update payment record
@@ -620,24 +845,40 @@ class CustomerViewController extends Controller
             $billResponse = $toyyibpay->createBill($payment);
 
             if (isset($billResponse[0]['BillCode'])) {
-                // Update payment with transaction ID
-                $payment->update(['transaction_id' => $billResponse[0]['BillCode']]);
+                // Update payment with billcode
+                $payment->update([
+                    'billcode' => $billResponse[0]['BillCode'],
+                    'transaction_id' => $billResponse[0]['BillCode']
+                ]);
                 
-                return redirect('https://dev.toyyibpay.com/'.$billResponse[0]['BillCode']);
+                // Determine the correct payment URL (sandbox or production)
+                $baseUrl = env('TOYYIBPAY_SANDBOX', true) ? 'https://dev.toyyibpay.com' : 'https://toyyibpay.com';
+                
+                return response()->json([
+                    'success' => true,
+                    'show_popup' => true,
+                    'payment_url' => $baseUrl . '/' . $billResponse[0]['BillCode']
+                ]);
             }
 
             // If payment failed
-            $payment->delete();
-            return back()->with('error', 'Payment initialization failed. Please try again.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Payment initialization failed. Please try again.'
+            ]);
         } else {
             // For cash payment
             $payment->update(['status' => 'pending']);
             $appointment->update(['status' => 'scheduled']);
             
-            return redirect()->route('customer.appointments.index')
-                ->with('success', 'Appointment booked successfully! You will pay with cash on arrival.');
+            return response()->json([
+                'success' => true,
+                'show_success' => true,
+                'message' => 'Appointment booked successfully! You will pay with cash on arrival.'
+            ]);
         }
     }
+
 
     // Update the paymentCallback method to handle both order and appointment payments
     public function paymentCallback(Request $request)
@@ -647,13 +888,37 @@ class CustomerViewController extends Controller
     
         $payment = Payment::where('transaction_id', $billCode)->firstOrFail();
         
+        // Verify payment amount against cart total if it's an order payment
+        if ($payment->order_id && $payment->order && $payment->order->cart) {
+            $order = $payment->order;
+            $cart = $order->cart;
+            
+            // Calculate current cart total
+            $cartTotal = $cart->getTotalPrice() + 5.00; // Adding $5 shipping
+            
+            // If cart total doesn't match payment amount, mark payment as failed
+            if (abs($cartTotal - $payment->amount) > 0.01) { // Using small epsilon for float comparison
+                $payment->update([
+                    'status' => Payment::STATUS_FAILED,
+                    'payment_details' => array_merge($payment->payment_details ?? [], $request->all(), [
+                        'failure_reason' => 'Payment amount does not match cart total'
+                    ])
+                ]);
+                
+                $order->update(['payment_status' => Order::PAYMENT_FAILED]);
+                
+                return redirect()->route('customer.orders')
+                    ->with('error', 'Payment failed: Amount mismatch. Please try again or contact support.');
+            }
+        }
+        
         if ($status == 1) {
             // Payment successful
-            $payment->update(['status' => 'completed']);
+            $payment->update(['status' => Payment::STATUS_COMPLETED]);
             
             // Handle order payment
             if ($payment->order_id) {
-                $payment->order->update(['payment_status' => 'paid', 'status' => 'processing']);
+                $payment->order->update(['payment_status' => Order::PAYMENT_PAID, 'status' => Order::STATUS_PROCESSING]);
                 return redirect()->route('customer.orders')
                     ->with('success', 'Payment successful! Your order is being processed.');
             }
@@ -771,5 +1036,167 @@ class CustomerViewController extends Controller
             ->get();
         
         return view('customer.services.show', compact('service', 'availableSlots', 'relatedServices'));
+    }
+
+
+    /**
+     * Cancel an order
+     * 
+     * @param int $id Order ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function cancelOrder($id)
+    {
+        // Find the order
+        $order = Order::where('order_id', $id)
+                     ->where('user_id', auth()->id())
+                     ->first();
+        
+        if (!$order) {
+            return redirect()->route('customer.orders')
+                ->with('error', 'Order not found.');
+        }
+        
+        // Check if order can be cancelled (allow both pending and processing orders to be cancelled)
+        if ($order->status !== Order::STATUS_PROCESSING && $order->status !== Order::STATUS_PENDING) {
+            return redirect()->route('customer.orders')
+                ->with('error', 'Only pending or processing orders can be cancelled.');
+        }
+        
+        // Update order status
+        $order->status = Order::STATUS_CANCELLED;
+        $order->save();
+        
+        // If there's a pending payment, mark it as failed
+        $pendingPayment = Payment::where('order_id', $order->order_id)
+                              ->where('status', Payment::STATUS_PENDING)
+                              ->first();
+        
+        if ($pendingPayment) {
+            $pendingPayment->status = Payment::STATUS_FAILED;
+            $pendingPayment->save();
+        }
+        
+        return redirect()->route('customer.orders')
+            ->with('success', 'Order cancelled successfully.');
+    }
+
+    /**
+     * Mark an order as received by the customer
+     * 
+     * @param int $id Order ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function receiveOrder($id)
+    {
+        // Find the order
+        $order = Order::where('order_id', $id)
+                 ->where('user_id', auth()->id())
+                 ->first();
+        
+        if (!$order) {
+            return redirect()->route('customer.orders')
+                ->with('error', 'Order not found.');
+        }
+        
+        // Check if order can be marked as received (only shipped orders)
+        if ($order->status !== Order::STATUS_SHIPPED) {
+            return redirect()->route('customer.orders')
+                ->with('error', 'Only shipped orders can be marked as received.');
+        }
+        
+        // Update order status to delivered/completed
+        $order->status = Order::STATUS_DELIVERED;
+        $order->save();
+        
+        return redirect()->back()
+            ->with('success', 'Order marked as received successfully.');
+    }
+      /**
+     * Display the details of a specific order
+     * 
+     * @param int $id Order ID
+     * @return \Illuminate\View\View
+     */
+    public function orderDetails($id)
+    {
+        // Find the order
+        $order = Order::where('order_id', $id)
+                     ->where('user_id', auth()->id())
+                     ->with(['items.product', 'payments', 'tracking'])
+                     ->firstOrFail();
+        
+        return view('customer.orders.show', compact('order'));
+    }
+
+    /**
+     * Get unavailable times for a specific date.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUnavailableTimes(Request $request)
+    {
+        $date = $request->query('date');
+        
+        if (!$date) {
+            return response()->json([]);
+        }
+        
+        $unavailableTimes = \App\Models\UnavailableTime::where('date', $date)
+            ->with('availableTime')
+            ->get()
+            ->map(function($unavailableTime) {
+                return [
+                    'id' => $unavailableTime->unavailable_time_id,
+                    'date' => $unavailableTime->date->format('Y-m-d'),
+                    'start_time' => $unavailableTime->availableTime->start_time->format('H:i'),
+                    'end_time' => $unavailableTime->availableTime->end_time->format('H:i')
+                ];
+            });
+        
+        return response()->json($unavailableTimes);
+    }
+
+    /**
+     * Cancel an appointment
+     * 
+     * @param int $id Appointment ID
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function cancelAppointment($id)
+    {
+        // Find the appointment
+        $appointment = \App\Models\Appointment::where('appointment_id', $id)
+                     ->where('user_id', auth()->id())
+                     ->first();
+        
+        if (!$appointment) {
+            return redirect()->route('customer.appointments.index')
+                ->with('error', 'Appointment not found.');
+        }
+        
+        // Check if appointment can be cancelled (only scheduled appointments)
+        if ($appointment->status !== 'scheduled') {
+            return redirect()->route('customer.appointments.index')
+                ->with('error', 'Only scheduled appointments can be cancelled.');
+        }
+        
+        // Update appointment status
+        $appointment->status = 'cancelled';
+        $appointment->save();
+        
+        // If there's a pending payment, mark it as failed
+        $pendingPayment = \App\Models\Payment::where('appointment_id', $appointment->appointment_id)
+                              ->where('status', \App\Models\Payment::STATUS_PENDING)
+                              ->first();
+        
+        if ($pendingPayment) {
+            $pendingPayment->status = \App\Models\Payment::STATUS_FAILED;
+            $pendingPayment->save();
+        }
+        
+        return redirect()->route('customer.appointments.index')
+            ->with('success', 'Appointment cancelled successfully.');
     }
 }

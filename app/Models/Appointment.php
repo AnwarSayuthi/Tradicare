@@ -8,17 +8,7 @@ class Appointment extends Model
     use HasFactory;
     
     protected $primaryKey = 'appointment_id';
-    protected $fillable = ['user_id', 'service_id', 'appointment_date', 'end_time', 'status', 'notes'];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'appointment_date' => 'datetime',
-        'end_time' => 'datetime',
-    ];
+    protected $fillable = ['user_id', 'service_id', 'available_time_id', 'appointment_date', 'status', 'notes'];
 
     public function user()
     {
@@ -28,6 +18,11 @@ class Appointment extends Model
     public function service()
     {
         return $this->belongsTo(Service::class, 'service_id');
+    }
+
+    public function availableTime()
+    {
+        return $this->belongsTo(AvailableTime::class, 'available_time_id');
     }
 
     public function payment()

@@ -12,9 +12,14 @@
                         <h4 class="mb-1 fw-bold text-primary">Create New Appointment</h4>
                         <p class="text-muted mb-0">Schedule a new appointment for a customer</p>
                     </div>
-                    <a href="{{ route('admin.appointments.index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-left me-1"></i> Back to Appointments
-                    </a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('admin.appointments.times.manage') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-clock me-1"></i> Manage Time Slots
+                        </a>
+                        <a href="{{ route('admin.appointments.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Appointments
+                        </a>
+                    </div>
                 </div>
                 
                 <div class="card-body p-4">
@@ -52,7 +57,7 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="appointment_date" class="form-label">Date</label>
                                 <input type="date" class="form-control @error('appointment_date') is-invalid @enderror" id="appointment_date" name="appointment_date" value="{{ old('appointment_date', date('Y-m-d', strtotime('+1 day'))) }}" min="{{ date('Y-m-d') }}" required>
                                 @error('appointment_date')
@@ -60,20 +65,29 @@
                                 @enderror
                             </div>
                             
-                            <div class="col-md-4 mb-3">
-                                <label for="appointment_time" class="form-label">Time</label>
-                                <input type="time" class="form-control @error('appointment_time') is-invalid @enderror" id="appointment_time" name="appointment_time" value="{{ old('appointment_time', '09:00') }}" required>
-                                @error('appointment_time')
+                            <div class="col-md-6 mb-3">
+                                <label for="available_time_id" class="form-label">Time Slot</label>
+                                <select class="form-select @error('available_time_id') is-invalid @enderror" id="available_time_id" name="available_time_id" required>
+                                    <option value="">Select Time Slot</option>
+                                    @php
+                                        $availableTimes = App\Models\AvailableTime::orderBy('start_time')->get();
+                                    @endphp
+                                    
+                                    @foreach($availableTimes as $time)
+                                        <option value="{{ $time->available_time_id }}" {{ old('available_time_id') == $time->available_time_id ? 'selected' : '' }}>
+                                            {{ \Carbon\Carbon::parse($time->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($time->end_time)->format('H:i') }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('available_time_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                            </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <label for="duration" class="form-label">Duration (minutes)</label>
-                                <input type="number" class="form-control @error('duration') is-invalid @enderror" id="duration" name="duration" min="15" step="15" value="{{ old('duration', 60) }}" required>
-                                @error('duration')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                
+                                @if($availableTimes->count() == 0)
+                                    <div class="alert alert-warning mt-2 mb-0">
+                                        <i class="bi bi-exclamation-triangle me-2"></i> No time slots available. <a href="{{ route('admin.appointments.times.manage') }}">Create time slots</a> first.
+                                    </div>
+                                @endif
                             </div>
                             
                             <div class="col-md-12 mb-3">
@@ -87,7 +101,7 @@
                         
                         <div class="d-flex justify-content-end gap-2">
                             <a href="{{ route('admin.appointments.index') }}" class="btn btn-outline-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Create Appointment</button>
+                            <button type="submit" class="btn btn-primary" @if($availableTimes->count() == 0) disabled @endif>Create Appointment</button>
                         </div>
                     </form>
                 </div>
@@ -95,4 +109,46 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dateInput = document.getElementById('appointment_date');
+        const timeSelect = document.getElementById('available_time_id');
+        
+        // Function to check availability and update time slots
+        function checkAvailability() {
+            const date = dateInput.value;
+            if (!date) return;
+            
+            // Disable all options first
+            for (let i = 0; i < timeSelect.options.length; i++) {
+                timeSelect.options[i].disabled = false;
+            }
+            
+            // Fetch unavailable times for the selected date
+            fetch(`/admin/appointments/unavailable-times?date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    // Disable unavailable time slots
+                    data.forEach(item => {
+                        for (let i = 0; i < timeSelect.options.length; i++) {
+                            if (timeSelect.options[i].value == item.available_time_id) {
+                                timeSelect.options[i].disabled = true;
+                                // If the currently selected option is now disabled, reset selection
+                                if (timeSelect.selectedIndex === i) {
+                                    timeSelect.selectedIndex = 0;
+                                }
+                            }
+                        }
+                    });
+                });
+        }
+        
+        // Check availability on date change
+        dateInput.addEventListener('change', checkAvailability);
+        
+        // Initial check
+        checkAvailability();
+    });
+</script>
 @endsection

@@ -133,8 +133,8 @@ function getStatusBadgeClass($status) {
                             <td>{{ $order->user->name }}</td>
                             <td>RM{{ number_format($order->total_amount, 2) }}</td>
                             <td>
-                                <span class="badge bg-{{ $order->payment->status == 'completed' ? 'success' : 'danger' }}">
-                                    {{ $order->payment->status }}
+                                <span class="badge bg-{{ $order->payments->first() && $order->payments->first()->status == 'completed' ? 'success' : 'danger' }}">
+                                    {{ $order->payments->first() ? $order->payments->first()->status : 'pending' }}
                                 </span>
                             </td>
                             <td>

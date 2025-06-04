@@ -33,7 +33,15 @@ class AppointmentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Appointment::with(['user', 'service']);
+        $query = Appointment::with(['user', 'service', 'payment'])
+            ->where(function($query) {
+                $query->whereHas('payment', function($q) {
+                    $q->where('status', \App\Models\Payment::STATUS_COMPLETED);
+                })
+                ->orWhereHas('payment', function($q) {
+                    $q->where('payment_method', \App\Models\Payment::METHOD_CASH);
+                });
+            });
         
         // Apply filters
         if ($request->has('status') && $request->status != '') {
@@ -41,7 +49,7 @@ class AppointmentController extends Controller
         }
         
         if ($request->has('date') && $request->date != '') {
-            $query->whereDate('appointment_date', $request->date);
+            $query->whereDate('created_at', $request->date);
         }
         
         if ($request->has('search') && $request->search != '') {
@@ -53,7 +61,7 @@ class AppointmentController extends Controller
         }
         
         // Get appointments with pagination
-        $appointments = $query->orderBy('appointment_date', 'desc')->paginate(10);
+        $appointments = $query->orderBy('created_at', 'desc')->paginate(10);
         
         // Get appointment statistics
         $stats = $this->getAppointmentStats();
@@ -92,26 +100,39 @@ class AppointmentController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'service_id' => 'required|exists:services,service_id',
-            'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required',
-            'duration' => 'required|integer|min:15',
+            'appointment_date' => 'required|date|after_or_equal:today',
+            'available_time_id' => 'required|exists:available_times,available_time_id',
             'notes' => 'nullable|string',
         ]);
         
-        // Combine date and time
-        $appointmentDateTime = Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
+        // Check if the time slot is unavailable for the selected date
+        $isUnavailable = \App\Models\UnavailableTime::where('date', $validated['appointment_date'])
+            ->where('available_time_id', $validated['available_time_id'])
+            ->exists();
         
-        // Calculate end time based on duration (in minutes)
-        $endTime = (clone $appointmentDateTime)->addMinutes($validated['duration']);
+        if ($isUnavailable) {
+            return back()->withErrors(['available_time_id' => 'This time slot is not available for the selected date.'])->withInput();
+        }
         
         // Create appointment
-        Appointment::create([
+        $appointment = Appointment::create([
             'user_id' => $validated['user_id'],
             'service_id' => $validated['service_id'],
-            'appointment_date' => $appointmentDateTime,
-            'end_time' => $endTime,
+            'available_time_id' => $validated['available_time_id'],
+            'appointment_date' => $validated['appointment_date'], // Store as date only
             'status' => 'scheduled',
             'notes' => $validated['notes'],
+        ]);
+        
+        // Create a pending payment record
+        \App\Models\Payment::create([
+            'user_id' => $validated['user_id'],
+            'appointment_id' => $appointment->appointment_id,
+            'amount' => 0, // Set appropriate amount based on service
+            'status' => \App\Models\Payment::STATUS_PENDING,
+            'payment_method' => \App\Models\Payment::METHOD_CASH, // Default method
+            'transaction_id' => 'APP' . time() . rand(1000, 9999), // Generate a unique transaction ID
+            'payment_date' => now(), // Also need to set payment_date as it's required
         ]);
         
         return redirect()->route('admin.appointments.index')
@@ -126,7 +147,7 @@ class AppointmentController extends Controller
      */
     public function show($id)
     {
-        $appointment = Appointment::with(['user', 'service'])->findOrFail($id);
+        $appointment = Appointment::with(['user', 'service', 'availableTime'])->findOrFail($id);
         $stats = $this->getAppointmentStats();
         
         return view('admin.appointments.show', array_merge(
@@ -169,23 +190,19 @@ class AppointmentController extends Controller
             'user_id' => 'required|exists:users,id',
             'service_id' => 'required|exists:services,service_id',
             'appointment_date' => 'required|date',
-            'appointment_time' => 'required',
-            'duration' => 'required|integer|min:15',
+            'available_time_id' => 'required|exists:available_times,available_time_id',
             'notes' => 'nullable|string',
             'status' => 'required|in:scheduled,completed,cancelled',
         ]);
         
-        // Combine date and time
-        $appointmentDateTime = Carbon::parse($validated['appointment_date'] . ' ' . $validated['appointment_time']);
-        
-        // Calculate end time based on duration (in minutes)
-        $endTime = (clone $appointmentDateTime)->addMinutes($validated['duration']);
+        // Get the available time details
+        $availableTime = \App\Models\AvailableTime::findOrFail($validated['available_time_id']);
         
         $appointment->update([
             'user_id' => $validated['user_id'],
             'service_id' => $validated['service_id'],
-            'appointment_date' => $appointmentDateTime,
-            'end_time' => $endTime,
+            'available_time_id' => $validated['available_time_id'],
+            'appointment_date' => $validated['appointment_date'],
             'status' => $validated['status'],
             'notes' => $validated['notes'],
         ]);
@@ -228,9 +245,132 @@ class AppointmentController extends Controller
     public function destroy($id)
     {
         $appointment = Appointment::findOrFail($id);
+        
+        // Delete associated payment first
+        if ($appointment->payment) {
+            $appointment->payment->delete();
+        }
+        
+        // Now delete the appointment
         $appointment->delete();
         
         return redirect()->route('admin.appointments.index')
             ->with('success', 'Appointment deleted successfully');
+    }
+
+    /**
+     * Show the form for managing available times and unavailable dates.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function manageTimes()
+    {
+        $stats = $this->getAppointmentStats();
+        $availableTimes = \App\Models\AvailableTime::orderBy('start_time')->get();
+        
+        return view('admin.appointments.manage_times', array_merge(
+            compact('availableTimes'),
+            $stats
+        ));
+    }
+
+    /**
+     * Store newly created available time slots.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function storeAvailableTimes(Request $request)
+    {
+        $validated = $request->validate([
+            'time_slots' => 'required|array',
+            'time_slots.*' => 'required|string',
+        ]);
+        
+        foreach ($validated['time_slots'] as $timeSlot) {
+            $startTime = $timeSlot;
+            $endTime = date('H:i', strtotime($startTime . ' +1 hour'));
+            
+            \App\Models\AvailableTime::create([
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+            ]);
+        }
+        
+        return redirect()->route('admin.appointments.times.manage')
+            ->with('success', 'Time slots created successfully');
+    }
+
+    /**
+     * Remove the specified available time from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroyAvailableTime($id)
+    {
+        $availableTime = \App\Models\AvailableTime::findOrFail($id);
+        $availableTime->delete();
+        
+        return redirect()->route('admin.appointments.times.manage')
+            ->with('success', 'Time slot deleted successfully');
+    }
+
+    /**
+     * Store newly created unavailable dates.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function storeUnavailableTimes(Request $request)
+    {
+        $validated = $request->validate([
+            'date' => 'required|date|after_or_equal:today',
+            'available_time_ids' => 'required|array',
+            'available_time_ids.*' => 'required|exists:available_times,available_time_id',
+        ]);
+        
+        foreach ($validated['available_time_ids'] as $timeId) {
+            \App\Models\UnavailableTime::create([
+                'available_time_id' => $timeId,
+                'date' => $validated['date'],
+            ]);
+        }
+        
+        return redirect()->route('admin.appointments.times.manage')
+            ->with('success', 'Unavailable times marked successfully');
+    }
+
+    /**
+     * Remove the specified unavailable time from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroyUnavailableTime($id)
+    {
+        $unavailableTime = \App\Models\UnavailableTime::findOrFail($id);
+        $unavailableTime->delete();
+        
+        return redirect()->route('admin.appointments.times.manage')
+            ->with('success', 'Unavailable time removed successfully');
+    }
+    /**
+     * Get unavailable times for a specific date.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUnavailableTimes(Request $request)
+    {
+        $date = $request->query('date');
+        
+        if (!$date) {
+            return response()->json([]);
+        }
+        
+        $unavailableTimes = \App\Models\UnavailableTime::where('date', $date)->get();
+        
+        return response()->json($unavailableTimes);
     }
 }

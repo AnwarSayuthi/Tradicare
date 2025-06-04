@@ -201,7 +201,7 @@ class ProfileController extends Controller
         $user = auth()->user();
         $locations = $user->locations;
         $orders = $user->orders()
-            ->with(['orderItems.product', 'payment'])
+            ->with(['items.product', 'payment'])
             ->orderBy('order_date', 'desc')
             ->get();
         $appointments = $user->appointments()

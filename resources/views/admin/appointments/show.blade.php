@@ -98,13 +98,13 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="detail-item">
                                         <p class="text-muted mb-1">Date</p>
-                                        <h6 class="fw-semibold mb-0">{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y') }}</h6>
+                                        <h6 class="fw-semibold mb-0">{{ \Carbon\Carbon::parse($appointment->availableTime->start_time)->format('M d, Y') }}</h6>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <div class="detail-item">
                                         <p class="text-muted mb-1">Time</p>
-                                        <h6 class="fw-semibold mb-0">{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('h:i A') }}</h6>
+                                        <h6 class="fw-semibold mb-0">{{ \Carbon\Carbon::parse($appointment->created_at)->format('h:i A') }}</h6>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
@@ -112,8 +112,8 @@
                                         <p class="text-muted mb-1">Duration</p>
                                         <h6 class="fw-semibold mb-0">
                                             @php
-                                                $start = \Carbon\Carbon::parse($appointment->appointment_date);
-                                                $end = \Carbon\Carbon::parse($appointment->end_time);
+                                                $start = \Carbon\Carbon::parse($appointment->availableTime->start_time);
+                                                $end = \Carbon\Carbon::parse($appointment->availableTime->end_time);
                                                 $duration = $start->diffInMinutes($end);
                                             @endphp
                                             {{ $duration }} minutes
@@ -168,12 +168,7 @@
                                         
                                         <div class="mb-2">
                                             <p class="text-muted mb-1 small">Phone</p>
-                                            <p class="mb-0">{{ $appointment->user->phone ?? 'Not provided' }}</p>
-                                        </div>
-                                        
-                                        <div>
-                                            <p class="text-muted mb-1 small">Address</p>
-                                            <p class="mb-0">{{ $appointment->user->address ?? 'Not provided' }}</p>
+                                            <p class="mb-0">{{ $appointment->user->tel_number ?? 'Not provided' }}</p>
                                         </div>
                                         
                                         <div class="mt-3">
@@ -191,7 +186,7 @@
                                 @php
                                     $pastAppointments = \App\Models\Appointment::where('user_id', $appointment->user_id)
                                         ->where('appointment_id', '!=', $appointment->appointment_id)
-                                        ->orderBy('appointment_date', 'desc')
+                                        ->orderBy('created_at', 'desc')
                                         ->limit(5)
                                         ->get();
                                 @endphp
@@ -203,7 +198,7 @@
                                                 <div class="d-flex justify-content-between align-items-center">
                                                     <div>
                                                         <h6 class="mb-1 fw-semibold">{{ $pastAppointment->service->service_name }}</h6>
-                                                        <p class="text-muted small mb-0">{{ \Carbon\Carbon::parse($pastAppointment->appointment_date)->format('M d, Y, h:i A') }}</p>
+                                                        <p class="text-muted small mb-0">{{ \Carbon\Carbon::parse($pastAppointment->created_at)->format('M d, Y, h:i A') }}</p>
                                                     </div>
                                                     <span class="badge rounded-pill px-3 py-2 
                                                         @if($pastAppointment->status == 'scheduled') bg-warning

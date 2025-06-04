@@ -17,14 +17,14 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h1 class="h3 mb-0">Order #{{ $order->order_id }}</h1>
-                        <span class="badge {{ getStatusBadgeClass($order->status) }}">{{ ucfirst($order->status) }}</span>
+                        <span class="badge" data-status="{{ $order->status }}">{{ ucfirst($order->status) }}</span>
                     </div>
                     <p class="text-muted mb-0">Placed on {{ \Carbon\Carbon::parse($order->order_date)->format('F d, Y') }}</p>
                 </div>
                 <div class="card-body">
                     <div class="order-timeline mb-4">
                         <div class="timeline-track">
-                            <div class="timeline-progress" style="width: {{ getOrderProgressPercentage($order->status) }}%"></div>
+                            <div class="timeline-progress" data-status="{{ $order->status }}"></div>
                         </div>
                         <div class="timeline-steps">
                             <div class="timeline-step {{ in_array($order->status, ['processing', 'shipped', 'completed']) ? 'active' : '' }}">
@@ -116,21 +116,25 @@
                     
                     <div class="info-section mb-4">
                         <h5 class="info-title">Payment Information</h5>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Method:</span>
-                            <span>{{ ucfirst(str_replace('_', ' ', $order->payment->payment_method)) }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between mb-2">
-                            <span>Status:</span>
-                            <span class="badge {{ $order->payment->status === 'paid' ? 'bg-success' : 'bg-warning text-dark' }}">
-                                {{ ucfirst($order->payment->status) }}
-                            </span>
-                        </div>
-                        @if($order->payment->transaction_id)
-                        <div class="d-flex justify-content-between">
-                            <span>Transaction ID:</span>
-                            <span>{{ $order->payment->transaction_id }}</span>
-                        </div>
+                        @if($order->payments && $order->payments->count() > 0)
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Method:</span>
+                                <span>{{ ucfirst(str_replace('_', ' ', $order->payments->first()->payment_method)) }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span>Status:</span>
+                                <span class="badge {{ $order->payments->first()->status === 'paid' ? 'bg-success' : 'bg-warning text-dark' }}">
+                                    {{ ucfirst($order->payments->first()->status) }}
+                                </span>
+                            </div>
+                            @if($order->payments->first()->transaction_id)
+                            <div class="d-flex justify-content-between">
+                                <span>Transaction ID:</span>
+                                <span>{{ $order->payments->first()->transaction_id }}</span>
+                            </div>
+                            @endif
+                        @else
+                            <div class="alert alert-info">No payment information available</div>
                         @endif
                     </div>
                     
