@@ -196,6 +196,91 @@
     </div>
 </div>
 
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold" id="paymentModalLabel">Complete Your Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <!-- Booking Summary -->
+                <div class="booking-summary mb-4 p-4 rounded-3" style="background-color: #f8f9fa; border-left: 4px solid #007bff;">
+                    <h6 class="fw-bold mb-3">Booking Summary</h6>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-2">
+                                <small class="text-muted d-block">SERVICE</small>
+                                <span id="modal-service-name" class="fw-medium">-</span>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted d-block">DATE</small>
+                                <span id="modal-date" class="fw-medium">-</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-2">
+                                <small class="text-muted d-block">TIME</small>
+                                <span id="modal-time" class="fw-medium">-</span>
+                            </div>
+                            <div class="mb-2">
+                                <small class="text-muted d-block">DURATION</small>
+                                <span id="modal-duration" class="fw-medium">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <hr class="my-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Total Amount:</span>
+                        <span class="fw-bold text-primary fs-5" id="modal-total-amount">RM95.00</span>
+                    </div>
+                </div>
+                
+                <!-- Payment Method Selection -->
+                <div class="payment-methods">
+                    <h6 class="fw-bold mb-3">Select Payment Method</h6>
+                    <div class="row g-3">
+                        <!-- Online Payment -->
+                        <div class="col-6">
+                            <div class="payment-option border rounded-3 p-4 text-center h-100 position-relative" data-payment="toyyibpay" style="cursor: pointer; transition: all 0.3s ease;">
+                                <div class="payment-icon mb-3">
+                                    <i class="bi bi-credit-card text-primary" style="font-size: 2rem;"></i>
+                                </div>
+                                <h6 class="fw-bold mb-2">Online Payment</h6>
+                                <p class="text-muted small mb-0">Pay securely with Online Banking</p>
+                                <div class="payment-check position-absolute top-0 end-0 m-2" style="display: none;">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Cash Payment -->
+                        <div class="col-6">
+                            <div class="payment-option border rounded-3 p-4 text-center h-100 position-relative" data-payment="cash" style="cursor: pointer; transition: all 0.3s ease;">
+                                <div class="payment-icon mb-3">
+                                    <i class="bi bi-cash text-success" style="font-size: 2rem;"></i>
+                                </div>
+                                <h6 class="fw-bold mb-2">Cash Payment</h6>
+                                <p class="text-muted small mb-0">Pay at the Tradicare Center</p>
+                                <div class="payment-check position-absolute top-0 end-0 m-2" style="display: none;">
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirm-payment-btn" disabled>
+                    <i class="bi bi-credit-card me-2"></i>Confirm Payment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
@@ -219,6 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentWeekStart = getWeekStart(currentDate);
     let selectedDate = null;
     let selectedTime = null;
+    let selectedPaymentMethod = null;
     
     // Initialize
     updateMonthDisplay();
@@ -422,6 +508,118 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update booking details
             updateDateTimeDetails();
         });
+    });
+    
+    // Payment Modal Functions
+    window.showPaymentModal = function() {
+        // Validate form before showing modal
+        if (!validateAppointmentForm()) {
+            return;
+        }
+        
+        // Update modal with booking details
+        updatePaymentModal();
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        modal.show();
+    }
+    
+    function validateAppointmentForm() {
+        const serviceId = document.getElementById('service_id').value;
+        const appointmentDate = document.getElementById('selected_date').value;
+        const timeId = document.getElementById('selected_time').value;
+        const mobileNumber = document.getElementById('mobile_number').value;
+        
+        if (!serviceId) {
+            alert('Please select a service.');
+            return false;
+        }
+        
+        if (!appointmentDate) {
+            alert('Please select a date.');
+            return false;
+        }
+        
+        if (!timeId) {
+            alert('Please select a time slot.');
+            return false;
+        }
+        
+        if (!mobileNumber) {
+            alert('Please enter your mobile number.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    function updatePaymentModal() {
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+        const serviceName = selectedOption.text.split(' - ')[0];
+        const duration = selectedOption.getAttribute('data-duration');
+        const price = selectedOption.getAttribute('data-price');
+        
+        // Update modal content
+        document.getElementById('modal-service-name').textContent = serviceName;
+        document.getElementById('modal-duration').textContent = duration + ' minutes';
+        document.getElementById('modal-total-amount').textContent = `RM${parseFloat(price).toFixed(2)}`;
+        
+        if (selectedDate) {
+            const formattedDate = selectedDate.toLocaleDateString('en-US', { 
+                weekday: 'long',
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric' 
+            });
+            document.getElementById('modal-date').textContent = formattedDate;
+        }
+        
+        if (selectedTime) {
+            // Extract time range from selected time
+            const timeSlot = selectedTime;
+            document.getElementById('modal-time').textContent = timeSlot;
+        }
+    }
+    
+    // Payment method selection
+    document.querySelectorAll('.payment-option').forEach(option => {
+        option.addEventListener('click', function() {
+            // Remove active state from all options
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.remove('border-primary', 'bg-light');
+                opt.querySelector('.payment-check').style.display = 'none';
+            });
+            
+            // Add active state to selected option
+            this.classList.add('border-primary', 'bg-light');
+            this.querySelector('.payment-check').style.display = 'block';
+            
+            // Store selected payment method
+            selectedPaymentMethod = this.getAttribute('data-payment');
+            
+            // Enable confirm button
+            document.getElementById('confirm-payment-btn').disabled = false;
+        });
+    });
+    
+    // Confirm payment button
+    document.getElementById('confirm-payment-btn').addEventListener('click', function() {
+        if (!selectedPaymentMethod) {
+            alert('Please select a payment method.');
+            return;
+        }
+        
+        // Add payment method to form
+        const form = document.getElementById('appointment-form');
+        const paymentMethodInput = document.createElement('input');
+        paymentMethodInput.type = 'hidden';
+        paymentMethodInput.name = 'payment_method';
+        paymentMethodInput.value = selectedPaymentMethod;
+        form.appendChild(paymentMethodInput);
+        
+        // Submit the form
+        form.submit();
     });
 });
 </script>
@@ -682,6 +880,31 @@ document.addEventListener('DOMContentLoaded', function() {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     display: inline-block;
+}
+
+/* Payment Modal Styles */
+.payment-option {
+    transition: all 0.3s ease;
+    border: 2px solid #dee2e6 !important;
+}
+
+.payment-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.payment-option.border-primary {
+    border-color: #007bff !important;
+    background-color: #f8f9fa !important;
+}
+
+.modal-content {
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.booking-summary {
+    border-left: 4px solid #007bff;
 }
 </style>
 @endsection
