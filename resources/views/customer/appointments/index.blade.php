@@ -424,13 +424,13 @@ document.getElementById('date_filter').addEventListener('change', function() {
     }
 
     .payment-card:hover {
-        border-color: #0d6efd;
+        border-color: #493628;
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
     }
 
     .payment-option .payment-card.selected {
-        border-color: #0d6efd !important;
+        border-color: #493628 !important;
         background-color: #f8f9ff !important;
         box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
     }
@@ -446,7 +446,7 @@ document.getElementById('date_filter').addEventListener('change', function() {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
         padding: 1.5rem;
         border-radius: 8px;
-        border-left: 4px solid #0d6efd;
+        border-left: 4px solid #493628;
     }
 
     /* Responsive Design */

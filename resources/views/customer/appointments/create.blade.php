@@ -121,12 +121,12 @@
                                 
                                 <!-- Mobile Number -->
                                 <div class="mb-4">
-                                    <label for="mobile_number" class="form-label">Mobile Number</label>
-                                    <input type="tel" class="form-control @error('mobile_number') is-invalid @enderror" 
-                                           id="mobile_number" name="mobile_number" 
+                                    <label for="tel_number" class="form-label">Mobile Number</label>
+                                    <input type="tel" class="form-control @error('tel_number') is-invalid @enderror" 
+                                           id="tel_number" name="tel_number" 
                                            placeholder="Enter your mobile number" 
-                                           value="{{ auth()->user()->tel_number ?? old('mobile_number') }}" required>
-                                    @error('mobile_number')
+                                           value="{{ auth()->user()->tel_number ?? old('tel_number') }}" required>
+                                    @error('tel_number')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -370,7 +370,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function getWeekStart(date) {
         const d = new Date(date);
         const day = d.getDay(); // 0 for Sunday, 1 for Monday, etc.
-        d.setDate(d.getDate() - day); // Go to the start of the week (Sunday)
+        const daysFromFriday = (day + 5) % 7; // Calculate days from Friday (5 is Friday, so we add 2 and mod 7)
+        d.setDate(d.getDate() - daysFromFriday); // Go to the start of the week (Friday)
         return d;
     }
     
@@ -529,7 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const serviceId = document.getElementById('service_id').value;
         const appointmentDate = document.getElementById('selected_date').value;
         const timeId = document.getElementById('selected_time').value;
-        const mobileNumber = document.getElementById('mobile_number').value;
+        const telNumber = document.getElementById('tel_number').value;
         
         if (!serviceId) {
             alert('Please select a service.');
@@ -546,7 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
         
-        if (!mobileNumber) {
+        if (!telNumber) {
             alert('Please enter your mobile number.');
             return false;
         }

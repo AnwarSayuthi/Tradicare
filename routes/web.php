@@ -8,6 +8,7 @@ use App\Http\Middleware\AdminMiddleware;
 use App\Http\Middleware\CustomerMiddleware;
 use App\Http\Controllers\Process\PaymentController;
 use App\Http\Controllers\Process\ReportController;
+use App\Http\Controllers\Process\DashboardController;
 
 // ----------------------
 // Public Routes
@@ -27,13 +28,13 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Admin Routes
 // ----------------------
 Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [AdminViewController::class, 'dashboard'])->name('dashboard');
+    // Dashboard - Updated to use DashboardController
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Orders
     Route::get('/orders', [AdminViewController::class, 'orders'])->name('orders.index');
     Route::get('/orders/{order}', [AdminViewController::class, 'showOrder'])->name('orders.show');
-    Route::put('/orders/{order}/status', [App\Http\Controllers\Process\DashboardController::class, 'updateOrderStatus'])->name('orders.update-status');
+    Route::put('/orders/{order}/status', [DashboardController::class, 'updateOrderStatus'])->name('orders.update-status');
 
     // Products
     Route::get('/products', [App\Http\Controllers\Process\ProductController::class, 'index'])->name('products.index');

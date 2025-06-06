@@ -427,7 +427,7 @@ body {
 /* Status Badge Colors */
 .badge.bg-pending { background-color: #ffc107; }
 .badge.bg-processing { background-color: #0dcaf0; }
-.badge.bg-shipped { background-color: #0d6efd; }
+.badge.bg-shipped { background-color: #493628; }
 .badge.bg-delivered { background-color: #198754; }
 .badge.bg-completed { background-color: #198754; }
 .badge.bg-cancelled { background-color: #dc3545; }

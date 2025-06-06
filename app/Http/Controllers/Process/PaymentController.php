@@ -197,7 +197,7 @@ class PaymentController extends Controller
             // Handle order payment
             if ($payment->order_id) {
                 $payment->order->update(['payment_status' => Order::PAYMENT_PAID, 'status' => Order::STATUS_PROCESSING]);
-                return redirect()->route('customer.orders')
+                return redirect()->route('customer.profile')
                     ->with('success', 'Payment successful! Your order is being processed.');
             }
             
@@ -214,7 +214,7 @@ class PaymentController extends Controller
             // Handle order payment failure
             if ($payment->order_id) {
                 $payment->order->update(['payment_status' => Order::PAYMENT_FAILED]);
-                return redirect()->route('customer.orders')
+                return redirect()->route('customer.profile')
                     ->with('error', 'Payment failed. Please try again or contact support.');
             }
             

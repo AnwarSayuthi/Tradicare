@@ -310,6 +310,28 @@ class AppointmentController extends Controller
     public function destroyAvailableTime($id)
     {
         $availableTime = \App\Models\AvailableTime::findOrFail($id);
+        
+        // Check if there are any appointments using this time slot
+        $hasAppointments = \App\Models\Appointment::where('available_time_id', $id)->exists();
+        
+        if ($hasAppointments) {
+            return redirect()->route('admin.appointments.times.manage')
+                ->with('error', 'Cannot delete this time slot because it is being used by one or more appointments.');
+        }
+        
+        // Check if there are any unavailable times using this time slot
+        $hasUnavailableTimes = \App\Models\UnavailableTime::where('available_time_id', $id)->exists();
+        
+        if ($hasUnavailableTimes) {
+            // Option 1: Prevent deletion
+            // return redirect()->route('admin.appointments.times.manage')
+            //     ->with('error', 'Cannot delete this time slot because it has unavailable dates associated with it.');
+            
+            // Option 2: Delete associated unavailable times first
+            \App\Models\UnavailableTime::where('available_time_id', $id)->delete();
+        }
+        
+        // Now safe to delete the available time
         $availableTime->delete();
         
         return redirect()->route('admin.appointments.times.manage')

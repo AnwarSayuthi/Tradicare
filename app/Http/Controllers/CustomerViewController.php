@@ -282,10 +282,10 @@ class CustomerViewController extends Controller
         // Create a pending payment record
         $payment = Payment::create([
             'user_id' => auth()->id(),
-            'appointment_id' => $appointment->appointment_id,
-            'amount' => $service->price,
+            'order_id' => $order->order_id,
+            'amount' => $totalAmount,
             'payment_date' => now(),
-            'payment_method' => Payment::METHOD_TOYYIBPAY, // Set a default method
+            'payment_method' => $request->payment_method,
             'status' => Payment::STATUS_PENDING,
             'transaction_id' => 'TXN' . time() . rand(1000, 9999)
         ]);
@@ -322,7 +322,7 @@ class CustomerViewController extends Controller
         $order->status = Order::STATUS_PROCESSING;
         $order->save();
         
-        return redirect()->route('customer.orders')->with('success', 'Order placed successfully! You will pay upon delivery.');
+        return redirect()->route('customer.profile', ['button' => 'order'])->with('success', 'Order placed successfully! You will pay upon delivery.');
     }
 }
 
@@ -331,13 +331,19 @@ class CustomerViewController extends Controller
         $user = auth()->user();
         $locations = $user->locations()->get();
         
-        // Use paginate instead of get
-        $orders = Order::with(['items.product', 'payments', 'tracking'])
+        // Get all orders as collection for filtering by status
+        $allOrders = Order::with(['items.product', 'payments', 'tracking'])
                       ->where('user_id', auth()->id())
                       ->orderBy('order_date', 'desc')
-                      ->paginate(10); // Show 10 orders per page
+                      ->get();
         
-        return view('customer.profile.index', compact('user', 'locations', 'orders'));
+        // Add appointments data
+        $appointments = Appointment::with(['service', 'availableTime', 'payment'])
+                                  ->where('user_id', auth()->id())
+                                  ->orderBy('appointment_date', 'desc')
+                                  ->paginate(10); // Show 10 appointments per page
+        
+        return view('customer.profile.index', compact('user', 'locations', 'allOrders', 'appointments'));
     }
 
     // Add this method to handle adding new addresses
@@ -383,7 +389,7 @@ class CustomerViewController extends Controller
             'service_id' => 'required|exists:services,service_id',
             'appointment_date' => 'required|date',
             'available_time_id' => 'required|exists:available_times,available_time_id',
-            'mobile_number' => 'required|string',
+            'tel_number' => 'required|string',
         ]);
     
         $service = Service::findOrFail($request->service_id);
@@ -394,7 +400,7 @@ class CustomerViewController extends Controller
             'service_id' => $request->service_id,
             'appointment_date' => $request->appointment_date,
             'available_time_id' => $request->available_time_id,
-            'mobile_number' => $request->mobile_number,
+            'tel_number' => $request->tel_number,
             'notes' => $request->notes,
         ];
         
@@ -559,6 +565,14 @@ class CustomerViewController extends Controller
             
         return view('customer.services.index', compact('services'));
     }
+    
+    /**
+     * Display the about page.
+     */
+    public function about()
+    {
+        return view('customer.about');
+    }
 
     // Update the createAppointment method to handle service_id parameter
     public function createAppointment(Request $request) 
@@ -692,30 +706,88 @@ class CustomerViewController extends Controller
         // Get service
         $service = Service::findOrFail($validated['service_id']);
         
-        // Create appointment with pending_payment status
-        $appointment = Appointment::create([
-            'user_id' => auth()->id(),
-            'service_id' => $validated['service_id'],
-            'available_time_id' => $validated['available_time_id'],
-            'appointment_date' => Carbon::parse($validated['appointment_date']),
-            'status' => 'scheduled', // Changed to an allowed value
-            'notes' => $request->notes ?? null,
-        ]);
+        // Check if there's already a scheduled appointment for this user, service, date, and time
+        $existingAppointment = Appointment::where('user_id', auth()->id())
+            ->where('service_id', $validated['service_id'])
+            ->where('appointment_date', Carbon::parse($validated['appointment_date']))
+            ->where('available_time_id', $validated['available_time_id'])
+            ->where('status', 'scheduled')
+            ->first();
         
-        // Create a pending payment record
-        $payment = Payment::create([
-            'user_id' => auth()->id(),
-            'appointment_id' => $appointment->appointment_id,
-            'amount' => $service->price,
-            'payment_date' => now(),
-            'payment_method' => Payment::METHOD_TOYYIBPAY, // Set a default method
-            'status' => Payment::STATUS_PENDING,
-            'transaction_id' => 'TXN' . time() . rand(1000, 9999)
-        ]);
+        if ($existingAppointment) {
+            // If scheduled appointment exists, check for payment record
+            $existingPayment = Payment::where('appointment_id', $existingAppointment->appointment_id)->first();
+            
+            if (!$existingPayment) {
+                // Create payment record for existing appointment
+                $payment = Payment::create([
+                    'user_id' => auth()->id(),
+                    'appointment_id' => $existingAppointment->appointment_id,
+                    'amount' => $service->price,
+                    'payment_date' => now(),
+                    'payment_method' => Payment::METHOD_TOYYIBPAY,
+                    'status' => Payment::STATUS_PENDING,
+                    'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+                ]);
+            } else {
+                $payment = $existingPayment;
+            }
+            
+            // Use existing appointment
+            $appointment = $existingAppointment;
+        } else {
+            // No scheduled appointment found, create new appointment
+            $appointment = Appointment::create([
+                'user_id' => auth()->id(),
+                'service_id' => $validated['service_id'],
+                'available_time_id' => $validated['available_time_id'],
+                'appointment_date' => Carbon::parse($validated['appointment_date']),
+                'status' => 'scheduled',
+                'notes' => $request->notes ?? null,
+            ]);
+            
+            // Create a pending payment record for new appointment
+            $payment = Payment::create([
+                'user_id' => auth()->id(),
+                'appointment_id' => $appointment->appointment_id,
+                'amount' => $service->price,
+                'payment_date' => now(),
+                'payment_method' => Payment::METHOD_TOYYIBPAY,
+                'status' => Payment::STATUS_PENDING,
+                'transaction_id' => 'TXN' . time() . rand(1000, 9999)
+            ]);
+        }
         
-        // Redirect to payment page
-        return redirect()->route('customer.appointments.payment', $appointment->appointment_id)
-            ->with('success', 'Appointment reserved. Please complete your payment to confirm booking.');
+        // Initialize ToyyibPay service
+        $toyyibPayService = new \App\Services\ToyyibPayService();
+        
+        try {
+            // Create bill in ToyyibPay
+            $billResponse = $toyyibPayService->createBill($payment);
+            
+            if ($billResponse && isset($billResponse[0]['BillCode'])) {
+                // Get payment URL and redirect
+                $paymentUrl = $toyyibPayService->getPaymentUrl($billResponse[0]['BillCode']);
+                
+                return redirect($paymentUrl);
+            } else {
+                // Handle ToyyibPay error
+                return redirect()->back()
+                    ->withErrors(['payment' => 'Unable to process payment. Please try again.'])
+                    ->withInput();
+            }
+        } catch (\Exception $e) {
+            // Log error and redirect back with error message
+            \Log::error('ToyyibPay payment creation failed', [
+                'appointment_id' => $appointment->appointment_id,
+                'payment_id' => $payment->payment_id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->back()
+                ->withErrors(['payment' => 'Payment processing failed. Please try again.'])
+                ->withInput();
+        }
     }
 
 
@@ -733,7 +805,7 @@ class CustomerViewController extends Controller
             'service_id' => 'required|exists:services,service_id',
             'appointment_date' => 'required|date|after:today',
             'available_time_id' => 'required|exists:available_times,available_time_id',
-            'mobile_number' => 'required|string',
+            'tel_number' => 'required|string',
             'payment_method' => 'required|in:toyyibpay,cash',
         ]);
     
@@ -907,7 +979,7 @@ class CustomerViewController extends Controller
                 
                 $order->update(['payment_status' => Order::PAYMENT_FAILED]);
                 
-                return redirect()->route('customer.orders')
+                return redirect()->route('customer.profile')
                     ->with('error', 'Payment failed: Amount mismatch. Please try again or contact support.');
             }
         }
@@ -919,7 +991,7 @@ class CustomerViewController extends Controller
             // Handle order payment
             if ($payment->order_id) {
                 $payment->order->update(['payment_status' => Order::PAYMENT_PAID, 'status' => Order::STATUS_PROCESSING]);
-                return redirect()->route('customer.orders')
+                return redirect()->route('customer.profile')
                     ->with('success', 'Payment successful! Your order is being processed.');
             }
             
@@ -937,7 +1009,7 @@ class CustomerViewController extends Controller
         // Handle order payment failure
         if ($payment->order_id) {
             $payment->order->update(['payment_status' => 'failed']);
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile')
                 ->with('error', 'Payment failed. Please try again or contact support.');
         }
         
@@ -1053,13 +1125,13 @@ class CustomerViewController extends Controller
                      ->first();
         
         if (!$order) {
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile')
                 ->with('error', 'Order not found.');
         }
         
         // Check if order can be cancelled (allow both pending and processing orders to be cancelled)
         if ($order->status !== Order::STATUS_PROCESSING && $order->status !== Order::STATUS_PENDING) {
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile')
                 ->with('error', 'Only pending or processing orders can be cancelled.');
         }
         
@@ -1077,7 +1149,7 @@ class CustomerViewController extends Controller
             $pendingPayment->save();
         }
         
-        return redirect()->route('customer.orders')
+        return redirect()->route('customer.profile')
             ->with('success', 'Order cancelled successfully.');
     }
 
@@ -1095,13 +1167,13 @@ class CustomerViewController extends Controller
                  ->first();
         
         if (!$order) {
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile')
                 ->with('error', 'Order not found.');
         }
         
         // Check if order can be marked as received (only shipped orders)
         if ($order->status !== Order::STATUS_SHIPPED) {
-            return redirect()->route('customer.orders')
+            return redirect()->route('customer.profile')
                 ->with('error', 'Only shipped orders can be marked as received.');
         }
         

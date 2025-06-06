@@ -15,6 +15,11 @@ class Order extends Model
     ];
     public $timestamps = false;
 
+    // Add this casts array to convert order_date to Carbon instance
+    protected $casts = [
+        'order_date' => 'datetime',
+    ];
+
     // Status constants
     const STATUS_PENDING = 'pending';
     const STATUS_PROCESSING = 'processing';

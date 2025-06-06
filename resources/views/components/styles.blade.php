@@ -560,7 +560,7 @@
         }
 
         .admin-stat-icon.sales {
-            background-color: #6366F1;
+            background-color: #493628;
         }
 
         .admin-stat-icon.products {
@@ -568,7 +568,7 @@
         }
 
         .admin-stat-icon.orders {
-            background-color: #3B82F6;
+            background-color: #493628;
         }
 
         .admin-stat-icon.customers {

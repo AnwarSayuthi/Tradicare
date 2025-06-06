@@ -69,7 +69,7 @@
 @section('content')
 <div class="auth-container d-flex align-items-center justify-content-center">
     <div class="auth-card">
-        <h1 class="auth-title text-center">Welcome back</h1>
+        <h1 class="auth-title text-center">Welcome to Tradicare</h1>
         <p class="auth-subtitle text-center">Please enter your account details</p>
         
         <form method="POST" action="{{ route('login') }}">

@@ -6,10 +6,17 @@
 <div class="container py-5">
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('customer.orders') }}">My Orders</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('customer.profile') }}?button=order">My Profile</a></li>
             <li class="breadcrumb-item active" aria-current="page">Order #{{ $order->order_id }}</li>
         </ol>
     </nav>
+
+    {{-- <!-- Add Return to Profile button -->
+    <div class="mb-3">
+        <a href="{{ route('customer.profile') }}?button=order" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i>Return to Profile
+        </a>
+    </div> --}}
 
     <div class="row">
         <div class="col-lg-8">
@@ -160,8 +167,8 @@
                             </a>
                         @endif
                         
-                        <a href="{{ route('customer.orders') }}" class="btn btn-outline-secondary w-100">
-                            Back to Orders
+                        <a href="{{ route('customer.profile') }}?button=order" class="btn btn-outline-primary">
+                            Return to Profile
                         </a>
                     </div>
                 </div>
