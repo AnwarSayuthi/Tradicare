@@ -68,7 +68,7 @@
                             </a>
                             
                             @if($order->status === 'processing')
-                                <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
+                                <button class="btn btn-outline-danger btn-sm" onclick="openCancelOrderModal({{ $order->order_id }})">
                                     <i class="bi bi-x-circle me-1"></i>Cancel Order
                                 </button>
                             @elseif($order->status === 'shipped')
@@ -229,9 +229,16 @@
                             <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-eye me-1"></i>View Details
                             </a>
-                            <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#cancelOrderModal{{ $order->order_id }}">
-                                <i class="bi bi-x-circle me-1"></i>Cancel Order
-                            </button>
+                            <!-- Replace the existing cancel button with this -->
+                            @if($order->status === 'processing')
+                                <button class="btn btn-outline-danger btn-sm" onclick="openCancelOrderModal({{ $order->order_id }})">
+                                    <i class="bi bi-x-circle me-1"></i>Cancel Order
+                                </button>
+                            @elseif($order->status === 'shipped')
+                                <button class="btn btn-success btn-sm" onclick="markAsReceived({{ $order->order_id }})">
+                                    <i class="bi bi-check-circle me-1"></i>Received
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -465,3 +472,14 @@
         @endif
     </div>
 </div>
+<!-- Add this at the end of the file -->
+<script>
+function openCancelOrderModal(orderId) {
+    // Set the order ID in the modal button
+    document.getElementById('confirmCancelOrder').setAttribute('data-order-id', orderId);
+    
+    // Open the modal
+    const modal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+    modal.show();
+}
+</script>

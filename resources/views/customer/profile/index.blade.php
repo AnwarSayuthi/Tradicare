@@ -419,6 +419,228 @@
                 placeholder.innerHTML = '<div class="placeholder-image d-flex align-items-center justify-content-center"><i class="bi bi-image text-muted"></i></div>';
             });
         });
+
+        // Enhanced Cancel Order functionality
+        const confirmCancelOrderBtn = document.getElementById('confirmCancelOrder');
+        if (confirmCancelOrderBtn) {
+            confirmCancelOrderBtn.addEventListener('click', function() {
+                const orderId = this.getAttribute('data-order-id');
+                const button = this;
+                
+                // Disable button and show loading state
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cancelling...';
+                
+                // Send AJAX request to cancel the order
+                fetch(`{{ route('customer.orders.cancel', '') }}/${orderId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal'));
+                        modal.hide();
+                        
+                        // Show success toast
+                        showToast('success', 'Order cancelled successfully!');
+                        
+                        // Redirect to cancelled tab after a short delay
+                        setTimeout(() => {
+                            // Activate the cancelled tab
+                            const cancelledTab = document.getElementById('cancelled-tab');
+                            const cancelledTabPane = document.getElementById('cancelled');
+                            
+                            if (cancelledTab && cancelledTabPane) {
+                                // Remove active class from all tabs and panes
+                                document.querySelectorAll('.nav-link').forEach(tab => tab.classList.remove('active'));
+                                document.querySelectorAll('.tab-pane').forEach(pane => {
+                                    pane.classList.remove('show', 'active');
+                                });
+                                
+                                // Activate cancelled tab
+                                cancelledTab.classList.add('active');
+                                cancelledTabPane.classList.add('show', 'active');
+                                
+                                // Update URL to reflect the tab change
+                                const url = new URL(window.location);
+                                url.searchParams.set('tab', 'cancelled');
+                                window.history.pushState({}, '', url);
+                            }
+                            
+                            // Reload the page to show updated data
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast('error', 'Cancellation Failed', data.message || 'Failed to cancel order.');
+                        // Reset button
+                        button.disabled = false;
+                        button.innerHTML = '<i class="bi bi-x-circle me-2"></i>Yes, Cancel Order';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Error', 'An error occurred. Please try again.');
+                    // Reset button
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-x-circle me-2"></i>Yes, Cancel Order';
+                });
+            });
+        }
+        
+        // Enhanced Cancel Appointment functionality
+        const confirmCancelAppointmentBtn = document.getElementById('confirmCancelAppointment');
+        if (confirmCancelAppointmentBtn) {
+            confirmCancelAppointmentBtn.addEventListener('click', function() {
+                const appointmentId = this.getAttribute('data-appointment-id');
+                const reason = document.getElementById('cancel_reason') ? document.getElementById('cancel_reason').value : '';
+                const button = this;
+                
+                // Disable button and show loading state
+                button.disabled = true;
+                button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cancelling...';
+                
+                // Send AJAX request to cancel the appointment
+                fetch(`{{ route('customer.appointments.cancel', '') }}/${appointmentId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        reason: reason
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('cancelAppointmentModal'));
+                        modal.hide();
+                        
+                        // Clear the reason field if it exists
+                        if (document.getElementById('cancel_reason')) {
+                            document.getElementById('cancel_reason').value = '';
+                        }
+                        
+                        // Show success toast
+                        showToast('success', 'Appointment cancelled successfully!', 'Your appointment has been cancelled and the time slot is now available for others.');
+                        
+                        // Redirect to cancelled appointments tab after a short delay
+                        setTimeout(() => {
+                            // Activate the cancelled appointments tab
+                            const cancelledAppointmentsTab = document.getElementById('cancelled-appointments-tab');
+                            const cancelledAppointmentsPane = document.getElementById('cancelled-appointments');
+                            
+                            if (cancelledAppointmentsTab && cancelledAppointmentsPane) {
+                                // Remove active class from all appointment tabs and panes
+                                document.querySelectorAll('#appointmentTabs .nav-link').forEach(tab => tab.classList.remove('active'));
+                                document.querySelectorAll('#appointmentTabsContent .tab-pane').forEach(pane => {
+                                    pane.classList.remove('show', 'active');
+                                });
+                                
+                                // Activate cancelled appointments tab
+                                cancelledAppointmentsTab.classList.add('active');
+                                cancelledAppointmentsPane.classList.add('show', 'active');
+                                
+                                // Update URL to reflect the tab change
+                                const url = new URL(window.location);
+                                url.searchParams.set('appointment_tab', 'cancelled');
+                                window.history.pushState({}, '', url);
+                            }
+                            
+                            // Reload the page to show updated data
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast('error', 'Cancellation Failed', data.message || 'Failed to cancel appointment.');
+                        // Reset button
+                        button.disabled = false;
+                        button.innerHTML = '<i class="bi bi-x-circle me-2"></i>Yes, Cancel Appointment';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Error', 'An error occurred. Please try again.');
+                    // Reset button
+                    button.disabled = false;
+                    button.innerHTML = '<i class="bi bi-x-circle me-2"></i>Yes, Cancel Appointment';
+                });
+            });
+        }
+        
+        // Toast notification function
+        function showToast(type, title, message) {
+            // Create toast container if it doesn't exist
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '9999';
+                document.body.appendChild(toastContainer);
+            }
+            
+            const toastId = 'toast-' + Date.now();
+            const bgClass = type === 'success' ? 'bg-success' : 'bg-danger';
+            const icon = type === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle';
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <div class="d-flex align-items-center">
+                                <i class="bi ${icon} me-2"></i>
+                                <div>
+                                    <strong>${title}</strong><br>
+                                    <small>${message}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: 5000
+            });
+            
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+        
+        // Global functions for modal handling
+        window.openCancelOrderModal = function(orderId) {
+            // Set the order ID in the modal button
+            document.getElementById('confirmCancelOrder').setAttribute('data-order-id', orderId);
+            
+            // Open the modal
+            const modal = new bootstrap.Modal(document.getElementById('cancelOrderModal'));
+            modal.show();
+        };
+        
+        window.openCancelAppointmentModal = function(appointmentId) {
+            // Set the appointment ID in the modal button
+            document.getElementById('confirmCancelAppointment').setAttribute('data-appointment-id', appointmentId);
+            
+            
+            // Open the modal
+            const modal = new bootstrap.Modal(document.getElementById('cancelAppointmentModal'));
+            modal.show();
+        };
     });
 </script>
 @endsection

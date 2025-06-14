@@ -1115,24 +1115,38 @@ class CustomerViewController extends Controller
      * Cancel an order
      * 
      * @param int $id Order ID
-     * @return \Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function cancelOrder($id)
     {
         // Find the order
         $order = Order::where('order_id', $id)
                      ->where('user_id', auth()->id())
+                     ->with('items.product') // Load order items and products
                      ->first();
         
         if (!$order) {
-            return redirect()->route('customer.profile')
-                ->with('error', 'Order not found.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found.'
+            ]);
         }
         
         // Check if order can be cancelled (allow both pending and processing orders to be cancelled)
         if ($order->status !== Order::STATUS_PROCESSING && $order->status !== Order::STATUS_PENDING) {
-            return redirect()->route('customer.profile')
-                ->with('error', 'Only pending or processing orders can be cancelled.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Only pending or processing orders can be cancelled.'
+            ]);
+        }
+        
+        // Restore stock for each product in the order
+        foreach ($order->items as $item) {
+            $product = $item->product;
+            if ($product) {
+                $product->stock_quantity += $item->quantity;
+                $product->save();
+            }
         }
         
         // Update order status
@@ -1149,8 +1163,10 @@ class CustomerViewController extends Controller
             $pendingPayment->save();
         }
         
-        return redirect()->route('customer.profile')
-            ->with('success', 'Order cancelled successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Order cancelled successfully. Stock has been restored.'
+        ]);
     }
 
     /**
@@ -1234,41 +1250,59 @@ class CustomerViewController extends Controller
      * Cancel an appointment
      * 
      * @param int $id Appointment ID
-     * @return \Illuminate\Http\RedirectResponse
+     * @param \Illuminate\Http\Request $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function cancelAppointment($id)
+    public function cancelAppointment($id, Request $request)
     {
         // Find the appointment
-        $appointment = \App\Models\Appointment::where('appointment_id', $id)
-                     ->where('user_id', auth()->id())
-                     ->first();
+        $appointment = Appointment::where('appointment_id', $id)
+                           ->where('user_id', auth()->id())
+                           ->with('availableTime') // Load the available time
+                           ->first();
         
         if (!$appointment) {
-            return redirect()->route('customer.appointments.index')
-                ->with('error', 'Appointment not found.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Appointment not found.'
+            ]);
         }
         
         // Check if appointment can be cancelled (only scheduled appointments)
         if ($appointment->status !== 'scheduled') {
-            return redirect()->route('customer.appointments.index')
-                ->with('error', 'Only scheduled appointments can be cancelled.');
+            return response()->json([
+                'success' => false,
+                'message' => 'Only scheduled appointments can be cancelled.'
+            ]);
         }
         
-        // Update appointment status
+        // Make the time slot available again by removing the unavailable time record
+        if ($appointment->available_time_id && $appointment->appointment_date) {
+            \App\Models\UnavailableTime::where('available_time_id', $appointment->available_time_id)
+                ->where('date', $appointment->appointment_date)
+                ->delete();
+        }
+        
+        // Update appointment status and add cancellation reason if provided
         $appointment->status = 'cancelled';
+        if ($request->has('reason')) {
+            $appointment->notes = $request->reason;
+        }
         $appointment->save();
         
         // If there's a pending payment, mark it as failed
-        $pendingPayment = \App\Models\Payment::where('appointment_id', $appointment->appointment_id)
-                              ->where('status', \App\Models\Payment::STATUS_PENDING)
-                              ->first();
+        $pendingPayment = Payment::where('appointment_id', $appointment->appointment_id)
+                          ->where('status', Payment::STATUS_PENDING)
+                          ->first();
         
         if ($pendingPayment) {
-            $pendingPayment->status = \App\Models\Payment::STATUS_FAILED;
+            $pendingPayment->status = Payment::STATUS_FAILED;
             $pendingPayment->save();
         }
         
-        return redirect()->route('customer.appointments.index')
-            ->with('success', 'Appointment cancelled successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Appointment cancelled successfully. Time slot is now available for booking.'
+        ]);
     }
 }

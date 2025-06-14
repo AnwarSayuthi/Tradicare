@@ -100,7 +100,9 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     // Orders
     Route::get('/orders', [CustomerViewController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [CustomerViewController::class, 'orderDetails'])->name('orders.show');
+    // These routes should already exist, but make sure they're correct
     Route::post('/orders/{order}/cancel', [CustomerViewController::class, 'cancelOrder'])->name('orders.cancel');
+    Route::put('/appointments/{id}/cancel', [CustomerViewController::class, 'cancelAppointment'])->name('appointments.cancel');
     Route::post('/orders/{order}/receive', [CustomerViewController::class, 'receiveOrder'])->name('orders.receive');
 
     // Appointments
