@@ -717,26 +717,4 @@ function handlePaymentReturn() {
     }
 }
 </script>
-{{-- <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const selectBtn = document.getElementById('selectAddressBtn');
-    
-    if (selectBtn) {
-        selectBtn.addEventListener('click', function() {
-            const selectedAddress = document.querySelector('input[name="selected_address"]:checked');
-            
-            if (selectedAddress) {
-                const locationId = selectedAddress.value;
-                document.querySelector('input[name="location_id"]').value = locationId;
-                $('#addressSelectionModal').modal('hide');
-                
-                // Update the displayed address (optional)
-                // You would need to fetch the address details via AJAX or reload the page
-            } else {
-                alert('Please select an address');
-            }
-        });
-    }
-});
-</script> --}}
 @endsection
