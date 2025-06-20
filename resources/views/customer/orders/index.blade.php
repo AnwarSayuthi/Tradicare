@@ -51,7 +51,7 @@
                             <span class="mx-2">|</span>
                             <span class="text-muted">{{ \Carbon\Carbon::parse($order->order_date)->format('M d, Y') }}</span>
                         </div>     
-                        <span class="badge getStatusBadgeClass({{$order->status}})">{{ ucfirst($order->status) }}</span>
+                        <span class="badge {{ $this->getStatusBadgeClass($order->status) }}">{{ ucfirst($order->status) }}</span>
                     </div>
                     <div class="card-body">
                         @foreach($order->items->take(2) as $item)

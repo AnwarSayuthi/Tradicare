@@ -152,9 +152,13 @@
                             <a href="{{ route('customer.orders.show', $order->order_id) }}" class="btn btn-outline-primary btn-sm">
                                 <i class="bi bi-eye me-1"></i>View Details
                             </a>
-                            <button class="btn btn-primary btn-sm">
-                                <i class="bi bi-credit-card me-1"></i>Pay Now
-                            </button>
+                            <form method="POST" action="{{ route('customer.payment.process', ['type' => 'order', 'id' => $order->order_id]) }}" class="d-inline">
+                                @csrf
+                                <input type="hidden" name="payment_method" value="toyyibpay">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-credit-card me-1"></i>Pay Now
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

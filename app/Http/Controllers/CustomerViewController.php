@@ -12,7 +12,7 @@ use App\Models\AvailableTime;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Order;
-use App\Models\OrderItem;
+
 use App\Models\Payment;
 use Carbon\Carbon;
 
@@ -232,7 +232,7 @@ class CustomerViewController extends Controller
         // Create order
         $order = Order::create([
             'user_id' => auth()->id(),
-            'location_id' => $request->location_id, // Add this line to store location_id
+            'location_id' => $request->location_id,
             'order_date' => now(),
             'total_amount' => $totalAmount,
             'payment_status' => Order::PAYMENT_PENDING,
@@ -243,23 +243,29 @@ class CustomerViewController extends Controller
         
         // Link cart to order
         $cart->order_id = $order->order_id;
-        $cart->status = 'active';
+        $cart->status = 'completed';
         $cart->save();
-    // After retrieving the order and before creating a new payment
+        
+        // Create new active cart for future purchases
+        Cart::create([
+            'user_id' => auth()->id(),
+            'status' => 'active'
+        ]);
+        
     } else {
-        $order = Order::findOrFail($cart->order_id);
-        
-        // Recalculate the total amount based on current cart items
-        $currentTotalAmount = $cart->getTotalPrice() + 5.00; // Adding $5 shipping
-        
-        // If the cart total has changed, update the order total_amount
-        if (abs($currentTotalAmount - $order->total_amount) > 0.01) { // Using small epsilon for float comparison
-            $order->total_amount = $currentTotalAmount;
-            $order->save();
+            $order = Order::findOrFail($cart->order_id);
+            
+            // Recalculate the total amount based on current cart items
+            $currentTotalAmount = $cart->getTotalPrice() + 5.00; // Adding $5 shipping
+            
+            // If the cart total has changed, update the order total_amount
+            if (abs($currentTotalAmount - $order->total_amount) > 0.01) {
+                $order->total_amount = $currentTotalAmount;
+                $order->save();
+            }
+            
+            $totalAmount = $order->total_amount;
         }
-        
-        $totalAmount = $order->total_amount;
-    }
 
     // Check for existing pending payment
     $payment = Payment::where('order_id', $order->order_id)
@@ -277,6 +283,7 @@ class CustomerViewController extends Controller
         // Set payment to null so a new one will be created
         $payment = null;
     }
+    
     // Create new payment if none exists
     if (!$payment) {
         // Create a pending payment record
@@ -290,6 +297,7 @@ class CustomerViewController extends Controller
             'transaction_id' => 'TXN' . time() . rand(1000, 9999)
         ]);
     }
+    
     // Handle payment based on method
     if ($request->payment_method === Payment::METHOD_TOYYIBPAY) {
         // Check if payment already has a billcode
@@ -332,7 +340,7 @@ class CustomerViewController extends Controller
         $locations = $user->locations()->get();
         
         // Get all orders as collection for filtering by status
-        $allOrders = Order::with(['items.product', 'payments', 'tracking'])
+        $allOrders = Order::with(['cart.cartItems.product', 'payments', 'tracking'])
                       ->where('user_id', auth()->id())
                       ->orderBy('order_date', 'desc')
                       ->get();
@@ -1122,7 +1130,7 @@ class CustomerViewController extends Controller
         // Find the order
         $order = Order::where('order_id', $id)
                      ->where('user_id', auth()->id())
-                     ->with('items.product') // Load order items and products
+                     ->with('cart.cartItems.product') // Load cart items and products
                      ->first();
         
         if (!$order) {
@@ -1140,12 +1148,14 @@ class CustomerViewController extends Controller
             ]);
         }
         
-        // Restore stock for each product in the order
-        foreach ($order->items as $item) {
-            $product = $item->product;
-            if ($product) {
-                $product->stock_quantity += $item->quantity;
-                $product->save();
+        // Restore stock for each product in the cart
+        if ($order->cart && $order->cart->cartItems) {
+            foreach ($order->cart->cartItems as $cartItem) {
+                $product = $cartItem->product;
+                if ($product) {
+                    $product->stock_quantity += $cartItem->quantity;
+                    $product->save();
+                }
             }
         }
         
@@ -1165,7 +1175,8 @@ class CustomerViewController extends Controller
         
         return response()->json([
             'success' => true,
-            'message' => 'Order cancelled successfully. Stock has been restored.'
+            'message' => 'Order cancelled successfully. Stock has been restored.',
+            'redirect_url' => route('customer.profile', ['button' => 'order', 'orders_tab' => 'cancelled'])
         ]);
     }
 
@@ -1211,7 +1222,7 @@ class CustomerViewController extends Controller
         // Find the order
         $order = Order::where('order_id', $id)
                      ->where('user_id', auth()->id())
-                     ->with(['items.product', 'payments', 'tracking'])
+                     ->with(['cart.cartItems.product', 'payments', 'tracking'])
                      ->firstOrFail();
         
         return view('customer.orders.show', compact('order'));

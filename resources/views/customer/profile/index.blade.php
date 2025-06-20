@@ -432,7 +432,8 @@
                 button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cancelling...';
                 
                 // Send AJAX request to cancel the order
-                fetch(`{{ route('customer.orders.cancel', '') }}/${orderId}`, {
+                // Send AJAX request to cancel the order
+                fetch(`{{ route('customer.orders.cancel', ':orderId') }}`.replace(':orderId', orderId), {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -446,35 +447,38 @@
                         const modal = bootstrap.Modal.getInstance(document.getElementById('cancelOrderModal'));
                         modal.hide();
                         
-                        // Show success toast
-                        showToast('success', 'Order cancelled successfully!');
+                        // Show success toast with proper parameters
+                        showToast('success', 'Order Cancelled', 'Order cancelled successfully!');
                         
-                        // Redirect to cancelled tab after a short delay
-                        setTimeout(() => {
-                            // Activate the cancelled tab
-                            const cancelledTab = document.getElementById('cancelled-tab');
-                            const cancelledTabPane = document.getElementById('cancelled');
-                            
-                            if (cancelledTab && cancelledTabPane) {
-                                // Remove active class from all tabs and panes
-                                document.querySelectorAll('.nav-link').forEach(tab => tab.classList.remove('active'));
-                                document.querySelectorAll('.tab-pane').forEach(pane => {
-                                    pane.classList.remove('show', 'active');
-                                });
+                        // Redirect to cancelled tab
+                        if (data.redirect_url) {
+                            setTimeout(() => {
+                                window.location.href = data.redirect_url;
+                            }, 1500);
+                        } else {
+                            // Fallback: Activate the cancelled tab manually
+                            setTimeout(() => {
+                                const cancelledTab = document.getElementById('cancelled-tab');
+                                const cancelledTabPane = document.getElementById('cancelled');
                                 
-                                // Activate cancelled tab
-                                cancelledTab.classList.add('active');
-                                cancelledTabPane.classList.add('show', 'active');
-                                
-                                // Update URL to reflect the tab change
-                                const url = new URL(window.location);
-                                url.searchParams.set('tab', 'cancelled');
-                                window.history.pushState({}, '', url);
-                            }
-                            
-                            // Reload the page to show updated data
-                            location.reload();
-                        }, 1500);
+                                if (cancelledTab && cancelledTabPane) {
+                                    // Remove active class from all tabs and panes
+                                    document.querySelectorAll('#orderTabs .nav-link').forEach(tab => tab.classList.remove('active'));
+                                    document.querySelectorAll('#orderTabsContent .tab-pane').forEach(pane => {
+                                        pane.classList.remove('show', 'active');
+                                    });
+                                    
+                                    // Activate cancelled tab
+                                    cancelledTab.classList.add('active');
+                                    cancelledTabPane.classList.add('show', 'active');
+                                    
+                                    // Update URL to reflect the tab change
+                                    const url = new URL(window.location);
+                                    url.searchParams.set('orders_tab', 'cancelled');
+                                    window.history.pushState({}, '', url);
+                                }
+                            }, 1500);
+                        }
                     } else {
                         showToast('error', 'Cancellation Failed', data.message || 'Failed to cancel order.');
                         // Reset button
@@ -505,7 +509,7 @@
                 button.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Cancelling...';
                 
                 // Send AJAX request to cancel the appointment
-                fetch(`{{ route('customer.appointments.cancel', '') }}/${appointmentId}`, {
+                fetch(`{{ route('customer.appointments.cancel', ':appointmentId') }}`.replace(':appointmentId', appointmentId), {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -552,9 +556,6 @@
                                 url.searchParams.set('appointment_tab', 'cancelled');
                                 window.history.pushState({}, '', url);
                             }
-                            
-                            // Reload the page to show updated data
-                            location.reload();
                         }, 1500);
                     } else {
                         showToast('error', 'Cancellation Failed', data.message || 'Failed to cancel appointment.');

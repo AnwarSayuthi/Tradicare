@@ -71,13 +71,12 @@ class PaymentController extends Controller
             ]
         );
         
-        //Remove this section - we'll only mark the cart as completed after successful payment
-        //Mark cart as completed if it exists
+        // Mark cart as associated with this order but don't delete it yet
         $cart = Cart::where('user_id', auth()->id())
                     ->where('status', 'active')
                     ->first();
         if ($cart) {
-            $cart->status = 'completed';
+            $cart->order_id = $order->order_id;
             $cart->save();
         }
         
@@ -91,7 +90,7 @@ class PaymentController extends Controller
                 // Update payment with transaction ID
                 $payment->update(['transaction_id' => $billResponse[0]['BillCode']]);
                 
-                // Use the ToyyibPayService to get the correct payment URL
+                // Don't delete cart items here, just redirect to payment
                 return redirect($toyyibpay->getPaymentUrl($billResponse[0]['BillCode']));
             }
 
@@ -104,6 +103,12 @@ class PaymentController extends Controller
             // For cash on delivery
             $payment->update(['status' => 'pending']);
             $order->update(['payment_status' => 'pending', 'status' => 'processing']);
+            
+            // For COD, we can safely mark the cart as completed
+            if ($cart) {
+                $cart->status = 'completed';
+                $cart->save();
+            }
             
             return redirect()->route('customer.profile', ['tab' => 'orders', 'status' => $order->status])
                 ->with('success', 'Order placed successfully! You will pay upon delivery.');
@@ -196,7 +201,18 @@ class PaymentController extends Controller
             
             // Handle order payment
             if ($payment->order_id) {
-                $payment->order->update(['payment_status' => Order::PAYMENT_PAID, 'status' => Order::STATUS_PROCESSING]);
+                $order = $payment->order;
+                $order->update(['payment_status' => Order::PAYMENT_PAID, 'status' => Order::STATUS_PROCESSING]);
+                
+                // Now that payment is confirmed, mark the cart as completed
+                $cart = Cart::where('order_id', $order->order_id)
+                            ->where('user_id', $payment->user_id)
+                            ->first();
+                if ($cart) {
+                    $cart->status = 'completed';
+                    $cart->save();
+                }
+                
                 return redirect()->route('customer.profile')
                     ->with('success', 'Payment successful! Your order is being processed.');
             }

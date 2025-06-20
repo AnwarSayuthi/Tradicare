@@ -11,6 +11,13 @@
         </ol>
     </nav>
 
+    {{-- <!-- Add Return to Profile button -->
+    <div class="mb-3">
+        <a href="{{ route('customer.profile') }}?button=order" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-left me-2"></i>Return to Profile
+        </a>
+    </div> --}}
+
     <div class="row">
         <div class="col-lg-8">
             <div class="card shadow-sm border-0 rounded-lg mb-4">
@@ -399,7 +406,7 @@
         font-size: 0.85rem;
     }
     
-    /* Badge Styling */
+    /* Badge Styling - Compact */
     .badge {
         padding: 0.35rem 0.75rem;
         font-size: 0.75rem;
@@ -407,32 +414,6 @@
         border-radius: 15px;
         text-transform: uppercase;
         letter-spacing: 0.3px;
-        color: #000000; /* Black text color for all badges */
-    }
-    
-    /* Status Badge Colors with black text */
-    .badge-processing {
-        background-color: #f8f9fa;
-        color: #000000;
-        border: 1px solid #dee2e6;
-    }
-    
-    .badge-shipped {
-        background-color: #e3f2fd;
-        color: #000000;
-        border: 1px solid #bbdefb;
-    }
-    
-    .badge-completed {
-        background-color: #e8f5e9;
-        color: #000000;
-        border: 1px solid #c8e6c9;
-    }
-    
-    .badge-cancelled {
-        background-color: #ffebee;
-        color: #000000;
-        border: 1px solid #ffcdd2;
     }
     
     /* Order Timeline - Compact */
