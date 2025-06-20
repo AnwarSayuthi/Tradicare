@@ -231,12 +231,12 @@
                             </div>
                             
                             <!-- Contact Info -->
-                            @if($appointment->mobile_number)
+                            @if($appointment->tel_number)
                             <div class="d-flex align-items-center mb-3">
                                 <i class="bi bi-phone text-primary me-2"></i>
                                 <div>
                                     <small class="text-muted d-block">Contact</small>
-                                    <p class="mb-0 fw-medium small">{{ $appointment->mobile_number }}</p>
+                                    <p class="mb-0 fw-medium small">{{ $appointment->tel_number }}</p>
                                 </div>
                             </div>
                             @endif

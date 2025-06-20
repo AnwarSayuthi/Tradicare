@@ -33,7 +33,7 @@ class AppointmentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Appointment::with(['user', 'service', 'payment'])
+        $query = Appointment::with(['user', 'service', 'payment', 'availableTime'])
             ->where(function($query) {
                 $query->whereHas('payment', function($q) {
                     $q->where('status', \App\Models\Payment::STATUS_COMPLETED);
@@ -147,13 +147,10 @@ class AppointmentController extends Controller
      */
     public function show($id)
     {
-        $appointment = Appointment::with(['user', 'service', 'availableTime'])->findOrFail($id);
-        $stats = $this->getAppointmentStats();
+        $appointment = Appointment::with(['user', 'service', 'payment', 'availableTime'])
+            ->findOrFail($id);
         
-        return view('admin.appointments.show', array_merge(
-            compact('appointment'),
-            $stats
-        ));
+        return view('admin.appointments.show', compact('appointment'));
     }
 
     /**

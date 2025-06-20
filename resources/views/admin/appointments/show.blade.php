@@ -104,7 +104,7 @@
                                 <div class="col-md-6 mb-3">
                                     <div class="detail-item">
                                         <p class="text-muted mb-1">Time</p>
-                                        <h6 class="fw-semibold mb-0">{{ \Carbon\Carbon::parse($appointment->created_at)->format('h:i A') }}</h6>
+                                        <h6 class="fw-semibold mb-0">{{ \Carbon\Carbon::parse($appointment->availableTime->start_time)->format('h:i A') }}</h6>
                                     </div>
                                 </div>
                                 <div class="col-md-6 mb-3">
@@ -120,7 +120,41 @@
                                         </h6>
                                     </div>
                                 </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="detail-item">
+                                        <p class="text-muted mb-1">Amount</p>
+                                        <h6 class="fw-semibold mb-0">RM{{ number_format($appointment->service->price, 2) }}</h6>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="detail-item">
+                                        <p class="text-muted mb-1">Payment Status</p>
+                                        @if($appointment->payment)
+                                            <span class="badge rounded-pill px-3 py-2 
+                                                @if($appointment->payment->status == 'completed') bg-success
+                                                @elseif($appointment->payment->status == 'pending') bg-warning
+                                                @else bg-secondary
+                                                @endif">
+                                                {{ ucfirst($appointment->payment->status) }}
+                                            </span>
+                                        @else
+                                            <span class="badge rounded-pill px-3 py-2 bg-warning">Pending</span>
+                                        @endif
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <!-- Contact Information -->
+                            @if($appointment->tel_number)
+                            <div class="row mb-4">
+                                <div class="col-md-6 mb-3">
+                                    <div class="detail-item">
+                                        <p class="text-muted mb-1">Phone Number</p>
+                                        <h6 class="fw-semibold mb-0">{{ $appointment->tel_number }}</h6>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                             
                             <!-- Notes -->
                             <h5 class="fw-semibold mb-3">Notes</h5>

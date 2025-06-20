@@ -121,6 +121,7 @@
                             <th scope="col">Customer</th>
                             <th scope="col">Service</th>
                             <th scope="col">Date & Time</th>
+                            <th scope="col">Payment</th>
                             <th scope="col">Status</th>
                             <th scope="col" class="text-end pe-4 ">Actions</th>
                         </tr>
@@ -139,10 +140,18 @@
                                         <div>
                                             <h6 class="mb-0">{{ $appointment->user->name }}</h6>
                                             <small class="text-muted">{{ $appointment->user->email }}</small>
+                                            @if($appointment->tel_number)
+                                                <br><small class="text-muted">{{ $appointment->tel_number }}</small>
+                                            @endif
                                         </div>
                                     </div>
                                 </td>
-                                <td>{{ $appointment->service->service_name }}</td>
+                                <td>
+                                    <div>
+                                        <h6 class="mb-0">{{ $appointment->service->service_name }}</h6>
+                                        <small class="text-muted">RM{{ number_format($appointment->service->price, 2) }}</small>
+                                    </div>
+                                </td>
                                 <td>
                                     <div>
                                         <h6 class="mb-0">{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y') }}</h6>
@@ -150,13 +159,17 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge rounded-pill px-3 py-2 
-                                        @if($appointment->status == 'scheduled') bg-warning
-                                        @elseif($appointment->status == 'completed') bg-success
-                                        @elseif($appointment->status == 'cancelled') bg-danger
-                                        @endif">
-                                        {{ ucfirst($appointment->status) }}
-                                    </span>
+                                    @if($appointment->payment)
+                                        <span class="badge rounded-pill px-2 py-1 
+                                            @if($appointment->payment->status == 'completed') bg-success
+                                            @elseif($appointment->payment->status == 'pending') bg-warning
+                                            @else bg-secondary
+                                            @endif">
+                                            {{ ucfirst($appointment->payment->status) }}
+                                        </span>
+                                    @else
+                                        <span class="badge rounded-pill px-2 py-1 bg-warning">Pending</span>
+                                    @endif
                                 </td>
                                 <td class="text-end pe-4">
                                     <div class="btn-group" role="group" aria-label="Appointment actions">

@@ -8,7 +8,7 @@ class Appointment extends Model
     use HasFactory;
     
     protected $primaryKey = 'appointment_id';
-    protected $fillable = ['user_id', 'service_id', 'available_time_id', 'appointment_date', 'status', 'notes'];
+    protected $fillable = ['user_id', 'service_id', 'available_time_id', 'appointment_date', 'status', 'notes', 'tel_number'];
 
     // Add this casts array to convert appointment_date to Carbon instance
     protected $casts = [
