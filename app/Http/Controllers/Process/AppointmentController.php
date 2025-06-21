@@ -60,8 +60,8 @@ class AppointmentController extends Controller
             })->orWhere('appointment_id', 'like', "%{$search}%");
         }
         
-        // Get appointments with pagination
-        $appointments = $query->orderBy('created_at', 'desc')->paginate(10);
+        // Get appointments with pagination - Changed from 10 to 3
+        $appointments = $query->orderBy('created_at', 'desc')->paginate(3);
         
         // Get appointment statistics
         $stats = $this->getAppointmentStats();
