@@ -1,19 +1,19 @@
 @extends('admin_layout')
 
-@section('title', 'Dashboard')
+@section('title', 'Dashboard - Tradicare Admin')
 
 @section('content')
 <div class="dashboard-wrapper">
-    <!-- Header -->
+    <!-- Enhanced Header -->
     @include('admin.dashboard.partials.header')
     
-    <!-- Metrics Cards -->
+    <!-- Enhanced Metrics Cards -->
     @include('admin.dashboard.partials.metrics')
     
-    <!-- Charts Section -->
+    <!-- Enhanced Charts Section -->
     @include('admin.dashboard.partials.charts')
     
-    <!-- Recent Data Table -->
+    <!-- Enhanced Recent Data Table -->
     @include('admin.dashboard.partials.recent-data')
 </div>
 

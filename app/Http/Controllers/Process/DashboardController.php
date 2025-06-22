@@ -37,7 +37,7 @@ class DashboardController extends Controller
         }
         
         // Get dashboard data
-        $metrics = $this->getMetrics($startDate, $endDate);
+        $metrics = $this->getMetrics($startDate, $endDate, $period, $year, $month);
         $charts = $this->getChartData($period, $year, $month);
         $recentData = $this->getRecentData();
         $analytics = $this->getAnalytics($startDate, $endDate);
@@ -47,13 +47,18 @@ class DashboardController extends Controller
         ));
     }
     
-    private function getMetrics($startDate, $endDate)
+    private function getMetrics($startDate, $endDate, $period, $year, $month)
     {
         // Sales metrics
-        $totalSales = Order::whereBetween('order_date', [$startDate, $endDate])->sum('total_amount');
+        $totalSales = Order::whereBetween('order_date', [$startDate, $endDate])
+            ->where('payment_status', 'paid')
+            ->sum('total_amount');
+            
         $appointmentRevenue = Payment::whereNotNull('appointment_id')
+            ->where('status', 'completed')
             ->whereBetween('payment_date', [$startDate, $endDate])
             ->sum('amount');
+            
         $totalRevenue = $totalSales + $appointmentRevenue;
         
         // Order metrics
@@ -77,6 +82,20 @@ class DashboardController extends Controller
         $totalProducts = Product::where('active', true)->count();
         $lowStockProducts = Product::where('active', true)->where('stock_quantity', '<=', 10)->count();
         
+        // Growth calculations
+        $previousPeriodStart = $period === 'year' ? 
+            Carbon::createFromDate($year - 1, 1, 1)->startOfDay() :
+            Carbon::createFromDate($year, $month, 1)->subMonth()->startOfDay();
+        $previousPeriodEnd = $period === 'year' ?
+            Carbon::createFromDate($year - 1, 12, 31)->endOfDay() :
+            Carbon::createFromDate($year, $month, 1)->subMonth()->endOfMonth()->endOfDay();
+            
+        $previousSales = Order::whereBetween('order_date', [$previousPeriodStart, $previousPeriodEnd])
+            ->where('payment_status', 'paid')
+            ->sum('total_amount');
+            
+        $salesGrowth = $previousSales > 0 ? (($totalSales - $previousSales) / $previousSales) * 100 : 0;
+        
         return [
             'totalSales' => $totalSales,
             'totalOrders' => $totalOrders,
@@ -88,7 +107,8 @@ class DashboardController extends Controller
             'pendingOrders' => $pendingOrders,
             'completedOrders' => $completedOrders,
             'totalProducts' => $totalProducts,
-            'lowStockProducts' => $lowStockProducts
+            'lowStockProducts' => $lowStockProducts,
+            'salesGrowth' => round($salesGrowth, 1)
         ];
     }
     
@@ -96,17 +116,22 @@ class DashboardController extends Controller
     {
         $salesData = [];
         $ordersData = [];
+        $appointmentData = [];
         
         if ($period === 'year') {
             for ($i = 1; $i <= 12; $i++) {
                 $monthStart = Carbon::createFromDate($year, $i, 1)->startOfDay();
                 $monthEnd = Carbon::createFromDate($year, $i, 1)->endOfMonth()->endOfDay();
                 
-                $monthlySales = Order::whereBetween('order_date', [$monthStart, $monthEnd])->sum('total_amount');
+                $monthlySales = Order::whereBetween('order_date', [$monthStart, $monthEnd])
+                    ->where('payment_status', 'paid')
+                    ->sum('total_amount');
                 $monthlyOrders = Order::whereBetween('order_date', [$monthStart, $monthEnd])->count();
+                $monthlyAppointments = Appointment::whereBetween('appointment_date', [$monthStart, $monthEnd])->count();
                 
                 $salesData[] = ['label' => Carbon::createFromDate($year, $i, 1)->format('M'), 'value' => $monthlySales];
                 $ordersData[] = ['label' => Carbon::createFromDate($year, $i, 1)->format('M'), 'value' => $monthlyOrders];
+                $appointmentData[] = ['label' => Carbon::createFromDate($year, $i, 1)->format('M'), 'value' => $monthlyAppointments];
             }
         } else {
             $daysInMonth = Carbon::createFromDate($year, $month, 1)->daysInMonth;
@@ -114,11 +139,15 @@ class DashboardController extends Controller
                 $dayStart = Carbon::createFromDate($year, $month, $i)->startOfDay();
                 $dayEnd = Carbon::createFromDate($year, $month, $i)->endOfDay();
                 
-                $dailySales = Order::whereBetween('order_date', [$dayStart, $dayEnd])->sum('total_amount');
+                $dailySales = Order::whereBetween('order_date', [$dayStart, $dayEnd])
+                    ->where('payment_status', 'paid')
+                    ->sum('total_amount');
                 $dailyOrders = Order::whereBetween('order_date', [$dayStart, $dayEnd])->count();
+                $dailyAppointments = Appointment::whereBetween('appointment_date', [$dayStart, $dayEnd])->count();
                 
                 $salesData[] = ['label' => $i, 'value' => $dailySales];
                 $ordersData[] = ['label' => $i, 'value' => $dailyOrders];
+                $appointmentData[] = ['label' => $i, 'value' => $dailyAppointments];
             }
         }
         
@@ -134,6 +163,7 @@ class DashboardController extends Controller
         return [
             'sales' => $salesData,
             'orders' => $ordersData,
+            'appointments' => $appointmentData,
             'products' => $productData
         ];
     }
@@ -143,7 +173,7 @@ class DashboardController extends Controller
         // Recent orders with user info
         $recentOrders = Order::with('user')
             ->orderBy('order_date', 'desc')
-            ->take(5)
+            ->take(10)
             ->get()
             ->map(function($order) {
                 return [
@@ -151,12 +181,29 @@ class DashboardController extends Controller
                     'customer' => $order->user->name ?? 'Unknown',
                     'amount' => $order->total_amount,
                     'status' => $order->status,
+                    'payment_status' => $order->payment_status,
                     'date' => $order->order_date->format('d/m/Y H:i')
                 ];
             });
             
+        // Recent appointments
+        $recentAppointments = Appointment::with(['user', 'service'])
+            ->orderBy('appointment_date', 'desc')
+            ->take(5)
+            ->get()
+            ->map(function($appointment) {
+                return [
+                    'id' => $appointment->appointment_id,
+                    'customer' => $appointment->user->name ?? 'Unknown',
+                    'service' => $appointment->service->service_name ?? 'Unknown Service',
+                    'date' => $appointment->appointment_date->format('d/m/Y H:i'),
+                    'status' => $appointment->status
+                ];
+            });
+            
         return [
-            'orders' => $recentOrders
+            'orders' => $recentOrders,
+            'appointments' => $recentAppointments
         ];
     }
     
@@ -192,6 +239,41 @@ class DashboardController extends Controller
             'topServices' => $topServices,
             'customerLocations' => $customerLocations
         ];
+    }
+    
+    public function generateReport(Request $request)
+    {
+        $period = $request->input('period', 'month');
+        $year = $request->input('year', Carbon::now()->year);
+        $month = $request->input('month', Carbon::now()->month);
+        
+        // Set date range
+        if ($period === 'year') {
+            $startDate = Carbon::createFromDate($year, 1, 1)->startOfDay();
+            $endDate = Carbon::createFromDate($year, 12, 31)->endOfDay();
+            $dateLabel = $year;
+        } else {
+            $startDate = Carbon::createFromDate($year, $month, 1)->startOfDay();
+            $endDate = Carbon::createFromDate($year, $month, 1)->endOfMonth()->endOfDay();
+            $dateLabel = Carbon::createFromDate($year, $month, 1)->format('F Y');
+        }
+        
+        $metrics = $this->getMetrics($startDate, $endDate);
+        $charts = $this->getChartData($period, $year, $month);
+        $analytics = $this->getAnalytics($startDate, $endDate);
+        
+        $reportData = [
+            'period' => $dateLabel,
+            'metrics' => $metrics,
+            'charts' => $charts,
+            'analytics' => $analytics,
+            'generated_at' => Carbon::now()->format('d/m/Y H:i:s')
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'data' => $reportData
+        ]);
     }
     
     public function updateOrderStatus(Request $request, Order $order)

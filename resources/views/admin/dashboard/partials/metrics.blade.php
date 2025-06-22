@@ -1,53 +1,70 @@
-<div class="metrics-grid">
-    <div class="metric-card sales">
-        <div class="metric-content">
-            <h3 class="metric-title">Total Sales</h3>
-            <div class="metric-value">{{ number_format($metrics['totalSales']) }}</div>
-            <div class="metric-change positive">
-                <i class="bi bi-arrow-up"></i> +4.5% from last month
+<div class="metrics-section">
+    <div class="stats-container">
+        <!-- Total Sales Card -->
+        <div class="stats-card sales-card">
+            <div class="card-body">
+                <div class="icon-container">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-value">RM{{ number_format($metrics['totalSales'], 2) }}</div>
+                    <div class="stats-label">Total Sales</div>
+                    <div class="stats-change {{ $metrics['salesGrowth'] >= 0 ? 'positive' : 'negative' }}">
+                        <i class="bi bi-{{ $metrics['salesGrowth'] >= 0 ? 'arrow-up' : 'arrow-down' }}"></i>
+                        {{ abs($metrics['salesGrowth']) }}% from last {{ $period }}
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="metric-icon">
-            <i class="bi bi-graph-up"></i>
-        </div>
-    </div>
-    
-    <div class="metric-card orders">
-        <div class="metric-content">
-            <h3 class="metric-title">Total Order</h3>
-            <div class="metric-value">RM {{ number_format($metrics['totalOrders']) }}</div>
-            <div class="metric-change negative">
-                <i class="bi bi-arrow-down"></i> -2.1% from last month
+        
+        <!-- Total Orders Card -->
+        <div class="stats-card orders-card">
+            <div class="card-body">
+                <div class="icon-container">
+                    <i class="bi bi-cart-check"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-value">{{ number_format($metrics['totalOrders']) }}</div>
+                    <div class="stats-label">Total Orders</div>
+                    <div class="stats-breakdown">
+                        <span class="completed">{{ $metrics['completedOrders'] }} completed</span>
+                        <span class="pending">{{ $metrics['pendingOrders'] }} pending</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="metric-icon">
-            <i class="bi bi-bag-check"></i>
-        </div>
-    </div>
-    
-    <div class="metric-card appointments">
-        <div class="metric-content">
-            <h3 class="metric-title">Total appointment</h3>
-            <div class="metric-value">{{ $metrics['appointmentRate'] }}%</div>
-            <div class="metric-change negative">
-                <i class="bi bi-arrow-down"></i> -0.5% from last month
+        
+        <!-- Total Appointments Card -->
+        <div class="stats-card appointments-card">
+            <div class="card-body">
+                <div class="icon-container">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-value">{{ number_format($metrics['totalAppointments']) }}</div>
+                    <div class="stats-label">Total Appointments</div>
+                    <div class="stats-breakdown">
+                        <span class="rate">{{ $metrics['appointmentRate'] }}% completion rate</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="metric-icon">
-            <i class="bi bi-calendar-check"></i>
-        </div>
-    </div>
-    
-    <div class="metric-card revenue">
-        <div class="metric-content">
-            <h3 class="metric-title">Total Invoice</h3>
-            <div class="metric-value">{{ number_format($metrics['totalRevenue']) }}</div>
-            <div class="metric-change positive">
-                <i class="bi bi-arrow-up"></i> +1.2% from last month
+        
+        <!-- Total Revenue Card -->
+        <div class="stats-card revenue-card">
+            <div class="card-body">
+                <div class="icon-container">
+                    <i class="bi bi-graph-up"></i>
+                </div>
+                <div class="stats-content">
+                    <div class="stats-value">RM{{ number_format($metrics['totalRevenue'], 2) }}</div>
+                    <div class="stats-label">Total Revenue</div>
+                    <div class="stats-breakdown">
+                        <span class="customers">{{ $metrics['totalCustomers'] }} customers</span>
+                        <span class="new">{{ $metrics['newCustomers'] }} new</span>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="metric-icon">
-            <i class="bi bi-currency-dollar"></i>
         </div>
     </div>
 </div>
