@@ -12,8 +12,8 @@
                 <!-- Period Selector -->
                 <div class="period-selector">
                     <select id="periodSelect" class="form-select">
-                        <option value="month" {{ $period == 'month' ? 'selected' : '' }}>This Month</option>
-                        <option value="year" {{ $period == 'year' ? 'selected' : '' }}>This Year</option>
+                        <option value="month" {{ $period == 'month' ? 'selected' : '' }}>Month</option>
+                        <option value="year" {{ $period == 'year' ? 'selected' : '' }}>Year</option>
                     </select>
                 </div>
                 
