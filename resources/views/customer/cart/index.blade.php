@@ -232,7 +232,7 @@
                             <div class="order-summary">
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="small">Subtotal (Products)</span>
-                                    <span class="text-end small">RM{{ number_format($totalPrice, 2) }}</span>
+                                    <span class="text-end small">RM{{ number_format($total, 2) }}</span>
                                 </div>
                                 <div class="d-flex justify-content-between mb-2">
                                     <span class="small">Shipping</span>
@@ -245,7 +245,7 @@
                                 <hr class="my-2">
                                 <div class="d-flex justify-content-between fw-bold">
                                     <span>Total Payment</span>
-                                    <span class="text-end fw-bold">RM{{ number_format($totalPrice + (isset($shippingCost) ? $shippingCost : 5) + 1, 2) }}</span>
+                                    <span class="text-end fw-bold">RM{{ number_format($total + (isset($shippingCost) ? $shippingCost : 5) + 1, 2) }}</span>
                                 </div>
                             </div>
                         </div>

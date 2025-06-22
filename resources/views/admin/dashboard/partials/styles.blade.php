@@ -259,12 +259,20 @@
 
 .chart-content {
     position: relative;
-    height: 220px;
+    height: 300px; /* Increased height */
+    min-height: 250px; /* Minimum height */
+    width: 100%;
 }
 
 .chart-wrapper {
     position: relative;
     height: 100%;
+    width: 100%;
+}
+
+.chart-wrapper canvas {
+    max-height: 100% !important;
+    width: 100% !important;
 }
 
 .chart-center-text {

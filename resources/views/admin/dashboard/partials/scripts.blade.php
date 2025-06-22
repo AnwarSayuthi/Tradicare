@@ -1,59 +1,218 @@
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> --}}
 <script>
+// Check if Chart.js is loaded
+if (typeof Chart === 'undefined') {
+    console.error('Chart.js is not loaded!');
+    // Show user-friendly error message
+    document.querySelectorAll('.chart-content').forEach(container => {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ef4444;">Charts failed to load. Please refresh the page.</div>';
+    });
+} else {
+    console.log('Chart.js loaded successfully');
+    
+    // Register Chart.js plugins with better error checking
+    try {
+        const pluginsToRegister = [];
+        
+        if (typeof ChartDataLabels !== 'undefined') {
+            pluginsToRegister.push(ChartDataLabels);
+        }
+        
+        if (window['chartjs-plugin-annotation']) {
+            pluginsToRegister.push(window['chartjs-plugin-annotation']);
+        }
+        
+        if (window['chartjs-adapter-date-fns']) {
+            pluginsToRegister.push(window['chartjs-adapter-date-fns']);
+        }
+        
+        if (pluginsToRegister.length > 0) {
+            Chart.register(...pluginsToRegister);
+            console.log('Chart.js plugins registered successfully:', pluginsToRegister.length);
+        }
+    } catch (error) {
+        console.error('Error registering Chart.js plugins:', error);
+    }
+}
+
 // Chart data from controller
 const salesData = {!! json_encode($charts['sales']) !!};
 const ordersData = {!! json_encode($charts['orders']) !!};
 const appointmentData = {!! json_encode($charts['appointments']) !!};
-const productData = {!! json_encode($charts['products']) !!};
+const productData = {!! json_encode($charts['products']) !!}; // ADD THIS LINE
 
-// Enhanced Product Chart (Doughnut)
+// Enhanced Product Chart (Doughnut) with Advanced Features
 const productCtx = document.getElementById('productChart')?.getContext('2d');
 if (productCtx) {
+    // Define category colors with gradients
+    const categoryColorMap = {
+        'Supplements': {
+            background: '#4F46E5',
+            gradient: ['#4F46E5', '#6366F1']
+        },
+        'Oil & Balms': {
+            background: '#10B981',
+            gradient: ['#10B981', '#34D399']
+        },
+        'Beverages': {
+            background: '#F59E0B',
+            gradient: ['#F59E0B', '#FBBF24']
+        },
+        'Body Care': {
+            background: '#EF4444',
+            gradient: ['#EF4444', '#F87171']
+        },
+        'Immune Booster': {
+            background: '#8B5CF6',
+            gradient: ['#8B5CF6', '#A78BFA']
+        }
+    };
+    
+    // Create gradient backgrounds
+    const createGradient = (ctx, color1, color2) => {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, color1);
+        gradient.addColorStop(1, color2);
+        return gradient;
+    };
+    
+    // Generate enhanced colors and patterns
+    const chartColors = productData.map(item => {
+        const colorConfig = categoryColorMap[item.label];
+        if (colorConfig) {
+            return createGradient(productCtx, colorConfig.gradient[0], colorConfig.gradient[1]);
+        }
+        return '#6B7280';
+    });
+    
+    const chartLabels = productData.map(item => item.label);
+    
     const productChart = new Chart(productCtx, {
         type: 'doughnut',
         data: {
-            labels: productData.map(item => item.label),
+            labels: chartLabels,
             datasets: [{
                 data: productData.map(item => item.value),
-                backgroundColor: [
-                    'linear-gradient(135deg, #667eea, #764ba2)',
-                    'linear-gradient(135deg, #f093fb, #f5576c)',
-                    'linear-gradient(135deg, #4facfe, #00f2fe)',
-                    'linear-gradient(135deg, #43e97b, #38f9d7)',
-                    'linear-gradient(135deg, #fa709a, #fee140)'
-                ],
-                borderWidth: 0,
-                cutout: '75%'
+                backgroundColor: chartColors,
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                cutout: '70%',
+                hoverBorderWidth: 5,
+                hoverBorderColor: '#ffffff',
+                hoverBackgroundColor: chartColors.map(color => color + 'CC')
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            aspectRatio: 1, // Add this to maintain square aspect
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: 10,
+                    left: 10,
+                    right: 10
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
             plugins: {
                 legend: {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: 'white',
-                    bodyColor: 'white',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderWidth: 1,
-                    cornerRadius: 8,
-                    displayColors: true
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 2,
+                    cornerRadius: 12,
+                    displayColors: true,
+                    padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: ${value} products (${percentage}%)`;
+                        },
+                        afterLabel: function(context) {
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            return `Share: ${((value / total) * 100).toFixed(1)}% of total inventory`;
+                        }
+                    }
+                },
+                datalabels: {
+                    display: function(context) {
+                        const value = context.parsed;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        return (value / total) > 0.05; // Only show labels for segments > 5%
+                    },
+                    color: '#ffffff',
+                    font: {
+                        weight: 'bold',
+                        size: 11
+                    },
+                    formatter: function(value, context) {
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(0);
+                        return percentage + '%';
+                    },
+                    anchor: 'center',
+                    align: 'center'
                 }
             },
             animation: {
                 animateRotate: true,
-                duration: 2000
+                animateScale: true,
+                duration: 2000,
+                easing: 'easeInOutQuart'
+            },
+            elements: {
+                arc: {
+                    borderJoinStyle: 'round'
+                }
             }
-        }
+        },
+        plugins: [ChartDataLabels]
     });
+    
+    // Add click interaction
+    productChart.canvas.onclick = function(evt) {
+        const points = productChart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+        if (points.length) {
+            const firstPoint = points[0];
+            const label = productChart.data.labels[firstPoint.index];
+            const value = productChart.data.datasets[firstPoint.datasetIndex].data[firstPoint.index];
+            console.log(`Clicked on ${label}: ${value} products`);
+            // Add your click handler logic here
+        }
+    };
 }
 
-// Enhanced Sales Chart (Line)
+// Enhanced Sales Chart (Line) with Advanced Features
 const salesCtx = document.getElementById('salesChart')?.getContext('2d');
 if (salesCtx) {
+    // Create gradient for sales chart
+    const salesGradient = salesCtx.createLinearGradient(0, 0, 0, 400);
+    salesGradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+    salesGradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
+    
+    const salesBorderGradient = salesCtx.createLinearGradient(0, 0, 0, 400);
+    salesBorderGradient.addColorStop(0, '#667eea');
+    salesBorderGradient.addColorStop(1, '#764ba2');
+    
     const salesChart = new Chart(salesCtx, {
         type: 'line',
         data: {
@@ -61,38 +220,104 @@ if (salesCtx) {
             datasets: [{
                 label: 'Sales Revenue',
                 data: salesData.map(item => item.value),
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                borderWidth: 3,
+                borderColor: salesBorderGradient,
+                backgroundColor: salesGradient,
+                borderWidth: 4,
                 fill: true,
                 tension: 0.4,
                 pointBackgroundColor: '#667eea',
                 pointBorderColor: '#ffffff',
                 pointBorderWidth: 3,
-                pointRadius: 6,
-                pointHoverRadius: 8,
+                pointRadius: 8,
+                pointHoverRadius: 12,
                 pointHoverBackgroundColor: '#764ba2',
-                pointHoverBorderColor: '#ffffff'
+                pointHoverBorderColor: '#ffffff',
+                pointHoverBorderWidth: 4,
+                segment: {
+                    borderColor: ctx => {
+                        // Fix: Add null checks for ctx properties
+                        if (!ctx || !ctx.p1 || !ctx.p0 || !ctx.p1.parsed || !ctx.p0.parsed) {
+                            return '#667eea'; // Default color
+                        }
+                        const current = ctx.p1.parsed.y;
+                        const previous = ctx.p0.parsed.y;
+                        return current > previous ? '#10B981' : '#EF4444';
+                    }
+                }
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            aspectRatio: 2, // Add this for wider aspect ratio
+            layout: {
+                padding: {
+                    top: 20,
+                    bottom: 20,
+                    left: 10,
+                    right: 10
+                }
+            },
             plugins: {
                 legend: {
                     display: false
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    titleColor: 'white',
-                    bodyColor: 'white',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
-                    borderWidth: 1,
-                    cornerRadius: 8,
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    titleColor: '#ffffff',
+                    bodyColor: '#ffffff',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 2,
+                    cornerRadius: 12,
                     displayColors: false,
+                    padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
                     callbacks: {
+                        title: function(context) {
+                            return `Period: ${context[0].label}`;
+                        },
                         label: function(context) {
-                            return 'Revenue: RM' + context.parsed.y.toLocaleString();
+                            return `Revenue: RM${context.parsed.y.toLocaleString()}`;
+                        },
+                        afterLabel: function(context) {
+                            const dataIndex = context.dataIndex;
+                            if (dataIndex > 0) {
+                                const current = context.parsed.y;
+                                const previous = salesData[dataIndex - 1].value;
+                                const change = ((current - previous) / previous * 100).toFixed(1);
+                                const trend = change >= 0 ? '📈' : '📉';
+                                return `${trend} ${Math.abs(change)}% from previous period`;
+                            }
+                            return '';
+                        }
+                    }
+                },
+                annotation: {
+                    annotations: {
+                        averageLine: {
+                            type: 'line',
+                            yMin: salesData.reduce((sum, item) => sum + item.value, 0) / salesData.length,
+                            yMax: salesData.reduce((sum, item) => sum + item.value, 0) / salesData.length,
+                            borderColor: '#F59E0B',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            label: {
+                                content: 'Average',
+                                enabled: true,
+                                position: 'end',
+                                backgroundColor: '#F59E0B',
+                                color: '#ffffff',
+                                font: {
+                                    size: 11,
+                                    weight: 'bold'
+                                }
+                            }
                         }
                     }
                 }
@@ -110,7 +335,8 @@ if (salesCtx) {
                         font: {
                             size: 12,
                             weight: '500'
-                        }
+                        },
+                        padding: 10
                     }
                 },
                 y: {
@@ -127,6 +353,7 @@ if (salesCtx) {
                             size: 12,
                             weight: '500'
                         },
+                        padding: 10,
                         callback: function(value) {
                             return 'RM' + value.toLocaleString();
                         }
@@ -135,7 +362,29 @@ if (salesCtx) {
             },
             animation: {
                 duration: 2000,
-                easing: 'easeInOutQuart'
+                easing: 'easeInOutQuart',
+                onProgress: function(animation) {
+                    const progress = animation.currentStep / animation.numSteps;
+                    // Fix: Add null check for chart and ctx
+                    if (this.chart && this.chart.ctx) {
+                        this.chart.ctx.globalAlpha = progress;
+                    }
+                },
+                onComplete: function() {
+                    // Fix: Add null check for chart and ctx
+                    if (this.chart && this.chart.ctx) {
+                        this.chart.ctx.globalAlpha = 1;
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    hoverRadius: 12
+                },
+                line: {
+                    borderJoinStyle: 'round',
+                    borderCapStyle: 'round'
+                }
             }
         }
     });
@@ -390,23 +639,26 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // Make sure canvas is visible and properly sized
-                const canvas = clonedChart.querySelector('canvas');
-                if (canvas) {
-                    canvas.style.cssText = `
+                // Around line 602 - rename to canvasElement
+                const canvasElement = clonedChart.querySelector('canvas');
+                if (canvasElement) {
+                    canvasElement.style.cssText = `
                         width: 100% !important;
                         height: 100% !important;
                         max-width: 100%;
                         max-height: 100%;
                     `;
+                } else {
+                    console.warn(`Canvas element not found for chart: ${chartInfo.title}`);
                 }
-                
+
                 chartWrapper.appendChild(titleSection);
                 chartWrapper.appendChild(clonedChart);
                 
                 document.body.appendChild(chartWrapper);
                 
                 // Convert to canvas with higher quality settings
-                const canvas = await html2canvas(chartWrapper, {
+                const chartCanvas = await html2canvas(chartWrapper, {
                     width: 794,
                     height: 1123,
                     scale: 2,
@@ -428,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
                 
-                const imgData = canvas.toDataURL('image/png', 1.0);
+                const imgData = chartCanvas.toDataURL('image/png', 1.0);
                 pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
                 
                 // Clean up

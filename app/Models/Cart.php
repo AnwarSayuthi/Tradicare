@@ -1,6 +1,9 @@
 <?php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log; // Add this line
 
 class Cart extends Model
 {
@@ -38,8 +41,23 @@ class Cart extends Model
      */
     public function getTotalPrice()
     {
-        return $this->cartItems->sum(function($item) {
+        $total = $this->cartItems->sum(function($item) {
             return $item->quantity * $item->unit_price;
         });
+        
+        Log::info('Cart getTotalPrice calculation:', [
+            'cart_id' => $this->cart_id,
+            'items_count' => $this->cartItems->count(),
+            'calculated_total' => $total,
+            'items_detail' => $this->cartItems->map(function($item) {
+                return [
+                    'quantity' => $item->quantity,
+                    'unit_price' => $item->unit_price,
+                    'subtotal' => $item->quantity * $item->unit_price
+                ];
+            })
+        ]);
+        
+        return $total;
     }
 }

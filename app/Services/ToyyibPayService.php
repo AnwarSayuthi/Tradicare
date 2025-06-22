@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Config;
 use App\Models\Payment;
 use App\Models\Order;
 use App\Models\Appointment;
+use App\Models\Cart;
 
 class ToyyibPayService
 {
@@ -51,32 +52,41 @@ class ToyyibPayService
             if (empty($this->secretKey) || empty($this->categoryCode)) {
                 throw new \RuntimeException('ToyyibPay configuration is incomplete');
             }
-            
+
             // Verify payment amount against cart total if it's an order payment
-            if ($payment->isOrderPayment() && $payment->order && $payment->order->cart) {
+            if ($payment->isOrderPayment() && $payment->order) {
                 $order = $payment->order;
-                $cart = $order->cart;
                 
-                // Calculate current cart total
-                $cartTotal = $cart->getTotalPrice();
-                // Add shipping cost
-                $shippingCost = 5.00;
-                $cartTotal += $shippingCost;
+                // Get the user's current active cart instead of the order's cart
+                $cart = \App\Models\Cart::where('user_id', $order->user_id)
+                                        ->where('status', 'active')
+                                        ->with('cartItems.product')
+                                        ->first();
                 
-                // If cart total doesn't match payment amount, update the payment amount
-                if (abs($cartTotal - $payment->amount) > 0.01) { // Using small epsilon for float comparison
-                    Log::info('Updating payment amount to match cart total', [
-                        'payment_id' => $payment->payment_id,
-                        'old_amount' => $payment->amount,
-                        'new_amount' => $cartTotal
-                    ]);
+                if ($cart) {
+                    // Calculate current cart total
+                    $cartTotal = $cart->getTotalPrice();
+                    // Add shipping cost
+                    $shippingCost = 5.00;
+                    $cartTotal += $shippingCost;
                     
-                    $payment->amount = $cartTotal;
-                    $payment->save();
-                    
-                    // Also update the order total_amount
-                    $order->total_amount = $cartTotal;
-                    $order->save();
+                    // If cart total doesn't match payment amount, update the payment amount
+                    if (abs($cartTotal - $payment->amount) > 0.01) {
+                        Log::info('Updating payment amount to match cart total', [
+                            'payment_id' => $payment->payment_id,
+                            'old_amount' => $payment->amount,
+                            'new_amount' => $cartTotal,
+                            'cart_id' => $cart->cart_id,
+                            'order_id' => $order->order_id
+                        ]);
+                        
+                        $payment->amount = $cartTotal;
+                        $payment->save();
+                        
+                        // Also update the order total_amount
+                        $order->total_amount = $cartTotal;
+                        $order->save();
+                    }
                 }
             }
             
@@ -208,11 +218,19 @@ class ToyyibPayService
         }
         
         // Verify payment amount against cart total if it's an order payment
+        // Replace the cart retrieval logic in createBill method
         if ($payment->isOrderPayment() && $payment->order) {
             $order = $payment->order;
-            if ($order->cart) {
+            
+            // Get the active cart directly from the user instead of through order relationship
+            $cart = Cart::where('user_id', $order->user_id)
+                        ->where('status', 'active')
+                        ->with('cartItems.product')
+                        ->first();
+            
+            if ($cart && $cart->cartItems->count() > 0) {
                 // Calculate current cart total
-                $cartTotal = $order->cart->getTotalPrice();
+                $cartTotal = $cart->getTotalPrice();
                 // Add shipping cost
                 $shippingCost = 5.00;
                 $cartTotal += $shippingCost;

@@ -81,7 +81,13 @@
                                             <small class="text-muted d-block">Payment</small>
                                             <span class="badge bg-warning">
                                                 @if($appointment->payment)
-                                                    {{ ucfirst($appointment->payment->status) }}
+                                                    @if($appointment->payment->status == 'confirmed')
+                                                        Confirmed
+                                                    @elseif($appointment->payment->status == 'completed')
+                                                        Completed
+                                                    @else
+                                                        {{ ucfirst($appointment->payment->status) }}
+                                                    @endif
                                                 @else
                                                     Pending
                                                 @endif
@@ -220,7 +226,13 @@
                                                 @else bg-secondary
                                                 @endif">
                                                 @if($appointment->payment)
-                                                    {{ ucfirst($appointment->payment->status) }}
+                                                    @if($appointment->payment->status == 'completed' && $appointment->payment->payment_method == 'cash')
+                                                        To pay
+                                                    @elseif($appointment->payment->status == 'completed')
+                                                        Completed
+                                                    @else
+                                                        {{ ucfirst($appointment->payment->status) }}
+                                                    @endif
                                                 @else
                                                     Pending
                                                 @endif

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 // Add this line with the other use statements
 use App\Services\ToyyibPayService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Appointment;
@@ -163,29 +165,28 @@ class CustomerViewController extends Controller
     // Update the cart method to use the new cart system
     public function cart()
     {
-        // Get the active cart for the current user
-        $cart = Cart::where('user_id', auth()->id())
+        // Get the active cart for the authenticated user
+        $cart = Cart::where('user_id', Auth::id())
                     ->where('status', 'active')
                     ->with('cartItems.product')
                     ->first();
         
-        // If no active cart exists, create one
         if (!$cart) {
             $cart = Cart::create([
-                'user_id' => auth()->id(),
+                'user_id' => Auth::id(),
                 'status' => 'active'
             ]);
         }
         
         // Calculate total price
-        $totalPrice = 0;
+        $total = 0;
         if ($cart) {
             foreach ($cart->cartItems as $item) {
-                $totalPrice += $item->unit_price * $item->quantity;
+                $total += $item->unit_price * $item->quantity;
             }
         }
         
-        return view('customer.cart.index', compact('cart', 'totalPrice'));
+        return view('customer.cart.index', compact('cart', 'total'));
     }
 
     // Update the placeOrder method to use the new Payment object approach
@@ -212,6 +213,29 @@ class CustomerViewController extends Controller
         return redirect()->route('customer.cart')->with('error', 'Your cart is empty.');
     }
     
+    // Add debugging logs
+    Log::info('Cart items during payment:', [
+        'cart_id' => $cart->cart_id,
+        'items_count' => $cart->cartItems->count(),
+        'items' => $cart->cartItems->map(function($item) {
+            return [
+                'product_id' => $item->product_id,
+                'product_name' => $item->product->product_name ?? 'N/A',
+                'quantity' => $item->quantity,
+                'unit_price' => $item->unit_price,
+                'subtotal' => $item->quantity * $item->unit_price
+            ];
+        })
+    ]);
+    
+    // Calculate total amount
+    $totalAmount = $cart->getTotalPrice();
+    Log::info('Cart total calculation:', [
+        'cart_total' => $totalAmount,
+        'shipping' => 5.00,
+        'final_total' => $totalAmount + 5.00
+    ]);
+    
     // Check if cart already has an order
     if (!$cart->order_id) {
         // Get the selected location using location_id
@@ -222,9 +246,6 @@ class CustomerViewController extends Controller
         // Use the location's full address attribute
         $shippingAddress = $location->full_address;
         
-        // Calculate total amount
-        $totalAmount = $cart->getTotalPrice();
-
         // Add shipping cost
         $shippingCost = 5.00; // $5 shipping
         $totalAmount += $shippingCost;
@@ -243,29 +264,34 @@ class CustomerViewController extends Controller
         
         // Link cart to order
         $cart->order_id = $order->order_id;
-        $cart->status = 'completed';
-        $cart->save();
-        
-        // Create new active cart for future purchases
-        Cart::create([
-            'user_id' => auth()->id(),
-            'status' => 'active'
-        ]);
+        $cart->save(); // Remove the status change to 'completed' here
         
     } else {
-            $order = Order::findOrFail($cart->order_id);
-            
-            // Recalculate the total amount based on current cart items
-            $currentTotalAmount = $cart->getTotalPrice() + 5.00; // Adding $5 shipping
-            
-            // If the cart total has changed, update the order total_amount
-            if (abs($currentTotalAmount - $order->total_amount) > 0.01) {
-                $order->total_amount = $currentTotalAmount;
-                $order->save();
-            }
-            
-            $totalAmount = $order->total_amount;
-        }
+        // Instead of reusing old order, create a new one for current cart state
+        $location = auth()->user()->locations()
+                    ->where('location_id', $request->location_id)
+                    ->firstOrFail();
+
+        $shippingAddress = $location->full_address;
+        $shippingCost = 5.00;
+        $totalAmount += $shippingCost;
+        
+        // Create new order for current cart
+        $order = Order::create([
+            'user_id' => auth()->id(),
+            'location_id' => $request->location_id,
+            'order_date' => now(),
+            'total_amount' => $totalAmount,
+            'payment_status' => Order::PAYMENT_PENDING,
+            'shipping_address' => $shippingAddress,
+            'status' => Order::STATUS_PENDING,
+            'cart_id' => $cart->cart_id
+        ]);
+        
+        // Update cart to link to new order
+        $cart->order_id = $order->order_id;
+        $cart->save();
+    }
 
     // Check for existing pending payment
     $payment = Payment::where('order_id', $order->order_id)
@@ -326,12 +352,22 @@ class CustomerViewController extends Controller
         
         return redirect()->route('customer.cart')->with('error', 'Payment initialization failed. Please try again.');
     } else {
-        // For cash on delivery
-        $order->status = Order::STATUS_PROCESSING;
-        $order->save();
-        
-        return redirect()->route('customer.profile', ['button' => 'order'])->with('success', 'Order placed successfully! You will pay upon delivery.');
-    }
+            // For cash on delivery
+            $order->status = Order::STATUS_PROCESSING;
+            $order->save();
+            
+            // Mark cart as completed and create new active cart
+            $cart->status = 'completed';
+            $cart->save();
+            
+            // Create new active cart for future purchases
+            Cart::create([
+                'user_id' => auth()->id(),
+                'status' => 'active'
+            ]);
+            
+            return redirect()->route('customer.profile', ['button' => 'order'])->with('success', 'Order placed successfully! You will pay upon delivery.');
+        }
 }
 
     public function profile(Request $request)
@@ -717,30 +753,34 @@ class CustomerViewController extends Controller
         
         // Handle cash payment differently
         if ($request->payment_method === 'cash') {
-            // Create appointment with scheduled status for cash payment
+            // Create appointment with confirmed status for cash payment
             $appointment = Appointment::create([
                 'user_id' => auth()->id(),
                 'service_id' => $validated['service_id'],
                 'available_time_id' => $validated['available_time_id'],
                 'appointment_date' => Carbon::parse($validated['appointment_date']),
-                'status' => 'scheduled', // Set to scheduled for cash payments
+                'status' => 'confirmed', // Changed from 'scheduled' to 'confirmed' for cash payments
                 'tel_number' => $validated['tel_number'],
                 'notes' => $request->notes ?? null,
             ]);
             
-            // Create payment record with pending status for cash
+            // Create payment record with completed status for cash
             $payment = Payment::create([
                 'user_id' => auth()->id(),
                 'appointment_id' => $appointment->appointment_id,
                 'amount' => $service->price,
                 'payment_date' => now(),
                 'payment_method' => 'cash',
-                'status' => 'pending',
+                'status' => Payment::STATUS_COMPLETED,
                 'transaction_id' => 'CASH_' . time() . rand(1000, 9999)
             ]);
             
-            return redirect()->route('customer.profile', ['button' => 'appointment'])
-                ->with('success', 'Appointment booked successfully! You will pay with cash on arrival. Your appointment is now scheduled.');
+            // Update appointment status to confirmed for cash payments
+            $appointment->update(['status' => 'confirmed']);
+            
+            // Redirect to scheduled appointments tab instead of payment tab
+            return redirect()->route('customer.profile', ['button' => 'appointment', 'appointment_tab' => 'scheduled'])
+                ->with('success', 'Appointment booked successfully! Payment confirmed for cash on arrival.');
         }
         
         // Get the available time slot
@@ -873,7 +913,7 @@ class CustomerViewController extends Controller
             'amount' => $service->price,
             'payment_date' => now(),
             'payment_method' => $request->payment_method,
-            'status' => Payment::STATUS_PENDING,
+            'status' => Payment::STATUS_COMPLETED,
             'transaction_id' => 'TXN' . time() . rand(1000, 9999)
         ]);
         
@@ -909,13 +949,13 @@ class CustomerViewController extends Controller
             ]);
         } else {
             // For cash payment
-            $payment->update(['status' => 'pending']);
-            $appointment->update(['status' => 'scheduled']);
+            $payment->update(['status' => Payment::STATUS_COMPLETED]);
+            $appointment->update(['status' => 'confirmed']); // Changed from 'scheduled' to 'confirmed'
             
             return response()->json([
                 'success' => true,
                 'show_success' => true,
-                'message' => 'Appointment booked successfully! You will pay with cash on arrival.',
+                'message' => 'Appointment booked successfully! Payment confirmed for cash on arrival.',
                 'redirect_url' => route('customer.profile', ['button' => 'appointment', 'appointment_tab' => 'scheduled'])
             ]);
         }
@@ -934,13 +974,13 @@ class CustomerViewController extends Controller
         // Get service
         $service = Service::findOrFail($validated['service_id']);
         
-        // Create appointment with scheduled status for cash payment
+        // Create appointment with confirmed status for cash payment
         $appointment = Appointment::create([
             'user_id' => auth()->id(),
             'service_id' => $validated['service_id'],
             'available_time_id' => $validated['available_time_id'],
             'appointment_date' => Carbon::parse($validated['appointment_date']),
-            'status' => 'scheduled', // Set to scheduled for cash payments
+            'status' => 'scheduled', // Changed from 'scheduled' to 'confirmed' for cash payments
             'tel_number' => $validated['tel_number'],
             'notes' => $request->notes ?? null,
         ]);
@@ -952,11 +992,11 @@ class CustomerViewController extends Controller
             'amount' => $service->price,
             'payment_date' => now(),
             'payment_method' => 'cash',
-            'status' => 'pending', // Will be updated when payment is received
+            'status' => Payment::STATUS_COMPLETED, // Will be updated when payment is received
             'transaction_id' => 'CASH_' . time() . rand(1000, 9999)
         ]);
         
-        // Redirect to profile with appointment tab and scheduled sub-tab
+        // Redirect to scheduled appointments tab instead of confirmed tab
         return redirect()->route('customer.profile', ['button' => 'appointment', 'appointment_tab' => 'scheduled'])
             ->with('success', 'Appointment booked successfully! You will pay with cash on arrival. Your appointment is now scheduled.');
     }
@@ -1021,13 +1061,13 @@ class CustomerViewController extends Controller
             ]);
         } else {
             // For cash payment
-            $payment->update(['status' => 'pending']);
-            $appointment->update(['status' => 'scheduled']);
+            $payment->update(['status' => Payment::STATUS_COMPLETED]);
+            $appointment->update(['status' => 'confirmed']); // Changed from 'scheduled' to 'confirmed'
             
             return response()->json([
                 'success' => true,
                 'show_success' => true,
-                'message' => 'Appointment booked successfully! You will pay with cash on arrival.'
+                'message' => 'Appointment booked successfully! Payment confirmed for cash on arrival.'
             ]);
         }
     }
