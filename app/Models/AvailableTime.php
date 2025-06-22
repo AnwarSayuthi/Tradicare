@@ -2,10 +2,11 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class AvailableTime extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
     
     protected $primaryKey = 'available_time_id';
     protected $fillable = ['start_time', 'end_time'];

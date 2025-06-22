@@ -16,12 +16,19 @@ class AppointmentController extends Controller
      * 
      * @return array
      */
+    /**
+     * Get common appointment statistics for all views
+     * 
+     * @return array
+     */
     private function getAppointmentStats()
     {
         return [
             'totalAppointments' => Appointment::count(),
+            'toPayAppointments' => Appointment::whereHas('payment', function($query) {
+                $query->where('status', \App\Models\Payment::STATUS_PENDING);
+            })->count(),
             'scheduledAppointments' => Appointment::where('status', 'scheduled')->count(),
-            'completedAppointments' => Appointment::where('status', 'completed')->count(),
             'cancelledAppointments' => Appointment::where('status', 'cancelled')->count(),
         ];
     }
@@ -60,8 +67,9 @@ class AppointmentController extends Controller
             })->orWhere('appointment_id', 'like', "%{$search}%");
         }
         
-        // Get appointments with pagination - Changed from 10 to 3
-        $appointments = $query->orderBy('created_at', 'desc')->paginate(3);
+        // Get appointments with pagination 
+        // Change line 64 from:
+        $appointments = $query->orderBy('created_at', 'desc')->paginate(10);
         
         // Get appointment statistics
         $stats = $this->getAppointmentStats();
@@ -263,12 +271,49 @@ class AppointmentController extends Controller
     public function manageTimes()
     {
         $stats = $this->getAppointmentStats();
+        // Only get non-deleted available times
         $availableTimes = \App\Models\AvailableTime::orderBy('start_time')->get();
         
         return view('admin.appointments.manage_times', array_merge(
             compact('availableTimes'),
             $stats
         ));
+    }
+
+    /**
+     * Remove the specified available time from storage (soft delete).
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroyAvailableTime($id)
+    {
+        $availableTime = \App\Models\AvailableTime::findOrFail($id);
+        
+        // Remove the safety check - allow deletion even with appointments
+        // Soft delete associated unavailable times first
+        \App\Models\UnavailableTime::where('available_time_id', $id)->delete();
+        
+        // Soft delete the available time
+        $availableTime->delete();
+        
+        return redirect()->route('admin.appointments.times.manage')
+            ->with('success', 'Time slot deleted successfully');
+    }
+
+    /**
+     * Remove the specified unavailable time from storage (soft delete).
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroyUnavailableTime($id)
+    {
+        $unavailableTime = \App\Models\UnavailableTime::findOrFail($id);
+        $unavailableTime->delete();
+        
+        return redirect()->route('admin.appointments.times.manage')
+            ->with('success', 'Unavailable time removed successfully');
     }
 
     /**
@@ -299,43 +344,6 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Remove the specified available time from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroyAvailableTime($id)
-    {
-        $availableTime = \App\Models\AvailableTime::findOrFail($id);
-        
-        // Check if there are any appointments using this time slot
-        $hasAppointments = \App\Models\Appointment::where('available_time_id', $id)->exists();
-        
-        if ($hasAppointments) {
-            return redirect()->route('admin.appointments.times.manage')
-                ->with('error', 'Cannot delete this time slot because it is being used by one or more appointments.');
-        }
-        
-        // Check if there are any unavailable times using this time slot
-        $hasUnavailableTimes = \App\Models\UnavailableTime::where('available_time_id', $id)->exists();
-        
-        if ($hasUnavailableTimes) {
-            // Option 1: Prevent deletion
-            // return redirect()->route('admin.appointments.times.manage')
-            //     ->with('error', 'Cannot delete this time slot because it has unavailable dates associated with it.');
-            
-            // Option 2: Delete associated unavailable times first
-            \App\Models\UnavailableTime::where('available_time_id', $id)->delete();
-        }
-        
-        // Now safe to delete the available time
-        $availableTime->delete();
-        
-        return redirect()->route('admin.appointments.times.manage')
-            ->with('success', 'Time slot deleted successfully');
-    }
-
-    /**
      * Store newly created unavailable dates.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -360,20 +368,6 @@ class AppointmentController extends Controller
             ->with('success', 'Unavailable times marked successfully');
     }
 
-    /**
-     * Remove the specified unavailable time from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\RedirectResponse
-     */
-    public function destroyUnavailableTime($id)
-    {
-        $unavailableTime = \App\Models\UnavailableTime::findOrFail($id);
-        $unavailableTime->delete();
-        
-        return redirect()->route('admin.appointments.times.manage')
-            ->with('success', 'Unavailable time removed successfully');
-    }
     /**
      * Get unavailable times for a specific date.
      *

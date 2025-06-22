@@ -597,9 +597,6 @@
         <h1 class="h3 mb-0 fw-bold text-primary">Product Management</h1>
         
         <div class="d-flex flex-column flex-sm-row gap-2">
-            <a href="{{ route('admin.reports.generate', 'products') }}" class="btn btn-outline-primary">
-                <i class="bi bi-file-earmark-pdf me-1"></i> Export Report
-            </a>
             <a href="{{ route('admin.products.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-1"></i> Add Product
             </a>
@@ -698,7 +695,7 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th scope="col" class="ps-4">#</th>
+                            <th scope="col" class="ps-4">ID</th>
                             <th scope="col">Image</th>
                             <th scope="col">Product</th>
                             <th scope="col">Category</th>

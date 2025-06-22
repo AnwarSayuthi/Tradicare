@@ -350,6 +350,7 @@
         // Check URL parameters for automatic tab opening
         const urlParams = new URLSearchParams(window.location.search);
         const buttonParam = urlParams.get('button');
+        const appointmentTabParam = urlParams.get('appointment_tab');
         
         // If button=order parameter exists, activate the orders tab
         if (buttonParam === 'order') {
@@ -367,6 +368,50 @@
                     const ordersSection = document.querySelector('#orders');
                     if (ordersSection) {
                         ordersSection.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                    }
+                }, 300);
+            }
+        }
+        
+        // If button=appointment parameter exists, activate the appointments tab
+        if (buttonParam === 'appointment') {
+            // Find and activate the appointments tab
+            const appointmentsTab = document.querySelector('#appointments-tab');
+            const appointmentsTabPane = document.querySelector('#appointments');
+            
+            if (appointmentsTab && appointmentsTabPane) {
+                // Use Bootstrap's tab API to properly activate the tab
+                const bsTab = new bootstrap.Tab(appointmentsTab);
+                bsTab.show();
+                
+                // If appointment_tab parameter exists, activate the specific appointment sub-tab
+                if (appointmentTabParam === 'scheduled') {
+                    setTimeout(() => {
+                        const scheduledTab = document.querySelector('#scheduled-tab');
+                        const scheduledTabPane = document.querySelector('#scheduled');
+                        
+                        if (scheduledTab && scheduledTabPane) {
+                            // Remove active class from all appointment tabs and panes
+                            document.querySelectorAll('#appointmentTabs .nav-link').forEach(tab => tab.classList.remove('active'));
+                            document.querySelectorAll('#appointmentTabsContent .tab-pane').forEach(pane => {
+                                pane.classList.remove('show', 'active');
+                            });
+                            
+                            // Activate scheduled appointments tab
+                            scheduledTab.classList.add('active');
+                            scheduledTabPane.classList.add('show', 'active');
+                        }
+                    }, 100);
+                }
+                
+                // Scroll to the appointments section after a short delay
+                setTimeout(() => {
+                    const appointmentsSection = document.querySelector('#appointments');
+                    if (appointmentsSection) {
+                        appointmentsSection.scrollIntoView({
                             behavior: 'smooth',
                             block: 'start'
                         });

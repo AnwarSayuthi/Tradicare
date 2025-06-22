@@ -619,6 +619,11 @@ document.addEventListener('DOMContentLoaded', function() {
         paymentMethodInput.value = selectedPaymentMethod;
         form.appendChild(paymentMethodInput);
         
+        // For cash payment, redirect to a different route that handles cash payments
+        if (selectedPaymentMethod === 'cash') {
+            form.action = '{{ route("customer.appointments.store.cash") }}';
+        }
+        
         // Submit the form
         form.submit();
     });

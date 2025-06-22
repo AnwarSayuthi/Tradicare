@@ -706,6 +706,7 @@ class CustomerViewController extends Controller
             'appointment_date' => 'required|date',
             'available_time_id' => 'required|exists:available_times,available_time_id',
             'tel_number' => 'required|string',
+            'payment_method' => 'required|in:toyyibpay,cash',
         ]);
         
         // Get the available time slot
@@ -713,6 +714,37 @@ class CustomerViewController extends Controller
         
         // Get service
         $service = Service::findOrFail($validated['service_id']);
+        
+        // Handle cash payment differently
+        if ($request->payment_method === 'cash') {
+            // Create appointment with scheduled status for cash payment
+            $appointment = Appointment::create([
+                'user_id' => auth()->id(),
+                'service_id' => $validated['service_id'],
+                'available_time_id' => $validated['available_time_id'],
+                'appointment_date' => Carbon::parse($validated['appointment_date']),
+                'status' => 'scheduled', // Set to scheduled for cash payments
+                'tel_number' => $validated['tel_number'],
+                'notes' => $request->notes ?? null,
+            ]);
+            
+            // Create payment record with pending status for cash
+            $payment = Payment::create([
+                'user_id' => auth()->id(),
+                'appointment_id' => $appointment->appointment_id,
+                'amount' => $service->price,
+                'payment_date' => now(),
+                'payment_method' => 'cash',
+                'status' => 'pending',
+                'transaction_id' => 'CASH_' . time() . rand(1000, 9999)
+            ]);
+            
+            return redirect()->route('customer.profile', ['button' => 'appointment'])
+                ->with('success', 'Appointment booked successfully! You will pay with cash on arrival. Your appointment is now scheduled.');
+        }
+        
+        // Get the available time slot
+        $availableTime = AvailableTime::findOrFail($validated['available_time_id']);
         
         // Check if there's already a scheduled appointment for this user, service, date, and time
         $existingAppointment = Appointment::where('user_id', auth()->id())
@@ -883,9 +915,50 @@ class CustomerViewController extends Controller
             return response()->json([
                 'success' => true,
                 'show_success' => true,
-                'message' => 'Appointment booked successfully! You will pay with cash on arrival.'
+                'message' => 'Appointment booked successfully! You will pay with cash on arrival.',
+                'redirect_url' => route('customer.profile', ['button' => 'appointment', 'appointment_tab' => 'scheduled'])
             ]);
         }
+    }
+    
+    public function storeAppointmentCash(Request $request)
+    {
+        $validated = $request->validate([
+            'service_id' => 'required|exists:services,service_id',
+            'appointment_date' => 'required|date',
+            'available_time_id' => 'required|exists:available_times,available_time_id',
+            'tel_number' => 'required|string',
+            'payment_method' => 'required|in:cash',
+        ]);
+        
+        // Get service
+        $service = Service::findOrFail($validated['service_id']);
+        
+        // Create appointment with scheduled status for cash payment
+        $appointment = Appointment::create([
+            'user_id' => auth()->id(),
+            'service_id' => $validated['service_id'],
+            'available_time_id' => $validated['available_time_id'],
+            'appointment_date' => Carbon::parse($validated['appointment_date']),
+            'status' => 'scheduled', // Set to scheduled for cash payments
+            'tel_number' => $validated['tel_number'],
+            'notes' => $request->notes ?? null,
+        ]);
+        
+        // Create payment record with pending status for cash
+        $payment = Payment::create([
+            'user_id' => auth()->id(),
+            'appointment_id' => $appointment->appointment_id,
+            'amount' => $service->price,
+            'payment_date' => now(),
+            'payment_method' => 'cash',
+            'status' => 'pending', // Will be updated when payment is received
+            'transaction_id' => 'CASH_' . time() . rand(1000, 9999)
+        ]);
+        
+        // Redirect to profile with appointment tab and scheduled sub-tab
+        return redirect()->route('customer.profile', ['button' => 'appointment', 'appointment_tab' => 'scheduled'])
+            ->with('success', 'Appointment booked successfully! You will pay with cash on arrival. Your appointment is now scheduled.');
     }
     
     /**

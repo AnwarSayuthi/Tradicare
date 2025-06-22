@@ -27,7 +27,7 @@ class Appointment extends Model
 
     public function availableTime()
     {
-        return $this->belongsTo(AvailableTime::class, 'available_time_id');
+        return $this->belongsTo(AvailableTime::class, 'available_time_id')->withTrashed();
     }
 
     public function payment()

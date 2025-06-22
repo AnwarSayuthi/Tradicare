@@ -313,7 +313,7 @@
     font-size: 1rem;
 }
 
-/* Color coding for 4 card types */
+/* Color coding for 4 card types - Updated order */
 .stats-card:nth-child(1) .icon-container {
     background: linear-gradient(135deg, #e3f2fd, #bbdefb);
 }
@@ -657,22 +657,22 @@
         <div class="card stats-card shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
                 <div class="icon-container me-3">
-                    <i class="bi bi-clock fs-3"></i>
+                    <i class="bi bi-credit-card fs-3"></i>
                 </div>
                 <div>
-                    <h6 class="text-muted mb-1">Scheduled</h6>
-                    <h2 class="mb-0 fw-bold">{{ $scheduledAppointments }}</h2>
+                    <h6 class="text-muted mb-1">To Pay</h6>
+                    <h2 class="mb-0 fw-bold">{{ $toPayAppointments }}</h2>
                 </div>
             </div>
         </div>
         <div class="card stats-card shadow-sm h-100">
             <div class="card-body d-flex align-items-center">
                 <div class="icon-container me-3">
-                    <i class="bi bi-check-circle fs-3"></i>
+                    <i class="bi bi-clock fs-3"></i>
                 </div>
                 <div>
-                    <h6 class="text-muted mb-1">Completed</h6>
-                    <h2 class="mb-0 fw-bold">{{ $completedAppointments }}</h2>
+                    <h6 class="text-muted mb-1">Scheduled</h6>
+                    <h2 class="mb-0 fw-bold">{{ $scheduledAppointments }}</h2>
                 </div>
             </div>
         </div>
@@ -690,16 +690,8 @@
     </div>
     
     <!-- Main Appointments Card -->
-    <div class="card main-card border-0">
-        <div class="card-header bg-white p-4 border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div>
-                <h4 class="mb-1 fw-bold text-primary">Manage Appointments</h4>
-                <p class="text-muted mb-0">Track and manage customer appointments and schedules</p>
-            </div>
-        </div>
-        
+    <div class="card main-card border-0">       
         <!-- Filters -->
-        <div class="card-body p-4">
             <div class="card filter-card shadow-sm mb-4">
                 <div class="card-body p-4">
                     <form action="{{ route('admin.appointments.index') }}" method="GET" class="row g-3">
@@ -713,8 +705,8 @@
                             <div class="form-floating">
                                 <select class="form-select" id="status" name="status">
                                     <option value="">All Statuses</option>
-                                    <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>Scheduled</option>
-                                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Completed</option>
+                                    <option value="scheduled" {{ request('status') == 'scheduled' ? 'selected' : '' }}>To Pay</option>
+                                    <option value="completed" {{ request('status') == 'completed' ? 'selected' : '' }}>Scheduled</option>
                                     <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                                 </select>
                                 <label for="status">Status</label>
@@ -750,10 +742,10 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($appointments as $appointment)
+                        @forelse($appointments as $index => $appointment)
                             <tr>
                                 <td class="ps-4">
-                                    <span class="fw-medium">#{{ $appointment->appointment_id }}</span>
+                                    <span class="fw-medium">{{ ($appointments->currentPage() - 1) * $appointments->perPage() + $index + 1 }}</span>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center customer-info">
@@ -778,7 +770,11 @@
                                 <td>
                                     <div class="datetime-info">
                                         <h6 class="mb-0">{{ \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y') }}</h6>
-                                        <small class="text-muted">{{ \Carbon\Carbon::parse($appointment->availableTime->start_time)->format('h:i A') }}</small>
+                                        @if($appointment->availableTime)
+                                            <small class="text-muted">{{ \Carbon\Carbon::parse($appointment->availableTime->start_time)->format('h:i A') }}</small>
+                                        @else
+                                            <small class="text-muted text-danger">Time slot deleted</small>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
@@ -875,8 +871,6 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-        
         @if($appointments->hasPages())
             <div class="card-footer bg-white border-0 py-3">
                 {{ $appointments->withQueryString()->links('pagination::bootstrap-5') }}

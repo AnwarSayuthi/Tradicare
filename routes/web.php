@@ -113,6 +113,8 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::get('/appointments/unavailable-times', [CustomerViewController::class, 'getUnavailableTimes'])->name('appointments.unavailable-times');
     Route::put('/appointments/{id}/cancel', [CustomerViewController::class, 'cancelAppointment'])->name('appointments.cancel');
     Route::get('/appointments/{id}/reschedule', [CustomerViewController::class, 'rescheduleAppointment'])->name('appointments.reschedule');
+    // Add this route for cash payment appointments
+    Route::post('/customer/appointments/store-cash', [CustomerViewController::class, 'storeAppointmentCash'])->name('appointments.store.cash');    
 
     // Payment routes - Simplified and organized
     Route::get('/appointments/payment', [CustomerViewController::class, 'showPayment'])->name('appointments.payment.show');
@@ -144,3 +146,5 @@ Route::middleware([CustomerMiddleware::class])->prefix('customer')->name('custom
     Route::get('/about', [CustomerViewController::class, 'about'])->name('about');
 
 });
+
+

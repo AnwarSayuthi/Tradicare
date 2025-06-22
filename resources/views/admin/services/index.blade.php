@@ -662,11 +662,7 @@
     <!-- Main Services Card -->
     <div class="card main-card border-0">
         <div class="card-header bg-white border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div>
-                <h4 class="mb-1 fw-bold text-primary">Manage Services</h4>
-                <p class="text-muted mb-0">Create, update and manage your traditional healing services</p>
-            </div>
-            <div class="search-box position-relative" style="min-width: 100px; width: 40%;">
+            <div class="search-box position-relative" style="min-width: 300px; width: 50%;">
                 <i class="bi bi-search"></i>
                 <input type="text" id="serviceSearch" class="form-control" placeholder="Search services by name or description..." style="padding-left: 2.5rem; font-size: 0.95rem;">
             </div>
@@ -691,7 +687,7 @@
                 <table class="table table-hover align-middle mb-0 service-table">
                     <thead>
                         <tr>
-                            <th scope="col" class="ps-4">#</th>
+                            <th scope="col" class="ps-4">ID</th>
                             <th scope="col">Service</th>
                             <th scope="col">Duration</th>
                             <th scope="col">Price</th>

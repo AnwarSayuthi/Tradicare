@@ -216,7 +216,7 @@ function getStatusBadgeClass($status) {
 }
 
 .filter-card .card-body {
-    padding: 1.75rem 2.5rem;
+    padding: 2rem 2.5rem;
 }
 
 .filter-card .row {
@@ -247,7 +247,7 @@ function getStatusBadgeClass($status) {
     border: 2px solid #e9ecef;
     transition: all 0.3s ease;
     background: white;
-    height: 56px;
+    height: 58px;
     font-size: 0.95rem;
     padding: 1rem 0.75rem 0.25rem 0.75rem;
 }
@@ -282,14 +282,14 @@ function getStatusBadgeClass($status) {
     font-weight: 600;
     letter-spacing: 0.5px;
     transition: all 0.3s ease;
-    height: 56px;
+    height: 58px;
     font-size: 0.95rem;
     padding: 0 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
     white-space: nowrap;
-    min-width: 120px;
+    min-width: 130px;
 }
 
 .filter-card .btn-primary:hover {
@@ -641,6 +641,16 @@ function getStatusBadgeClass($status) {
     color: #718096;
     margin-bottom: 0;
 }
+
+.amount-text {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 1rem;
+    background: linear-gradient(135deg, #00b894, #00a085);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
 </style>
 
 <div class="container-fluid py-4">
@@ -717,155 +727,141 @@ function getStatusBadgeClass($status) {
         </div>
     </div>
     
-    <!-- Main Orders Card -->
-    <div class="card main-card border-0">
-        <div class="card-header bg-white p-4 border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div>
-                <h4 class="mb-1 fw-bold text-primary">Manage Orders</h4>
-                <p class="text-muted mb-0">Track and manage customer orders and payments</p>
-            </div>
-        </div>
-        
-        <!-- Filters -->
-        <div class="card-body p-4">
-            <div class="card filter-card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <form action="{{ route('admin.orders.index') }}" method="GET" class="row g-3">
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="form-floating">
-                                <select name="status" id="status" class="form-select">
-                                    <option value="">All Statuses</option>
-                                    <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Processing</option>
-                                    <option value="shipped" {{ request('status') == 'shipped' ? 'selected' : '' }}>Shipped</option>
-                                    <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
-                                    <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                                </select>
-                                <label for="status">Status</label>
-                            </div>
+    <!-- Filters -->
+        <div class="card filter-card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <form action="{{ route('admin.orders.index') }}" method="GET" class="row g-3">
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <div class="form-floating">
+                            <select name="status" id="status" class="form-select">
+                                <option value="">All Status</option>
+                                <option value="processing" {{ request('status') == 'processing' ? 'selected' : '' }}>Processing</option>
+                                <option value="shipped" {{ request('status') == 'shipped' ? 'selected' : '' }}>Shipped</option>
+                                <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered</option>
+                                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                            </select>
+                            <label for="status">Status</label>
                         </div>
-                        <div class="col-12 col-md-6 col-lg-3">
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="date_range" name="date_range" placeholder="Select date range" value="{{ request('date_range') }}">
-                                <label for="date_range">Date Range</label>
-                            </div>
+                    </div>
+                    <div class="col-12 col-md-6 col-lg-3">
+                        <div class="form-floating">
+                            <input type="text" class="form-control" id="date_range" name="date_range" placeholder="Select date range" value="{{ request('date_range') }}">
+                            <label for="date_range">Date Range</label>
                         </div>
+                    </div>
                         <div class="col-12 col-md-8 col-lg-4">
-                            <div class="form-floating">
-                                <input type="text" class="form-control" id="search" name="search" placeholder="Order ID, Customer name or email" value="{{ request('search') }}">
-                                <label for="search">Search by Order ID, Customer name or email</label>
-                            </div>
+                           <div class="form-floating">
+                            <input type="text" class="form-control" id="search" name="search" placeholder="Order ID, Customer name or email" value="{{ request('search') }}">
+                            <label for="search">Search by ID, Customer name or email</label>
                         </div>
-                        <div class="col-12 col-md-4 col-lg-2 d-flex align-items-center">
+                    </div>
+                    <div class="col-12 col-md-4 col-lg-2 d-flex align-items-center">
                             <button type="submit" class="btn btn-primary w-100 py-3">
-                                <i class="bi bi-search me-1"></i> Filter
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-            
-            <!-- Orders Table -->
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 order-table">
-                    <thead>
-                        <tr>
-                            <th scope="col" class="ps-4">Order ID</th>
-                            <th scope="col">Customer</th>
-                            <th scope="col">Amount</th>
-                            <th scope="col">Payment Status</th>
-                            <th scope="col">Status</th>
-                            <th scope="col" class="text-end pe-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($orders as $order)
-                        <tr>
-                            <td class="ps-4">
-                                <span class="order-id">#{{ $order->order_id }}</span>
-                            </td>
-                            <td>
-                                <div class="d-flex align-items-center">
-                                    <div class="avatar-circle text-white me-3">
-                                        {{ substr($order->user->name, 0, 1) }}
-                                    </div>
-                                    <div>
-                                        <h6 class="customer-name">{{ $order->user->name }}</h6>
-                                        <small class="customer-email">{{ $order->user->email }}</small>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="amount-text">RM{{ number_format($order->total_amount, 2) }}</span>
-                            </td>
-                            <td>
-                                @php
-                                    $paymentStatus = $order->payments->first() ? $order->payments->first()->status : 'pending';
-                                    $badgeClass = $paymentStatus == 'completed' ? 'payment-complete' : 'payment-pending';
-                                    $displayStatus = $paymentStatus == 'completed' ? 'Complete' : 'Pending';
-                                @endphp
-                                <span class="payment-badge {{ $badgeClass }}">
-                                    <i class="bi {{ $paymentStatus == 'completed' ? 'bi-check-circle' : 'bi-clock' }} me-1"></i>
-                                    {{ $displayStatus }}
-                                </span>
-                            </td>
-                            <td>
-                                @php
-                                    $orderStatus = $order->status ?? 'processing';
-                                    $statusBadgeClass = match($orderStatus) {
-                                        'processing' => 'badge-processing',
-                                        'shipped' => 'badge-shipped', 
-                                        'delivered' => 'badge-delivered',
-                                        'cancelled' => 'badge-cancelled',
-                                        default => 'badge-processing'
-                                    };
-                                    $statusIcon = match($orderStatus) {
-                                        'processing' => 'bi-clock',
-                                        'shipped' => 'bi-truck',
-                                        'delivered' => 'bi-check-circle',
-                                        'cancelled' => 'bi-x-circle',
-                                        default => 'bi-clock'
-                                    };
-                                @endphp
-                                <span class="status-badge {{ $statusBadgeClass }}">
-                                    <i class="bi {{ $statusIcon }} me-1"></i>
-                                    {{ ucfirst($orderStatus) }}
-                                </span>
-                            </td>
-                            <td class="text-end pe-4">
-                                <div class="d-flex justify-content-end gap-2">
-                                    <a href="{{ route('admin.orders.show', $order) }}" 
-                                       class="btn btn-action" 
-                                       data-bs-toggle="tooltip" 
-                                       title="View Details">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-5">
-                                <div class="empty-state">
-                                    <i class="bi bi-cart-x"></i>
-                                    <h5 class="fw-medium mb-1">No Orders Found</h5>
-                                    <p class="text-muted mb-0">There are no orders matching your criteria.</p>
-                                </div>
-                            </td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+                               <i class="bi bi-search me-1"></i> Filter
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
         
-        @if($orders->hasPages())
-            <div class="card-footer bg-white border-0 py-3">
-                {{ $orders->withQueryString()->links('pagination::bootstrap-5') }}
-            </div>
-        @endif
-    </div>
+            <!-- Orders Table -->
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 order-table">
+                <thead>
+                    <tr>
+                        <th scope="col" class="ps-4">ID</th>
+                        <th scope="col">Customer</th>
+                        <th scope="col">Amount</th>
+                        <th scope="col">Payment Status</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($orders as $index => $order)
+                    <tr>
+                        <td class="ps-4">
+                            <span class="fw-medium">{{ ($orders->currentPage() - 1) * $orders->perPage() + $index + 1 }}</span>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle text-white me-3">
+                                    {{ substr($order->user->name, 0, 1) }}
+                                </div>
+                                <div>
+                                    <h6 class="customer-name">{{ $order->user->name }}</h6>
+                                    <small class="customer-email">{{ $order->user->email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="amount-text">RM{{ number_format($order->total_amount, 2) }}</span>
+                        </td>
+                        <td>
+                            @php
+                                $paymentStatus = $order->payments->first() ? $order->payments->first()->status : 'pending';
+                                $badgeClass = $paymentStatus == 'completed' ? 'payment-complete' : 'payment-pending';
+                                $displayStatus = $paymentStatus == 'completed' ? 'Complete' : 'Pending';
+                            @endphp
+                            <span class="payment-badge {{ $badgeClass }}">
+                                <i class="bi {{ $paymentStatus == 'completed' ? 'bi-check-circle' : 'bi-clock' }} me-1"></i>
+                                {{ $displayStatus }}
+                            </span>
+                        </td>
+                        <td>
+                            @php
+                                $orderStatus = $order->status ?? 'processing';
+                                $statusBadgeClass = match($orderStatus) {
+                                    'processing' => 'badge-processing',
+                                    'shipped' => 'badge-shipped', 
+                                    'delivered' => 'badge-delivered',
+                                    'cancelled' => 'badge-cancelled',
+                                    default => 'badge-processing'
+                                };
+                                $statusIcon = match($orderStatus) {
+                                    'processing' => 'bi-clock',
+                                    'shipped' => 'bi-truck',
+                                    'delivered' => 'bi-check-circle',
+                                    'cancelled' => 'bi-x-circle',
+                                    default => 'bi-clock'
+                                };
+                            @endphp
+                            <span class="status-badge {{ $statusBadgeClass }}">
+                                <i class="bi {{ $statusIcon }} me-1"></i>
+                                {{ ucfirst($orderStatus) }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="d-flex justify-content-end gap-2">
+                                <a href="{{ route('admin.orders.show', $order) }}" 
+                                   class="btn btn-action" 
+                                   data-bs-toggle="tooltip" 
+                                   title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="6" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="bi bi-cart-x"></i>
+                                <h5 class="fw-medium mb-1">No Orders Found</h5>
+                                <p class="text-muted mb-0">There are no orders matching your criteria.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>        
+    @if($orders->hasPages())
+        <div class="card-footer bg-white border-0 py-3">
+            {{ $orders->withQueryString()->links('pagination::bootstrap-5') }}
+        </div>
+    @endif
 </div>
-
 @endsection
 
 @push('scripts')

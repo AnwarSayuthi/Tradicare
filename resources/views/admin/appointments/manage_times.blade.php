@@ -203,38 +203,46 @@
                                 <tr>
                                     <th scope="col" class="ps-4">Date</th>
                                     <th scope="col">Time Slot</th>
+                                    <th scope="col">Status</th>
                                     <th scope="col" class="text-end pe-4">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                <!-- In the Unavailable Dates section, modify the query to exclude trashed items -->
                                 @php
-                                    $unavailableTimes = App\Models\UnavailableTime::with('availableTime')->orderBy('date', 'desc')->get();
+                                    $unavailableTimes = App\Models\UnavailableTime::with('availableTime')
+                                        ->whereNull('deleted_at')
+                                        ->orderBy('date', 'desc')
+                                        ->get();
                                 @endphp
                                 
                                 @forelse($unavailableTimes as $unavailable)
-                                    <tr>
-                                        <td class="ps-4">{{ \Carbon\Carbon::parse($unavailable->date)->format('M d, Y') }}</td>
-                                        <td>
-                                            @if($unavailable->availableTime)
-                                                {{ \Carbon\Carbon::parse($unavailable->availableTime->start_time)->format('H:i') }} - 
-                                                {{ \Carbon\Carbon::parse($unavailable->availableTime->end_time)->format('H:i') }}
-                                            @else
-                                                <span class="text-muted">Time slot deleted</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <form action="{{ route('admin.appointments.unavailable.destroy', $unavailable->unavailable_time_id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to remove this unavailable time?')">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
+                                <tr>
+                                    <td class="ps-4">{{ \Carbon\Carbon::parse($unavailable->date)->format('M d, Y') }}</td>
+                                    <td>
+                                        @if($unavailable->availableTime)
+                                            {{ \Carbon\Carbon::parse($unavailable->availableTime->start_time)->format('H:i') }} - 
+                                            {{ \Carbon\Carbon::parse($unavailable->availableTime->end_time)->format('H:i') }}
+                                        @else
+                                            <span class="text-muted">Time slot deleted</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">Active</span>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <form action="{{ route('admin.appointments.unavailable.destroy', $unavailable->unavailable_time_id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to remove this unavailable time?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center py-4">
+                                        <td colspan="4" class="text-center py-4">
                                             <p class="text-muted mb-0">No unavailable dates found.</p>
                                         </td>
                                     </tr>
