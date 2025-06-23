@@ -158,9 +158,11 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($availableTimes as $time)
+                                @forelse($availableTimes as $index => $time)
                                     <tr>
-                                        <td class="ps-4">#{{ $time->available_time_id }}</td>
+                                        <td class="ps-4">
+                                            <span class="fw-medium">{{ $index + 1 }}</span>
+                                        </td>
                                         <td>{{ \Carbon\Carbon::parse($time->start_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($time->end_time)->format('H:i') }}</td>
                                         <td class="text-end pe-4">
                                             <form action="{{ route('admin.appointments.times.destroy', $time->available_time_id) }}" method="POST" class="d-inline">
