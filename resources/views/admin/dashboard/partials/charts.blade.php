@@ -14,7 +14,6 @@
                     <div class="center-label">Total Products</div>
                 </div>
             </div>
-            <div class="chart-legend">
         </div>
     </div>
     
