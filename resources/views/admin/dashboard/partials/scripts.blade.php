@@ -470,8 +470,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Create front page
             await createFrontPage(pdf, period, month, year, pageWidth, pageHeight);
             
+            // Add metrics page with detailed data
+            await addMetricsPage(pdf, period, month, year, pageWidth, pageHeight);
+            
             // Add chart pages
             await addChartPages(pdf, pageWidth, pageHeight);
+            
+            // Add recent invoices table
+            await addRecentInvoicesPage(pdf, pageWidth, pageHeight);
             
             // Save the PDF
             const fileName = `Tradicare-Dashboard-Report-${period}-${year}${period === 'month' ? '-' + month : ''}.pdf`;
@@ -486,6 +492,219 @@ document.addEventListener('DOMContentLoaded', function() {
             generateReportBtn.disabled = false;
             generateReportBtn.innerHTML = '<i class="bi bi-file-earmark-text"></i> Generate Report';
         }
+    }
+    
+    // Add this new function after addChartPages
+    async function addRecentInvoicesPage(pdf, pageWidth, pageHeight) {
+        const recentDataElement = document.querySelector('.recent-data-section');
+        
+        if (recentDataElement) {
+            // Add new page
+            pdf.addPage();
+            
+            // Create a wrapper for the recent invoices table
+            const tableWrapper = document.createElement('div');
+            tableWrapper.style.cssText = `
+                width: 210mm;
+                height: 297mm;
+                background: white;
+                padding: 20mm;
+                box-sizing: border-box;
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+                font-family: 'Arial', sans-serif;
+                color: #333;
+            `;
+            
+            // Create title section
+            const titleSection = document.createElement('div');
+            titleSection.style.cssText = `
+                text-align: center;
+                margin-bottom: 30px;
+                padding-bottom: 20px;
+                border-bottom: 3px solid #667eea;
+            `;
+            titleSection.innerHTML = `
+                <h1 style="font-size: 28px; font-weight: bold; color: #667eea; margin: 0;">RECENT INVOICES</h1>
+                <p style="font-size: 16px; color: #666; margin: 10px 0 0 0;">Latest Order Transactions</p>
+            `;
+            
+            // Clone the recent data table with proper styling
+            const clonedTable = recentDataElement.cloneNode(true);
+            clonedTable.style.cssText = `
+                width: 100%;
+                background: white;
+                border-radius: 10px;
+                overflow: hidden;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            `;
+            
+            // Style the table for PDF
+            const table = clonedTable.querySelector('table');
+            if (table) {
+                table.style.cssText = `
+                    width: 100%;
+                    border-collapse: collapse;
+                    font-size: 12px;
+                `;
+                
+                // Style table headers
+                const headers = table.querySelectorAll('thead th');
+                headers.forEach(header => {
+                    header.style.cssText = `
+                        background: #667eea;
+                        color: white;
+                        padding: 12px 8px;
+                        text-align: left;
+                        font-weight: bold;
+                        border: 1px solid #ddd;
+                    `;
+                });
+                
+                // Style table cells
+                const cells = table.querySelectorAll('tbody td');
+                cells.forEach(cell => {
+                    cell.style.cssText = `
+                        padding: 10px 8px;
+                        border: 1px solid #ddd;
+                        background: white;
+                    `;
+                });
+                
+                // Style table rows
+                const rows = table.querySelectorAll('tbody tr');
+                rows.forEach((row, index) => {
+                    if (index % 2 === 1) {
+                        row.style.backgroundColor = '#f8f9fa';
+                    }
+                });
+            }
+            
+            tableWrapper.appendChild(titleSection);
+            tableWrapper.appendChild(clonedTable);
+            
+            document.body.appendChild(tableWrapper);
+            
+            // Convert to canvas and add to PDF
+            const canvas = await html2canvas(tableWrapper, {
+                width: 794,
+                height: 1123,
+                scale: 2,
+                useCORS: true,
+                allowTaint: true,
+                backgroundColor: '#ffffff'
+            });
+            
+            const imgData = canvas.toDataURL('image/png');
+            pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+            
+            // Clean up
+            document.body.removeChild(tableWrapper);
+        } else {
+            console.warn('Recent data table not found');
+        }
+    }
+    
+    // Add this new function after createFrontPage
+    async function addMetricsPage(pdf, period, month, year, pageWidth, pageHeight) {
+        // Fetch the metrics data
+        const response = await fetch(`/admin/dashboard/generate-report?period=${period}&month=${month}&year=${year}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            console.error('Failed to fetch metrics data');
+            return;
+        }
+        
+        const data = result.data;
+        
+        // Add new page for metrics
+        pdf.addPage();
+        
+        // Create metrics page element
+        const metricsPageElement = document.createElement('div');
+        metricsPageElement.style.cssText = `
+            width: 210mm;
+            height: 297mm;
+            background: white;
+            padding: 20mm;
+            box-sizing: border-box;
+            position: absolute;
+            top: -9999px;
+            left: -9999px;
+            font-family: 'Arial', sans-serif;
+            color: #333;
+        `;
+        
+        metricsPageElement.innerHTML = `
+            <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 20px;">
+                <h1 style="font-size: 28px; font-weight: bold; color: #667eea; margin: 0;">DASHBOARD METRICS</h1>
+                <p style="font-size: 16px; color: #666; margin: 10px 0 0 0;">Period: ${data.period}</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div style="background: #f8f9ff; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea;">
+                    <h3 style="color: #667eea; margin: 0 0 15px 0; font-size: 18px;">SALES METRICS</h3>
+                    <div style="line-height: 1.8; font-size: 14px;">
+                        <div><strong>Total Sales:</strong> RM${data.metrics.totalSales.toLocaleString()}</div>
+                        <div><strong>Total Orders:</strong> ${data.metrics.totalOrders}</div>
+                        <div><strong>Total Revenue:</strong> RM${data.metrics.totalRevenue.toLocaleString()}</div>
+                        <div><strong>Sales Growth:</strong> ${data.metrics.salesGrowth}%</div>
+                    </div>
+                </div>
+                
+                <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; border-left: 4px solid #0ea5e9;">
+                    <h3 style="color: #0ea5e9; margin: 0 0 15px 0; font-size: 18px;">BUSINESS METRICS</h3>
+                    <div style="line-height: 1.8; font-size: 14px;">
+                        <div><strong>Total Appointments:</strong> ${data.metrics.totalAppointments}</div>
+                        <div><strong>Appointment Rate:</strong> ${data.metrics.appointmentRate}%</div>
+                        <div><strong>Total Customers:</strong> ${data.metrics.totalCustomers}</div>
+                        <div><strong>New Customers:</strong> ${data.metrics.newCustomers}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                <div style="background: #f0fdf4; padding: 20px; border-radius: 10px; border-left: 4px solid #22c55e;">
+                    <h3 style="color: #22c55e; margin: 0 0 15px 0; font-size: 18px;">ORDER STATUS</h3>
+                    <div style="line-height: 1.8; font-size: 14px;">
+                        <div><strong>Completed Orders:</strong> ${data.metrics.completedOrders}</div>
+                        <div><strong>Pending Orders:</strong> ${data.metrics.pendingOrders}</div>
+                    </div>
+                </div>
+                
+                <div style="background: #fefce8; padding: 20px; border-radius: 10px; border-left: 4px solid #eab308;">
+                    <h3 style="color: #eab308; margin: 0 0 15px 0; font-size: 18px;">PRODUCT METRICS</h3>
+                    <div style="line-height: 1.8; font-size: 14px;">
+                        <div><strong>Total Products:</strong> ${data.metrics.totalProducts}</div>
+                        <div><strong>Low Stock Products:</strong> ${data.metrics.lowStockProducts}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 40px; text-align: center; color: #666; font-size: 12px;">
+                <p>Generated on ${data.generated_at}</p>
+            </div>
+        `;
+        
+        document.body.appendChild(metricsPageElement);
+        
+        // Convert to canvas and add to PDF
+        const canvas = await html2canvas(metricsPageElement, {
+            width: 794,
+            height: 1123,
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff'
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+        
+        // Clean up
+        document.body.removeChild(metricsPageElement);
     }
     
     async function createFrontPage(pdf, period, month, year, pageWidth, pageHeight) {

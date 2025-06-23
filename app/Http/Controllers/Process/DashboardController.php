@@ -258,7 +258,8 @@ class DashboardController extends Controller
             $dateLabel = Carbon::createFromDate($year, $month, 1)->format('F Y');
         }
         
-        $metrics = $this->getMetrics($startDate, $endDate);
+        // Fix: Pass all 5 parameters to getMetrics
+        $metrics = $this->getMetrics($startDate, $endDate, $period, $year, $month);
         $charts = $this->getChartData($period, $year, $month);
         $analytics = $this->getAnalytics($startDate, $endDate);
         

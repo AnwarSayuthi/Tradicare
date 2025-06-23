@@ -36,6 +36,10 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('
 Route::middleware([AdminMiddleware::class])->prefix('admin')->name('admin.')->group(function () {
     // Dashboard - Updated to use DashboardController
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('/reports/generate/{type}', [ReportController::class, 'generateAdminReport'])->name('reports.generate');
+
+    // Add this missing route for PDF report generation
+    Route::get('/dashboard/generate-report', [DashboardController::class, 'generateReport'])->name('dashboard.generate-report');
 
     // Orders
     Route::get('/orders', [AdminViewController::class, 'orders'])->name('orders.index');
