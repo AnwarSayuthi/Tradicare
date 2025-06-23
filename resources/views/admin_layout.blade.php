@@ -969,14 +969,38 @@
             buttons.forEach(button => {
                 button.addEventListener('click', function() {
                     if (this.type === 'submit' || this.closest('form')) {
-                        this.classList.add('loading');
-                        this.disabled = true;
-                        
-                        setTimeout(() => {
-                            this.classList.remove('loading');
-                            this.disabled = false;
-                        }, 2000);
+                        // Only disable if not already disabled
+                        if (!this.disabled) {
+                            this.classList.add('loading');
+                            this.disabled = true;
+                            
+                            // Store original state
+                            this.dataset.originalDisabled = 'false';
+                            
+                            // Re-enable after shorter timeout
+                            setTimeout(() => {
+                                this.classList.remove('loading');
+                                this.disabled = false;
+                            }, 1000); // Reduced from 2000ms to 1000ms
+                        }
                     }
+                });
+            });
+            
+            // Add form error handling to re-enable buttons
+            const forms = document.querySelectorAll('form');
+            forms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    // If form validation fails, re-enable buttons
+                    setTimeout(() => {
+                        if (!form.checkValidity()) {
+                            const buttons = form.querySelectorAll('.btn[disabled]');
+                            buttons.forEach(btn => {
+                                btn.disabled = false;
+                                btn.classList.remove('loading');
+                            });
+                        }
+                    }, 100);
                 });
             });
         });

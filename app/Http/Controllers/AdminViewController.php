@@ -328,4 +328,44 @@ class AdminViewController extends Controller
         return redirect()->route('admin.services.index')
             ->with('success', 'Service has been successfully deleted.');
     }
+
+    /**
+     * Update the specified product
+     */
+    public function updateProduct(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'product_name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'price' => 'required|numeric|min:0',
+            'stock_quantity' => 'required|integer|min:0',
+            'category' => 'required|string',
+            'status' => 'required|in:active,inactive',
+        ]);
+        
+        $product = Product::findOrFail($id);
+        $product->update($validated);
+        
+        return redirect()->route('admin.products.show', $id)
+            ->with('success', 'Product updated successfully');
+    }
+
+    /**
+     * Update the specified appointment
+     */
+    public function updateAppointment(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'appointment_date' => 'required|date',
+            'appointment_time' => 'required',
+            'status' => 'required|in:pending,confirmed,completed,cancelled',
+            'notes' => 'nullable|string',
+        ]);
+        
+        $appointment = Appointment::findOrFail($id);
+        $appointment->update($validated);
+        
+        return redirect()->route('admin.appointments.show', $id)
+            ->with('success', 'Appointment updated successfully');
+    }
 }
