@@ -277,14 +277,34 @@ class DashboardController extends Controller
         ]);
     }
     
-    public function updateOrderStatus(Request $request, Order $order)
+    public function updateOrderStatus(Request $request, $orderId)
     {
-        $request->validate([
-            'status' => 'required|in:pending,processing,shipped,delivered,cancelled'
-        ]);
-        
-        $order->update(['status' => $request->status]);
-        
-        return response()->json(['success' => true, 'message' => 'Order status updated successfully']);
+        try {
+            $order = Order::findOrFail($orderId);
+            
+            $request->validate([
+                'status' => 'required|in:pending,processing,shipped,delivered,completed,cancelled,refunded',
+                'tracking_number' => 'nullable|string|max:255'
+            ]);
+            
+            $order->status = $request->status;
+            
+            // Handle tracking number for shipped/delivered orders
+            if (in_array($request->status, ['shipped', 'delivered']) && $request->tracking_number) {
+                // Update or create tracking record
+                $order->tracking()->updateOrCreate(
+                    ['order_id' => $order->order_id],
+                    ['tracking_number' => $request->tracking_number]
+                );
+            }
+            
+            $order->save();
+            
+            return redirect()->back()->with('success', 'Order status updated successfully!');
+            
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to update order status: ' . $e->getMessage());
+        }
     }
+    
 }
