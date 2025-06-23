@@ -13,22 +13,22 @@
     <title>@yield('title', 'Tradicare Admin')</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    
+
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-    
+
     <!-- Animate CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-    
+
     <!-- PDF Generation Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    
+
     <!-- Chart.js and Plugins -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
@@ -36,7 +36,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/patternomaly@1.3.2/dist/patternomaly.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-gradient@0.6.1/dist/chartjs-plugin-gradient.min.js"></script>
-    
+
     @include('components.styles')
     <style>
         /* ===== CSS VARIABLES ===== */
@@ -47,12 +47,12 @@
             --primary-light: #74b9ff;
             --secondary: #492072;
             --secondary-light: #8b5fbf;
-            
+
             /* Legacy Colors for Compatibility */
             --legacy-primary: #493628;
             --legacy-primary-light: #D6C0B3;
             --legacy-secondary: #8B7355;
-            
+
             /* Modern Gradient Themes */
             --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             --gradient-secondary: linear-gradient(135deg, #74b9ff 0%, #0984e3 100%);
@@ -60,24 +60,24 @@
             --gradient-warning: linear-gradient(135deg, #fdcb6e 0%, #e17055 100%);
             --gradient-danger: linear-gradient(135deg, #fd79a8 0%, #e84393 100%);
             --gradient-light: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            
+
             /* Layout Variables */
             --sidebar-width: 260px;
             --sidebar-collapsed-width: 70px;
             --topbar-height: 65px;
-            
+
             /* Shadow Variables */
             --shadow-sm: 0 2px 8px rgba(102, 126, 234, 0.08);
             --shadow-md: 0 4px 20px rgba(102, 126, 234, 0.12);
             --shadow-lg: 0 8px 35px rgba(102, 126, 234, 0.15);
             --shadow-hover: 0 6px 25px rgba(102, 126, 234, 0.25);
-            
+
             /* Border Radius */
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-xl: 20px;
-            
+
             /* Transitions */
             --transition-fast: all 0.2s ease;
             --transition-normal: all 0.3s ease;
@@ -636,25 +636,25 @@
                 width: var(--sidebar-collapsed-width);
                 transform: translateX(-100%);
             }
-            
+
             .sidebar.mobile-visible {
                 transform: translateX(0);
                 width: var(--sidebar-width);
             }
-            
+
             .sidebar.mobile-visible .sidebar-text,
             .sidebar.mobile-visible .sidebar-brand {
                 display: inline-block;
             }
-            
+
             .main-content {
                 margin-left: 0;
             }
-            
+
             .main-content.expanded {
                 margin-left: 0;
             }
-            
+
             .mobile-overlay {
                 position: fixed;
                 top: 0;
@@ -666,11 +666,11 @@
                 display: none;
                 backdrop-filter: blur(5px);
             }
-            
+
             .mobile-overlay.active {
                 display: block;
             }
-            
+
             .mobile-toggle {
                 display: flex;
                 align-items: center;
@@ -690,32 +690,32 @@
                 border: none;
                 opacity: 1;
             }
-            
+
             .mobile-toggle.hidden {
                 opacity: 0;
                 pointer-events: none;
             }
-            
+
             .mobile-toggle:hover {
                 transform: scale(1.1);
                 box-shadow: var(--shadow-lg);
             }
-            
+
             .content-area {
                 padding-top: 80px;
                 padding-left: 15px;
                 padding-right: 15px;
             }
-            
+
             .service-card {
                 margin-bottom: 1rem;
             }
-            
+
             .action-buttons {
                 flex-direction: column;
                 gap: 0.5rem;
             }
-            
+
             .service-stats {
                 margin-top: 1rem;
             }
@@ -726,16 +726,16 @@
                 padding: 8px 12px;
                 font-size: 0.875rem;
             }
-            
+
             .btn {
                 padding: 10px 20px;
                 font-size: 0.875rem;
             }
-            
+
             .card-body {
                 padding: 20px;
             }
-            
+
             .content-area {
                 padding: 15px;
                 padding-top: 80px;
@@ -768,11 +768,11 @@
         .text-primary { color: var(--primary) !important; }
         .bg-primary { background: var(--gradient-primary) !important; }
         .border-primary { border-color: var(--primary) !important; }
-        
+
         .shadow-sm { box-shadow: var(--shadow-sm) !important; }
         .shadow-md { box-shadow: var(--shadow-md) !important; }
         .shadow-lg { box-shadow: var(--shadow-lg) !important; }
-        
+
         .rounded-sm { border-radius: var(--radius-sm) !important; }
         .rounded-md { border-radius: var(--radius-md) !important; }
         .rounded-lg { border-radius: var(--radius-lg) !important; }
@@ -817,10 +817,10 @@
         <button class="mobile-toggle d-md-none" id="mobile-toggle" aria-label="Toggle sidebar">
             <i class="bi bi-list"></i>
         </button>
-        
+
         <!-- Mobile Overlay -->
         <div class="mobile-overlay" id="mobile-overlay"></div>
-        
+
         <!-- Sidebar -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -881,14 +881,14 @@
                         {{ session('success') }}
                     </div>
                 @endif
-                
+
                 @if(session('error'))
                     <div class="alert alert-danger d-flex align-items-center animate__animated animate__fadeInDown">
                         <i class="bi bi-exclamation-circle-fill me-2"></i>
                         {{ session('error') }}
                     </div>
                 @endif
-                
+
                 @yield('content')
             </div>
         </div>
@@ -903,7 +903,7 @@
             const mobileToggle = document.getElementById('mobile-toggle');
             const mobileOverlay = document.getElementById('mobile-overlay');
             let isButtonVisible = true;
-            
+
             // Enhanced mobile toggle with ripple effect
             if (mobileToggle) {
                 mobileToggle.addEventListener('click', function(e) {
@@ -913,27 +913,27 @@
                     const size = Math.max(rect.width, rect.height);
                     const x = e.clientX - rect.left - size / 2;
                     const y = e.clientY - rect.top - size / 2;
-                    
+
                     ripple.style.width = ripple.style.height = size + 'px';
                     ripple.style.left = x + 'px';
                     ripple.style.top = y + 'px';
                     ripple.classList.add('ripple');
-                    
+
                     this.appendChild(ripple);
-                    
+
                     setTimeout(() => {
                         ripple.remove();
                     }, 600);
-                    
+
                     // Toggle sidebar
                     sidebar.classList.toggle('mobile-visible');
                     mobileOverlay.classList.toggle('active');
-                    
+
                     isButtonVisible = !isButtonVisible;
                     mobileToggle.classList.toggle('hidden', !isButtonVisible);
                 });
             }
-            
+
             // Enhanced overlay click with fade effect
             mobileOverlay.addEventListener('click', function() {
                 sidebar.classList.remove('mobile-visible');
@@ -941,7 +941,7 @@
                 mobileToggle.classList.remove('hidden');
                 isButtonVisible = true;
             });
-            
+
             // Enhanced window resize handler
             window.addEventListener('resize', function() {
                 if (window.innerWidth > 768) {
@@ -951,7 +951,7 @@
                     isButtonVisible = true;
                 }
             });
-            
+
             // Auto-hide alerts after 5 seconds
             const alerts = document.querySelectorAll('.alert');
             alerts.forEach(alert => {
@@ -963,30 +963,30 @@
                     }, 300);
                 }, 5000);
             });
-            
+
             // Enhanced loading states for buttons
-            const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(button => {
-                button.addEventListener('click', function() {
-                    if (this.type === 'submit' || this.closest('form')) {
-                        // Only disable if not already disabled
-                        if (!this.disabled) {
-                            this.classList.add('loading');
-                            this.disabled = true;
-                            
-                            // Store original state
-                            this.dataset.originalDisabled = 'false';
-                            
-                            // Re-enable after shorter timeout
-                            setTimeout(() => {
-                                this.classList.remove('loading');
-                                this.disabled = false;
-                            }, 1000); // Reduced from 2000ms to 1000ms
-                        }
-                    }
-                });
-            });
-            
+            // const buttons = document.querySelectorAll('.btn');
+            // buttons.forEach(button => {
+            //     button.addEventListener('click', function() {
+            //         if (this.type === 'submit' || this.closest('form')) {
+            //             // Only disable if not already disabled
+            //             if (!this.disabled) {
+            //                 this.classList.add('loading');
+            //                 this.disabled = true;
+
+            //                 // Store original state
+            //                 this.dataset.originalDisabled = 'false';
+
+            //                 // Re-enable after shorter timeout
+            //                 setTimeout(() => {
+            //                     this.classList.remove('loading');
+            //                     this.disabled = false;
+            //                 }, 1000); // Reduced from 2000ms to 1000ms
+            //             }
+            //         }
+            //     });
+            // });
+
             // Add form error handling to re-enable buttons
             const forms = document.querySelectorAll('form');
             forms.forEach(form => {
@@ -1004,7 +1004,7 @@
                 });
             });
         });
-        
+
         // Enhanced status color helper
         function getStatusColor(status) {
             status = status.toLowerCase();
@@ -1018,7 +1018,7 @@
                 default: return 'secondary';
             }
         }
-        
+
         // Add ripple effect CSS
         const rippleStyle = document.createElement('style');
         rippleStyle.textContent = `
@@ -1030,7 +1030,7 @@
                 animation: ripple-animation 0.6s linear;
                 pointer-events: none;
             }
-            
+
             @keyframes ripple-animation {
                 to {
                     transform: scale(4);
