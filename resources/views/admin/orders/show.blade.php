@@ -16,7 +16,7 @@
                         <a href="{{ route('admin.orders.index') }}" class="btn btn-outline-secondary">
                             <i class="bi bi-arrow-left me-1"></i> Back
                         </a>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
                             <i class="bi bi-pencil me-1"></i> Update Status
                         </button>
                     </div>
@@ -168,8 +168,6 @@
                             
                             <!-- Shipping Information -->
                             <div class="mb-4">
-                                
-                                
                                 @if($order->location)
                                 <div class="info-card p-3 rounded-3 bg-light mb-3">
                                     <div class="d-flex align-items-center mb-2">
@@ -287,20 +285,22 @@
 </div>
 
 <!-- Update Status Modal -->
-<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-hidden="true">
+<div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header">
-                <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Update Order Status</h5>
+                <h5 class="modal-title fw-bold" id="updateStatusModalLabel">
+                    <i class="bi bi-pencil-square me-2 text-primary"></i>Update Order Status
+                </h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form action="{{ route('admin.orders.update-status', $order->order_id) }}" method="POST">
+            <form action="{{ route('admin.orders.update-status', $order->order_id) }}" method="POST" id="updateStatusForm">
                 @csrf
                 @method('PUT')
-                <div class="modal-body p-4">
+                <div class="modal-body">
                     <div class="mb-3">
-                        <label for="status" class="form-label fw-medium">Status</label>
-                        <select class="form-select form-select-lg" id="status" name="status" onchange="toggleTrackingField()">
+                        <label for="status" class="form-label fw-semibold">Order Status</label>
+                        <select class="form-select" id="status" name="status" required onchange="toggleTrackingField()">
                             <option value="pending" {{ $order->status == 'pending' ? 'selected' : '' }}>Pending</option>
                             <option value="processing" {{ $order->status == 'processing' ? 'selected' : '' }}>Processing</option>
                             <option value="shipped" {{ $order->status == 'shipped' ? 'selected' : '' }}>Shipped</option>
@@ -311,36 +311,21 @@
                         </select>
                     </div>
                     
-                    <div class="mb-3" id="trackingNumberField" style="display: {{ in_array($order->status, ['shipped', 'delivered']) ? 'block' : 'none' }}">
-                        <label for="tracking_number" class="form-label fw-medium">Tracking Number</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="tracking_number" name="tracking_number" 
-                                   value="{{ $order->tracking ? $order->tracking->tracking_number : '' }}">
-                            <span class="input-group-text text-dark">
-                                <img src="{{ asset('image/JNT logo.png') }}" alt="JNT Logo" height="30" class="me-1">
-                            </span>
-                        </div>
+                    <div class="mb-3" id="trackingNumberField" style="display: {{ in_array($order->status, ['shipped', 'delivered']) ? 'block' : 'none' }};">
+                        <label for="tracking_number" class="form-label fw-semibold">
+                            Tracking Number 
+                            <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="tracking_number" name="tracking_number" 
+                               value="{{ $order->tracking_number ?? '' }}" placeholder="Enter tracking number">
                         <small class="text-muted">Enter the shipping tracking number</small>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary px-4">Update Status</button>
+                    <button type="submit" class="btn btn-primary px-4" id="updateStatusBtn">Update Status</button>
                 </div>
             </form>
-            
-            <script>
-                function toggleTrackingField() {
-                    const status = document.getElementById('status').value;
-                    const trackingField = document.getElementById('trackingNumberField');
-                    
-                    if (status === 'shipped' || status === 'delivered') {
-                        trackingField.style.display = 'block';
-                    } else {
-                        trackingField.style.display = 'none';
-                    }
-                }
-            </script>
         </div>
     </div>
 </div>
@@ -503,4 +488,113 @@
         }
     }
 </style>
+@endsection
+
+@section('scripts')
+<script>
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap modal
+    const updateStatusModalElement = document.getElementById('updateStatusModal');
+    const updateStatusForm = document.getElementById('updateStatusForm');
+    const updateStatusBtn = document.getElementById('updateStatusBtn');
+    
+    // Create Bootstrap modal instance
+    let updateStatusModal = null;
+    if (updateStatusModalElement) {
+        updateStatusModal = new bootstrap.Modal(updateStatusModalElement, {
+            backdrop: 'static',
+            keyboard: false
+        });
+    }
+    
+    // Handle modal show event
+    if (updateStatusModalElement) {
+        updateStatusModalElement.addEventListener('show.bs.modal', function() {
+            // Reset form state when modal opens
+            if (updateStatusBtn) {
+                updateStatusBtn.disabled = false;
+                updateStatusBtn.innerHTML = '<i class="bi bi-pencil me-1"></i> Update Status';
+            }
+            // Initialize tracking field visibility
+            toggleTrackingField();
+        });
+        
+        // Handle modal hidden event
+        updateStatusModalElement.addEventListener('hidden.bs.modal', function() {
+            // Reset form state when modal closes
+            if (updateStatusBtn) {
+                updateStatusBtn.disabled = false;
+                updateStatusBtn.innerHTML = '<i class="bi bi-pencil me-1"></i> Update Status';
+            }
+            // Reset form if needed
+            if (updateStatusForm) {
+                updateStatusForm.classList.remove('was-validated');
+            }
+        });
+    }
+    
+    // Handle form submission
+    if (updateStatusForm) {
+        updateStatusForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate form
+            const statusSelect = document.getElementById('status');
+            const trackingInput = document.getElementById('tracking_number');
+            
+            if (!statusSelect || !statusSelect.value) {
+                alert('Please select a status.');
+                return false;
+            }
+            
+            // Validate tracking number for shipped/delivered orders
+            const selectedStatus = statusSelect.value;
+            if ((selectedStatus === 'shipped' || selectedStatus === 'delivered')) {
+                if (!trackingInput || !trackingInput.value.trim()) {
+                    alert('Please enter a tracking number for shipped/delivered orders.');
+                    trackingInput?.focus();
+                    return false;
+                }
+            }
+            
+            // Show loading state
+            if (updateStatusBtn) {
+                updateStatusBtn.disabled = true;
+                updateStatusBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Updating...';
+            }
+            
+            // Submit form
+            this.submit();
+        });
+    }
+    
+    // Initialize tracking field on page load
+    toggleTrackingField();
+});
+
+// Toggle tracking number field based on status
+function toggleTrackingField() {
+    const statusSelect = document.getElementById('status');
+    const trackingField = document.getElementById('trackingNumberField');
+    const trackingInput = document.getElementById('tracking_number');
+    
+    if (!statusSelect || !trackingField) return;
+    
+    const selectedStatus = statusSelect.value;
+    
+    if (selectedStatus === 'shipped' || selectedStatus === 'delivered') {
+        trackingField.style.display = 'block';
+        if (trackingInput) {
+            trackingInput.required = true;
+        }
+    } else {
+        trackingField.style.display = 'none';
+        if (trackingInput) {
+            trackingInput.required = false;
+            trackingInput.value = '';
+        }
+    }
+}
+</script>
 @endsection
