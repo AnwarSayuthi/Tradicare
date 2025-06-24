@@ -9,23 +9,23 @@ if (typeof Chart === 'undefined') {
     });
 } else {
     console.log('Chart.js loaded successfully');
-    
+
     // Register Chart.js plugins with better error checking
     try {
         const pluginsToRegister = [];
-        
+
         if (typeof ChartDataLabels !== 'undefined') {
             pluginsToRegister.push(ChartDataLabels);
         }
-        
+
         if (window['chartjs-plugin-annotation']) {
             pluginsToRegister.push(window['chartjs-plugin-annotation']);
         }
-        
+
         if (window['chartjs-adapter-date-fns']) {
             pluginsToRegister.push(window['chartjs-adapter-date-fns']);
         }
-        
+
         if (pluginsToRegister.length > 0) {
             Chart.register(...pluginsToRegister);
             console.log('Chart.js plugins registered successfully:', pluginsToRegister.length);
@@ -67,7 +67,7 @@ if (productCtx) {
             gradient: ['#8B5CF6', '#A78BFA']
         }
     };
-    
+
     // Create gradient backgrounds
     const createGradient = (ctx, color1, color2) => {
         const gradient = ctx.createLinearGradient(0, 0, 0, 400);
@@ -75,7 +75,7 @@ if (productCtx) {
         gradient.addColorStop(1, color2);
         return gradient;
     };
-    
+
     // Generate enhanced colors and patterns
     const chartColors = productData.map(item => {
         const colorConfig = categoryColorMap[item.label];
@@ -84,9 +84,9 @@ if (productCtx) {
         }
         return '#6B7280';
     });
-    
+
     const chartLabels = productData.map(item => item.label);
-    
+
     const productChart = new Chart(productCtx, {
         type: 'doughnut',
         data: {
@@ -187,7 +187,7 @@ if (productCtx) {
         },
         plugins: [ChartDataLabels]
     });
-    
+
     // Add click interaction
     productChart.canvas.onclick = function(evt) {
         const points = productChart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
@@ -208,11 +208,11 @@ if (salesCtx) {
     const salesGradient = salesCtx.createLinearGradient(0, 0, 0, 400);
     salesGradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
     salesGradient.addColorStop(1, 'rgba(102, 126, 234, 0.1)');
-    
+
     const salesBorderGradient = salesCtx.createLinearGradient(0, 0, 0, 400);
     salesBorderGradient.addColorStop(0, '#667eea');
     salesBorderGradient.addColorStop(1, '#764ba2');
-    
+
     const salesChart = new Chart(salesCtx, {
         type: 'line',
         data: {
@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const yearSelect = document.getElementById('yearSelect');
     const generateReportBtn = document.getElementById('generateReport');
     const refreshBtn = document.getElementById('refreshDashboard');
-    
+
     // Period change handler
     if (periodSelect) {
         periodSelect.addEventListener('change', function() {
@@ -410,79 +410,79 @@ document.addEventListener('DOMContentLoaded', function() {
             updateDashboard();
         });
     }
-    
+
     // Month/Year change handlers
     if (monthSelect) {
         monthSelect.addEventListener('change', updateDashboard);
     }
-    
+
     if (yearSelect) {
         yearSelect.addEventListener('change', updateDashboard);
     }
-    
+
     // Generate report handler
     if (generateReportBtn) {
         generateReportBtn.addEventListener('click', function() {
             generateReport();
         });
     }
-    
+
     // Refresh dashboard handler
     if (refreshBtn) {
         refreshBtn.addEventListener('click', function() {
             location.reload();
         });
     }
-    
+
     function updateDashboard() {
         const period = periodSelect?.value || 'month';
         const month = monthSelect?.value || new Date().getMonth() + 1;
         const year = yearSelect?.value || new Date().getFullYear();
-        
+
         const url = new URL(window.location);
         url.searchParams.set('period', period);
         url.searchParams.set('month', month);
         url.searchParams.set('year', year);
-        
+
         window.location.href = url.toString();
     }
-    
+
     function generateReport() {
         const period = periodSelect?.value || 'month';
         const month = monthSelect?.value || new Date().getMonth() + 1;
         const year = yearSelect?.value || new Date().getFullYear();
-        
+
         // Show loading state
         generateReportBtn.disabled = true;
         generateReportBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Generating PDF...';
-        
+
         // Generate PDF using html2canvas
         generatePDFReport(period, month, year);
     }
-    
+
     async function generatePDFReport(period, month, year) {
         try {
             const { jsPDF } = window.jspdf;
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = 210; // A4 width in mm
             const pageHeight = 297; // A4 height in mm
-            
+
             // Create front page
             await createFrontPage(pdf, period, month, year, pageWidth, pageHeight);
-            
+
             // Add metrics page with detailed data
             await addMetricsPage(pdf, period, month, year, pageWidth, pageHeight);
-            
+
             // Add chart pages
             await addChartPages(pdf, pageWidth, pageHeight);
-            
+
             // Add recent invoices table
             await addRecentInvoicesPage(pdf, pageWidth, pageHeight);
-            
+
             // Save the PDF
             const fileName = `Tradicare-Dashboard-Report-${period}-${year}${period === 'month' ? '-' + month : ''}.pdf`;
             pdf.save(fileName);
-            
+
             showNotification('PDF report generated successfully!', 'success');
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -493,15 +493,15 @@ document.addEventListener('DOMContentLoaded', function() {
             generateReportBtn.innerHTML = '<i class="bi bi-file-earmark-text"></i> Generate Report';
         }
     }
-    
+
     // Add this new function after addChartPages
     async function addRecentInvoicesPage(pdf, pageWidth, pageHeight) {
         const recentDataElement = document.querySelector('.recent-data-section');
-        
+
         if (recentDataElement) {
             // Add new page
             pdf.addPage();
-            
+
             // Create a wrapper for the recent invoices table
             const tableWrapper = document.createElement('div');
             tableWrapper.style.cssText = `
@@ -516,7 +516,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 font-family: 'Arial', sans-serif;
                 color: #333;
             `;
-            
+
             // Create title section
             const titleSection = document.createElement('div');
             titleSection.style.cssText = `
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <h1 style="font-size: 28px; font-weight: bold; color: #667eea; margin: 0;">RECENT INVOICES</h1>
                 <p style="font-size: 16px; color: #666; margin: 10px 0 0 0;">Latest Order Transactions</p>
             `;
-            
+
             // Clone the recent data table with proper styling
             const clonedTable = recentDataElement.cloneNode(true);
             clonedTable.style.cssText = `
@@ -539,7 +539,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 overflow: hidden;
                 box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             `;
-            
+
             // Style the table for PDF
             const table = clonedTable.querySelector('table');
             if (table) {
@@ -548,7 +548,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     border-collapse: collapse;
                     font-size: 12px;
                 `;
-                
+
                 // Style table headers
                 const headers = table.querySelectorAll('thead th');
                 headers.forEach(header => {
@@ -561,7 +561,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         border: 1px solid #ddd;
                     `;
                 });
-                
+
                 // Style table cells
                 const cells = table.querySelectorAll('tbody td');
                 cells.forEach(cell => {
@@ -571,7 +571,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         background: white;
                     `;
                 });
-                
+
                 // Style table rows
                 const rows = table.querySelectorAll('tbody tr');
                 rows.forEach((row, index) => {
@@ -580,12 +580,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 });
             }
-            
+
             tableWrapper.appendChild(titleSection);
             tableWrapper.appendChild(clonedTable);
-            
+
             document.body.appendChild(tableWrapper);
-            
+
             // Convert to canvas and add to PDF
             const canvas = await html2canvas(tableWrapper, {
                 width: 794,
@@ -595,33 +595,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 allowTaint: true,
                 backgroundColor: '#ffffff'
             });
-            
+
             const imgData = canvas.toDataURL('image/png');
             pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-            
+
             // Clean up
             document.body.removeChild(tableWrapper);
         } else {
             console.warn('Recent data table not found');
         }
     }
-    
+
     // Add this new function after createFrontPage
     async function addMetricsPage(pdf, period, month, year, pageWidth, pageHeight) {
         // Fetch the metrics data
         const response = await fetch(`/admin/dashboard/generate-report?period=${period}&month=${month}&year=${year}`);
         const result = await response.json();
-        
+
         if (!result.success) {
             console.error('Failed to fetch metrics data');
             return;
         }
-        
+
         const data = result.data;
-        
+
         // Add new page for metrics
         pdf.addPage();
-        
+
         // Create metrics page element
         const metricsPageElement = document.createElement('div');
         metricsPageElement.style.cssText = `
@@ -636,13 +636,13 @@ document.addEventListener('DOMContentLoaded', function() {
             font-family: 'Arial', sans-serif;
             color: #333;
         `;
-        
+
         metricsPageElement.innerHTML = `
             <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px solid #667eea; padding-bottom: 20px;">
                 <h1 style="font-size: 28px; font-weight: bold; color: #667eea; margin: 0;">DASHBOARD METRICS</h1>
                 <p style="font-size: 16px; color: #666; margin: 10px 0 0 0;">Period: ${data.period}</p>
             </div>
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
                 <div style="background: #f8f9ff; padding: 20px; border-radius: 10px; border-left: 4px solid #667eea;">
                     <h3 style="color: #667eea; margin: 0 0 15px 0; font-size: 18px;">SALES METRICS</h3>
@@ -653,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div><strong>Sales Growth:</strong> ${data.metrics.salesGrowth}%</div>
                     </div>
                 </div>
-                
+
                 <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; border-left: 4px solid #0ea5e9;">
                     <h3 style="color: #0ea5e9; margin: 0 0 15px 0; font-size: 18px;">BUSINESS METRICS</h3>
                     <div style="line-height: 1.8; font-size: 14px;">
@@ -664,7 +664,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             </div>
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div style="background: #f0fdf4; padding: 20px; border-radius: 10px; border-left: 4px solid #22c55e;">
                     <h3 style="color: #22c55e; margin: 0 0 15px 0; font-size: 18px;">ORDER STATUS</h3>
@@ -673,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div><strong>Pending Orders:</strong> ${data.metrics.pendingOrders}</div>
                     </div>
                 </div>
-                
+
                 <div style="background: #fefce8; padding: 20px; border-radius: 10px; border-left: 4px solid #eab308;">
                     <h3 style="color: #eab308; margin: 0 0 15px 0; font-size: 18px;">PRODUCT METRICS</h3>
                     <div style="line-height: 1.8; font-size: 14px;">
@@ -682,14 +682,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 </div>
             </div>
-            
+
             <div style="margin-top: 40px; text-align: center; color: #666; font-size: 12px;">
                 <p>Generated on ${data.generated_at}</p>
             </div>
         `;
-        
+
         document.body.appendChild(metricsPageElement);
-        
+
         // Convert to canvas and add to PDF
         const canvas = await html2canvas(metricsPageElement, {
             width: 794,
@@ -699,14 +699,14 @@ document.addEventListener('DOMContentLoaded', function() {
             allowTaint: true,
             backgroundColor: '#ffffff'
         });
-        
+
         const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-        
+
         // Clean up
         document.body.removeChild(metricsPageElement);
     }
-    
+
     async function createFrontPage(pdf, period, month, year, pageWidth, pageHeight) {
         // Create a temporary front page element
         const frontPageElement = document.createElement('div');
@@ -726,19 +726,19 @@ document.addEventListener('DOMContentLoaded', function() {
             padding: 40px;
             box-sizing: border-box;
         `;
-        
+
         // Get current date
         const currentDate = new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
         });
-        
+
         // Get period text
-        const periodText = period === 'month' ? 
-            `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}` : 
+        const periodText = period === 'month' ?
+            `${new Date(year, month - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}` :
             `Year ${year}`;
-        
+
         frontPageElement.innerHTML = `
             <div style="text-align: center;">
                 <div style="width: 120px; height: 120px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 30px; backdrop-filter: blur(10px); border: 3px solid rgba(255,255,255,0.3);">
@@ -757,9 +757,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(frontPageElement);
-        
+
         // Convert to canvas and add to PDF
         const canvas = await html2canvas(frontPageElement, {
             width: 794, // A4 width in pixels at 96 DPI
@@ -769,174 +769,136 @@ document.addEventListener('DOMContentLoaded', function() {
             allowTaint: true,
             backgroundColor: null
         });
-        
+
         const imgData = canvas.toDataURL('image/png');
         pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-        
+
         // Clean up
         document.body.removeChild(frontPageElement);
     }
-    
+
     async function addChartPages(pdf, pageWidth, pageHeight) {
         const charts = [
-            { 
-                element: '.chart-container.product-chart', 
+            {
+                element: '.chart-container.product-chart',
                 title: 'Product Chart',
                 canvasId: 'productChart'
             },
-            { 
-                element: '.chart-container.sales-chart', 
+            {
+                element: '.chart-container.sales-chart',
                 title: 'Sales Analytics',
                 canvasId: 'salesChart'
             }
         ];
-        
+
         for (let i = 0; i < charts.length; i++) {
             const chartInfo = charts[i];
             const chartElement = document.querySelector(chartInfo.element);
-            
+
             if (chartElement) {
-                // Add new page
                 pdf.addPage();
-                
-                // Wait for charts to be fully rendered
-                await new Promise(resolve => setTimeout(resolve, 500));
-                
-                // Create a wrapper for the chart with title
-                const chartWrapper = document.createElement('div');
-                chartWrapper.style.cssText = `
-                    width: 210mm;
-                    height: 297mm;
+                await new Promise(resolve => setTimeout(resolve, 300)); // wait a bit
+
+                // Prepare chart wrapper
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = `
+                    width: 794px;
+                    height: 1123px;
                     background: white;
-                    padding: 20mm;
-                    box-sizing: border-box;
+                    padding: 40px;
                     position: absolute;
                     top: -9999px;
                     left: -9999px;
-                    font-family: 'Poppins', sans-serif;
+                    box-sizing: border-box;
+                    font-family: Poppins, sans-serif;
                     display: flex;
                     flex-direction: column;
                 `;
-                
-                // Create title section
-                const titleSection = document.createElement('div');
-                titleSection.style.cssText = `
+
+                // Title
+                const title = document.createElement('div');
+                title.style.cssText = `
                     text-align: center;
                     margin-bottom: 30px;
-                    padding-bottom: 20px;
-                    border-bottom: 3px solid #667eea;
-                    flex-shrink: 0;
+                    border-bottom: 2px solid #667eea;
+                    padding-bottom: 10px;
                 `;
-                titleSection.innerHTML = `
-                    <h1 style="font-size: 32px; font-weight: 700; color: #667eea; margin: 0;">${chartInfo.title}</h1>
-                    <p style="font-size: 16px; color: #666; margin: 10px 0 0 0;">Tradicare Dashboard Report</p>
+                title.innerHTML = `
+                    <h2 style="color:#667eea; font-size:28px; margin:0;">${chartInfo.title}</h2>
+                    <p style="margin-top:10px; font-size:14px; color:#666;">Tradicare Dashboard Report</p>
                 `;
-                
-                // Clone the chart element with proper styling
+
+                // Clone chart container
                 const clonedChart = chartElement.cloneNode(true);
                 clonedChart.style.cssText = `
-                    width: 100%;
-                    height: 500px;
+                    background: #f9f9f9;
+                    border-radius: 8px;
+                    padding: 24px;
                     flex: 1;
                     display: flex;
                     flex-direction: column;
-                    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-                    border-radius: 12px;
-                    padding: 1.5rem;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                    border: 1px solid rgba(0, 0, 0, 0.05);
+                    justify-content: center;
                 `;
-                
-                // Ensure chart content is properly sized
-                const chartContent = clonedChart.querySelector('.chart-content');
-                if (chartContent) {
-                    chartContent.style.cssText = `
-                        position: relative;
-                        height: 400px;
-                        flex: 1;
-                    `;
-                }
-                
-                // Make sure canvas is visible and properly sized
-                // Around line 602 - rename to canvasElement
-                const canvasElement = clonedChart.querySelector('canvas');
-                if (canvasElement) {
-                    canvasElement.style.cssText = `
-                        width: 100% !important;
-                        height: 100% !important;
-                        max-width: 100%;
-                        max-height: 100%;
-                    `;
-                } else {
-                    console.warn(`Canvas element not found for chart: ${chartInfo.title}`);
-                }
 
-                chartWrapper.appendChild(titleSection);
-                chartWrapper.appendChild(clonedChart);
-                
-                document.body.appendChild(chartWrapper);
-                
-                // Convert to canvas with higher quality settings
-                const chartCanvas = await html2canvas(chartWrapper, {
-                    width: 794,
-                    height: 1123,
-                    scale: 2,
-                    useCORS: true,
-                    allowTaint: true,
+                // Replace canvas with image
+                const originalCanvas = document.getElementById(chartInfo.canvasId);
+                const dataUrl = originalCanvas.toDataURL('image/png');
+                const img = new Image();
+                img.src = dataUrl;
+                img.style.cssText = 'width: 100%; max-height: 500px; object-fit: contain;';
+                const canvasContainer = clonedChart.querySelector('canvas');
+                canvasContainer?.replaceWith(img);
+
+                // Assemble
+                wrapper.appendChild(title);
+                wrapper.appendChild(clonedChart);
+                document.body.appendChild(wrapper);
+
+                // Screenshot
+                const canvas = await html2canvas(wrapper, {
                     backgroundColor: '#ffffff',
-                    logging: false,
-                    removeContainer: true,
-                    foreignObjectRendering: true,
-                    imageTimeout: 15000,
-                    onclone: function(clonedDoc) {
-                        // Ensure all styles are applied in the cloned document
-                        const clonedCanvas = clonedDoc.querySelector('canvas');
-                        if (clonedCanvas) {
-                            clonedCanvas.style.display = 'block';
-                            clonedCanvas.style.width = '100%';
-                            clonedCanvas.style.height = '100%';
-                        }
-                    }
+                    scale: 2
                 });
-                
-                const imgData = chartCanvas.toDataURL('image/png', 1.0);
+
+                const imgData = canvas.toDataURL('image/png');
                 pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
-                
-                // Clean up
-                document.body.removeChild(chartWrapper);
+
+                // Clean
+                document.body.removeChild(wrapper);
             } else {
                 console.warn(`Chart element not found: ${chartInfo.element}`);
             }
         }
     }
-    
+
+
     function downloadReport(data) {
         const reportContent = `
             TRADICARE DASHBOARD REPORT
             Period: ${data.period}
             Generated: ${data.generated_at}
-            
+
             SALES METRICS:
             - Total Sales: RM${data.metrics.totalSales.toLocaleString()}
             - Total Orders: ${data.metrics.totalOrders}
             - Total Revenue: RM${data.metrics.totalRevenue.toLocaleString()}
             - Sales Growth: ${data.metrics.salesGrowth}%
-            
+
             BUSINESS METRICS:
             - Total Appointments: ${data.metrics.totalAppointments}
             - Appointment Rate: ${data.metrics.appointmentRate}%
             - Total Customers: ${data.metrics.totalCustomers}
             - New Customers: ${data.metrics.newCustomers}
-            
+
             ORDER STATUS:
             - Completed Orders: ${data.metrics.completedOrders}
             - Pending Orders: ${data.metrics.pendingOrders}
-            
+
             PRODUCT METRICS:
             - Total Products: ${data.metrics.totalProducts}
             - Low Stock Products: ${data.metrics.lowStockProducts}
         `;
-        
+
         const blob = new Blob([reportContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -947,7 +909,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
     }
-    
+
     function showNotification(message, type) {
         // Create notification element
         const notification = document.createElement('div');
@@ -958,7 +920,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <span>${message}</span>
             </div>
         `;
-        
+
         // Add styles
         notification.style.cssText = `
             position: fixed;
@@ -974,14 +936,14 @@ document.addEventListener('DOMContentLoaded', function() {
             background: ${type === 'success' ? 'linear-gradient(135deg, #00b894, #00a085)' : 'linear-gradient(135deg, #fd79a8, #e84393)'};
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
         `;
-        
+
         document.body.appendChild(notification);
-        
+
         // Show notification
         setTimeout(() => {
             notification.style.transform = 'translateX(0)';
         }, 100);
-        
+
         // Hide notification after 3 seconds
         setTimeout(() => {
             notification.style.transform = 'translateX(100%)';
