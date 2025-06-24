@@ -21,7 +21,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div class="card-body p-0">
                     <div class="row g-0">
                         <div class="col-lg-8 p-4 border-end">
@@ -29,7 +29,7 @@
                             <div class="mb-4">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <h5 class="fw-semibold mb-0">Order Status</h5>
-                                    <span class="badge rounded-pill px-3 py-2 
+                                    <span class="badge rounded-pill px-3 py-2
                                         @if($order->status == 'processing') bg-primary
                                         @elseif($order->status == 'shipped') bg-info
                                         @elseif($order->status == 'delivered' || $order->status == 'completed') bg-success
@@ -38,17 +38,17 @@
                                         {{ ucfirst($order->status) }}
                                     </span>
                                 </div>
-                                
+
                                 <div class="order-timeline position-relative mt-4 ps-4">
                                     @php
                                         $statuses = ['pending', 'processing', 'shipped', 'delivered', 'completed'];
                                         $currentStatusIndex = array_search($order->status, $statuses);
                                         if ($currentStatusIndex === false) $currentStatusIndex = -1;
                                     @endphp
-                                    
+
                                     @foreach($statuses as $index => $status)
                                         <div class="timeline-item pb-4 position-relative">
-                                            <div class="timeline-icon position-absolute start-0 translate-middle-x 
+                                            <div class="timeline-icon position-absolute start-0 translate-middle-x
                                                 @if($index <= $currentStatusIndex) bg-primary @else bg-light border @endif">
                                                 @if($index <= $currentStatusIndex)
                                                     <i class="bi bi-check text-white"></i>
@@ -74,7 +74,7 @@
                                     @endforeach
                                 </div>
                             </div>
-                            
+
                             <!-- Order Items -->
                             <h5 class="fw-semibold mb-3 border-bottom pb-3">Order Items</h5>
                             <div class="table-responsive">
@@ -105,7 +105,7 @@
                                                 <td>
                                                     <h6 class="mb-0">{{ $item->product_name }}</h6>
                                                     @if($item->product)
-                                                        <a href="{{ route('admin.products.show', $item->product->product_id) }}" 
+                                                        <a href="{{ route('admin.products.show', $item->product->product_id) }}"
                                                             class="text-decoration-none small">View product</a>
                                                     @endif
                                                 </td>
@@ -138,7 +138,7 @@
                                 </table>
                             </div>
                         </div>
-                        
+
                         <div class="col-lg-4 p-4">
                             <!-- Customer Information -->
                             <div class="mb-4">
@@ -165,7 +165,7 @@
                                     <p class="mb-0">{{ $order->user->tel_number ?? 'N/A' }}</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Shipping Information -->
                             <div class="mb-4">
                                 @if($order->location)
@@ -196,7 +196,7 @@
                                     <p class="mb-0">{{ $order->shipping_method ?? 'Standard Shipping' }}</p>
                                 </div>
                             </div>
-                            
+
                             <!-- Payment Information -->
                             <div class="mb-4">
                                 <h5 class="fw-semibold mb-3 border-bottom pb-3">Payment Information</h5>
@@ -205,13 +205,13 @@
                                         <i class="bi bi-credit-card text-primary me-2"></i>
                                         <h6 class="mb-0">Payment Details</h6>
                                     </div>
-                                    
+
                                     @if($order->payments->count() > 0)
                                         <!-- Display the most recent payment information -->
                                         @php
                                             $latestPayment = $order->payments->sortByDesc('payment_date')->first();
                                         @endphp
-                                        
+
                                         <div class="info-item mb-2">
                                             <span class="text-muted small">Method:</span>
                                             <p class="mb-0">{{ $latestPayment->payment_method ?? 'N/A' }}</p>
@@ -232,13 +232,13 @@
                                             <span class="text-muted small">Date:</span>
                                             <p class="mb-0">{{ $latestPayment->payment_date->format('M d, Y, h:i A') }}</p>
                                         </div>
-                                        
+
                                         @if($order->payments->count() > 1)
                                             <div class="mt-3 pt-2 border-top">
                                                 <a href="#" data-bs-toggle="collapse" data-bs-target="#allPayments" class="text-decoration-none small">
                                                     <i class="bi bi-chevron-down me-1"></i> View all payments ({{ $order->payments->count() }})
                                                 </a>
-                                                
+
                                                 <div class="collapse mt-2" id="allPayments">
                                                     @foreach($order->payments->sortByDesc('payment_date') as $payment)
                                                         <div class="card card-body bg-light mb-2 p-2 small">
@@ -266,7 +266,7 @@
                                     @endif
                                 </div>
                             </div>
-                            
+
                             <!-- Order Notes -->
                             @if($order->notes)
                             <div class="mb-4">
@@ -284,6 +284,10 @@
     </div>
 </div>
 
+@endsection
+
+
+@push('modals')
 <!-- Update Status Modal -->
 <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -310,13 +314,13 @@
                             <option value="refunded" {{ $order->status == 'refunded' ? 'selected' : '' }}>Refunded</option>
                         </select>
                     </div>
-                    
+
                     <div class="mb-3" id="trackingNumberField" style="display: {{ in_array($order->status, ['shipped', 'delivered']) ? 'block' : 'none' }};">
                         <label for="tracking_number" class="form-label fw-semibold">
-                            Tracking Number 
+                            Tracking Number
                             <span class="text-danger">*</span>
                         </label>
-                        <input type="text" class="form-control" id="tracking_number" name="tracking_number" 
+                        <input type="text" class="form-control" id="tracking_number" name="tracking_number"
                                value="{{ $order->tracking_number ?? '' }}" placeholder="Enter tracking number">
                         <small class="text-muted">Enter the shipping tracking number</small>
                     </div>
@@ -329,7 +333,7 @@
         </div>
     </div>
 </div>
-@endsection
+@endpush
 
 @section('css')
 <style>
@@ -337,15 +341,15 @@
     .order-timeline {
         border-left: 2px solid #e9ecef;
     }
-    
+
     .timeline-item {
         position: relative;
     }
-    
+
     .timeline-item:last-child {
         padding-bottom: 0 !important;
     }
-    
+
     .timeline-icon {
         width: 24px;
         height: 24px;
@@ -355,11 +359,11 @@
         justify-content: center;
         z-index: 1;
     }
-    
+
     .timeline-icon i {
         font-size: 12px;
     }
-    
+
     /* Product Image */
     .product-img-small {
         width: 50px;
@@ -369,120 +373,120 @@
         align-items: center;
         justify-content: center;
     }
-    
+
     .product-img-small img {
         object-fit: cover;
         width: 100%;
         height: 100%;
     }
-    
+
     /* Info Cards */
     .info-card {
         transition: all 0.3s ease;
         border-left: 4px solid var(--bs-primary);
     }
-    
+
     .info-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    
+
     .info-item p {
         font-weight: 500;
     }
-    
+
     /* Buttons */
     .btn {
         transition: all 0.3s ease;
         border-radius: 0.5rem;
         padding: 0.5rem 1.25rem;
     }
-    
+
     .btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
-    
+
     .btn-primary {
         box-shadow: 0 0.125rem 0.25rem rgba(var(--bs-primary-rgb), 0.4);
     }
-    
+
     .btn-primary:hover {
         box-shadow: 0 0.5rem 1rem rgba(var(--bs-primary-rgb), 0.2);
     }
-    
+
     /* Card */
     .card {
         transition: all 0.3s ease;
         box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
     }
-    
+
     /* Badge */
     .badge {
         font-weight: 500;
         letter-spacing: 0.5px;
     }
-    
+
     /* Modal */
     .modal-content {
         border-radius: 0.75rem;
         overflow: hidden;
     }
-    
+
     .modal-header {
         background-color: #f8f9fa;
     }
-    
+
     /* Responsive adjustments */
     @media (max-width: 991.98px) {
         .card-header {
             flex-direction: column;
             align-items: flex-start;
         }
-        
+
         .card-header .d-flex {
             margin-top: 1rem;
             width: 100%;
         }
-        
+
         .card-header .btn {
             flex: 1;
         }
-        
+
         .row.g-0 {
             flex-direction: column;
         }
-        
+
         .col-lg-8 {
             border-right: none !important;
             border-bottom: 1px solid #dee2e6;
         }
     }
-    
+
     @media (max-width: 767.98px) {
         .table-responsive {
             font-size: 0.875rem;
         }
-        
+
         .product-img-small {
             width: 40px;
             height: 40px;
         }
     }
-    
+
     @media (max-width: 575.98px) {
         .card-body .p-4 {
             padding: 1rem !important;
         }
-        
+
         h4.fw-bold {
             font-size: 1.25rem;
         }
-        
+
         h5.fw-semibold {
             font-size: 1rem;
         }
-        
+
         .timeline-content {
             padding-left: 1rem !important;
         }
@@ -498,7 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const updateStatusModalElement = document.getElementById('updateStatusModal');
     const updateStatusForm = document.getElementById('updateStatusForm');
     const updateStatusBtn = document.getElementById('updateStatusBtn');
-    
+
     // Create Bootstrap modal instance
     let updateStatusModal = null;
     if (updateStatusModalElement) {
@@ -507,7 +511,7 @@ document.addEventListener('DOMContentLoaded', function() {
             keyboard: false
         });
     }
-    
+
     // Handle modal show event
     if (updateStatusModalElement) {
         updateStatusModalElement.addEventListener('show.bs.modal', function() {
@@ -519,7 +523,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Initialize tracking field visibility
             toggleTrackingField();
         });
-        
+
         // Handle modal hidden event
         updateStatusModalElement.addEventListener('hidden.bs.modal', function() {
             // Reset form state when modal closes
@@ -533,21 +537,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Handle form submission
     if (updateStatusForm) {
         updateStatusForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
+
             // Validate form
             const statusSelect = document.getElementById('status');
             const trackingInput = document.getElementById('tracking_number');
-            
+
             if (!statusSelect || !statusSelect.value) {
                 alert('Please select a status.');
                 return false;
             }
-            
+
             // Validate tracking number for shipped/delivered orders
             const selectedStatus = statusSelect.value;
             if ((selectedStatus === 'shipped' || selectedStatus === 'delivered')) {
@@ -557,18 +561,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     return false;
                 }
             }
-            
+
             // Show loading state
             if (updateStatusBtn) {
                 updateStatusBtn.disabled = true;
                 updateStatusBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Updating...';
             }
-            
+
             // Submit form
             this.submit();
         });
     }
-    
+
     // Initialize tracking field on page load
     toggleTrackingField();
 });
@@ -578,11 +582,11 @@ function toggleTrackingField() {
     const statusSelect = document.getElementById('status');
     const trackingField = document.getElementById('trackingNumberField');
     const trackingInput = document.getElementById('tracking_number');
-    
+
     if (!statusSelect || !trackingField) return;
-    
+
     const selectedStatus = statusSelect.value;
-    
+
     if (selectedStatus === 'shipped' || selectedStatus === 'delivered') {
         trackingField.style.display = 'block';
         if (trackingInput) {
